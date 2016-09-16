@@ -1,0 +1,17 @@
+#ifdef linux
+
+#include "ubw.h"
+
+int ubwInit() {
+
+}
+
+int ubwHandleEvent() {
+	if (0)
+	{
+		return 0;
+	}
+	return 1;
+}
+
+#endif // linux
