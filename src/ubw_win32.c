@@ -1,6 +1,7 @@
-#ifdef _WIN32
-
 #include "ubw.h"
+
+#ifdef UBWINDOW_WIN32
+
 #include <windows.h>
 
 static HMODULE hProcess;
@@ -224,4 +225,4 @@ int ubwGetView(Ubw wnd) {
 }
 
 #undef _UBW_HWND
-#endif // _WIN32
+#endif // UBWINDOW_WIN32

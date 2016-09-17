@@ -68,7 +68,6 @@ workspace "UBWindow"
 		language "C"
 		includedirs { "src", "include" }
 		files { "src/*.c" }
-
 		kind "StaticLib"
 		targetdir("lib")
 
@@ -89,12 +88,20 @@ workspace "UBWindow"
 		includedirs { "include" }
 		libdirs { "lib" }
 		files { "demo/blank.c" }
-		links { "ubwindow" }
-
-		kind "ConsoleApp"
-		configuration "windows or macosx"
-			kind "WindowedApp"
 		targetdir("bin")
+
+		configuration "windows"
+			kind "WindowedApp"
+			links { "ubwindow" }
+
+		--[[configuration "macosx"
+			kind "WindowedApp"
+			links { "ubwindow" }
+			linkoptions { "-framework Cocoa" }]]
+
+		configuration "linux"
+			kind "ConsoleApp"
+			links { "ubwindow", "X11" }
 
 		configuration "Debug"
 			defines { "DEBUG" }
