@@ -70,6 +70,7 @@ workspace "UBWindow"
 		files { "src/*.c" }
 		kind "StaticLib"
 		targetdir("lib")
+		warnings "Extra"
 
 		configuration {"windows", "gmake" }
 			targetprefix "lib"
@@ -77,11 +78,12 @@ workspace "UBWindow"
 
 		configuration "Debug"
 			defines { "DEBUG" }
-			flags { "Symbols", "ExtraWarnings"}
+			--symbols "On"
+			flags { "Symbols" }
 
 		configuration "Release"
 			defines { "NDEBUG" }
-			flags { "Optimize", "ExtraWarnings"}
+			optimize "Speed"
 
 	project "demo_blank"
 		language "C"
@@ -89,6 +91,7 @@ workspace "UBWindow"
 		libdirs { "lib" }
 		files { "demo/blank.c" }
 		targetdir("bin")
+		warnings "Extra"
 
 		configuration "windows"
 			kind "WindowedApp"
@@ -105,8 +108,9 @@ workspace "UBWindow"
 
 		configuration "Debug"
 			defines { "DEBUG" }
-			flags { "Symbols", "ExtraWarnings"}
+			--symbols "On"
+			flags { "Symbols" }
 
 		configuration "Release"
 			defines { "NDEBUG" }
-			flags { "Optimize", "ExtraWarnings"}
+			optimize "Speed"
