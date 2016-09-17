@@ -22,10 +22,6 @@ static LRESULT CALLBACK ubwProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 static DWORD dwExStyle;
 static DWORD dwStyle;
 
-static UbwBounds initialBorders;
-static UbwBounds initialPaddings;
-static UbwSize initialSizeDiff;
-
 int ubwInit() {
 	hProcess = GetModuleHandleW(NULL);
 	HICON hiApp = LoadIconW(NULL, (LPCWSTR)IDI_APPLICATION);
@@ -44,39 +40,14 @@ int ubwInit() {
 	wndCls.lpfnWndProc = ubwProc;
 	wndCls.cbSize = sizeof(wndCls);
 
-	int ok = (int)RegisterClassExW(&wndCls);
+	ATOM ok = RegisterClassExW(&wndCls);
 	if (!ok) {
-		puts("UBWindow: win32.RegisterClassExW error!");
+		puts("UBWindow: Win32.RegisterClassExW error!");
 		return 0;
 	}
 
 	dwExStyle = WS_EX_DLGMODALFRAME;
 	dwStyle = WS_CAPTION | WS_SYSMENU | WS_OVERLAPPED | WS_THICKFRAME | WS_MAXIMIZEBOX | WS_MINIMIZEBOX;
-
-	RECT boundDiffs = {500, 500, 1000, 1000};
-	ok = (int)AdjustWindowRectEx(&boundDiffs, dwStyle, FALSE, dwExStyle);
-	if (!ok) {
-		puts("UBWindow: win32.AdjustWindowRectEx error!");
-		return 0;
-	}
-
-	boundDiffs.left = 500 - boundDiffs.left;
-	boundDiffs.top = 500 - boundDiffs.top;
-	boundDiffs.right -= 1000;
-	boundDiffs.bottom -= 1000;
-
-	initialBorders.left = boundDiffs.left;
-	initialBorders.top = boundDiffs.bottom;
-	initialBorders.right = boundDiffs.right;
-	initialBorders.bottom = boundDiffs.bottom;
-
-	initialPaddings.left = 0;
-	initialPaddings.top = boundDiffs.top - boundDiffs.bottom;
-	initialPaddings.right = 0;
-	initialPaddings.bottom = 0;
-
-	initialSizeDiff.width = boundDiffs.left + boundDiffs.right;
-	initialSizeDiff.height = boundDiffs.top + boundDiffs.bottom;
 
 	return 1;
 }
@@ -106,13 +77,34 @@ Ubw ubwCreate() {
 		NULL
 	);
 	if (!wnd->pNtv) {
-		puts("UBWindow: win32.CreateWindowExW error!");
+		puts("UBWindow: Win32.CreateWindowExW error!");
 		return NULL;
 	}
 
-	wnd->borders = initialBorders;
-	wnd->paddings = initialPaddings;
-	wnd->szNonCont = initialSizeDiff;
+	RECT bdNonCont = { 500, 500, 1000, 1000 };
+	BOOL ok = AdjustWindowRectEx(&bdNonCont, dwStyle, FALSE, dwExStyle);
+	if (!ok) {
+		puts("UBWindow: Win32.AdjustWindowRectEx error!");
+		return 0;
+	}
+
+	bdNonCont.left = 500 - bdNonCont.left;
+	bdNonCont.top = 500 - bdNonCont.top;
+	bdNonCont.right -= 1000;
+	bdNonCont.bottom -= 1000;
+
+	wnd->borders.left = bdNonCont.left;
+	wnd->borders.top = bdNonCont.bottom;
+	wnd->borders.right = bdNonCont.right;
+	wnd->borders.bottom = bdNonCont.bottom;
+
+	wnd->paddings.left = 0;
+	wnd->paddings.top = bdNonCont.top - bdNonCont.bottom;
+	wnd->paddings.right = 0;
+	wnd->paddings.bottom = 0;
+
+	wnd->szNonCont.width = bdNonCont.left + bdNonCont.right;
+	wnd->szNonCont.height = bdNonCont.top + bdNonCont.bottom;
 
 	ubwSum++;
 	SetWindowLongPtr((HWND)wnd->pNtv, lenWndExtra - 1, (LONG_PTR)wnd);
