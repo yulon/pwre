@@ -148,6 +148,9 @@ int ubwSetTitle(Ubw wnd, char* str8) {
 }
 
 void ubwGetRect(Ubw wnd, UbwRect* pRect) {
+	if (!pRect) {
+		return;
+	}
 	GetWindowRect(_UBW_HWND, (LPRECT)pRect);
 	pRect->width -= pRect->left;
 	pRect->height -= pRect->top;
@@ -160,10 +163,8 @@ void ubwSetRect(Ubw wnd, UbwRect rect) {
 void ubwMoveToScreenCenter(Ubw wnd) {
 	UbwRect rect;
 	ubwGetRect(wnd, &rect);
-	int scrWidth = GetSystemMetrics(SM_CXSCREEN);
-	int scrHeight = GetSystemMetrics(SM_CYSCREEN);
-	rect.left = (scrWidth - rect.width) / 2;
-	rect.top = (scrHeight - rect.height) / 2;
+	rect.left = (GetSystemMetrics(SM_CXSCREEN) - rect.width) / 2;
+	rect.top = (GetSystemMetrics(SM_CYSCREEN) - rect.height) / 2;
 	ubwSetRect(wnd, rect);
 }
 
@@ -171,8 +172,8 @@ void ubwActive(Ubw wnd) {
 	SetActiveWindow(_UBW_HWND);
 }
 
-void ubwVisible(Ubw wnd) {
-	ShowWindow(_UBW_HWND, SW_SHOWNOACTIVATE);
+void ubwShow(Ubw wnd) {
+	ShowWindow(_UBW_HWND, SW_SHOW);
 }
 
 void ubwHide(Ubw wnd) {

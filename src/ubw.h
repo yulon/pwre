@@ -9,6 +9,7 @@ static int ubwSum;
 
 typedef struct _Ubw {
 	void* pNtv;
+	UbwRect rect;
 	UbwBounds borders;
 	UbwBounds paddings;
 	UbwSize szNonCont;

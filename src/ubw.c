@@ -9,11 +9,6 @@ void* ubwNativePointer(Ubw wnd) {
 	return ((_Ubw*)wnd)->pNtv;
 }
 
-void ubwShow(Ubw wnd) {
-	ubwVisible(wnd);
-	ubwActive(wnd);
-}
-
 void ubwContentSize(Ubw wnd, UbwSize* pSize) {
 	if (pSize) {
 		UbwRect rect;

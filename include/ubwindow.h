@@ -32,7 +32,6 @@ void ubwClose(Ubw);
 void* ubwNativePointer(Ubw);
 
 void ubwShow(Ubw);
-void ubwVisible(Ubw);
 void ubwHide(Ubw);
 int ubwIsVisible(Ubw);
 void ubwActive(Ubw);
