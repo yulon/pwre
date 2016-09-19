@@ -5,10 +5,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static int ubwSum;
+static int wndCount;
 
 typedef struct _UBWPVT {
-	void *pNtv;
+	void *ntvPtr;
 	int x, y, width, height;
 	int ncWidth, ncHeight;
 } _UBWPVT;

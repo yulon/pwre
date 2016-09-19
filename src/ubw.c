@@ -6,5 +6,5 @@ void ubwHandleEventsAndStuck(void) {
 }
 
 void *ubwNativePointer(UBW wnd) {
-	return ((_UBWPVT *)wnd)->pNtv;
+	return ((_UBWPVT *)wnd)->ntvPtr;
 }

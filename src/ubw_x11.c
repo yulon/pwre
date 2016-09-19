@@ -5,20 +5,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
-static Display *dpy;
-static Window root;
 static _UBWPVT *wndList[256];
-
-int ubwInit(void) {
-	XInitThreads();
-	dpy = XOpenDisplay(NULL);
-	if (!dpy) {
-		puts("UBWindow: X11.XOpenDisplay error!");
-		return 0;
-	}
-	root = XRootWindow(dpy, 0);
-	return 1;
-}
 
 static void wndListAdd(_UBWPVT *wnd) {
 	for (int i = 0; i < 256; i++) {
@@ -35,11 +22,25 @@ static int wndListIx(Window XWnd) {
 		if (!wndList[i]) {
 			return -1;
 		}
-		if ((Window)wndList[i]->pNtv == XWnd) {
+		if ((Window)wndList[i]->ntvPtr == XWnd) {
 			return i;
 		}
 	}
 	return -1;
+}
+
+static Display *dpy;
+static Window root;
+
+int ubwInit(void) {
+	XInitThreads();
+	dpy = XOpenDisplay(NULL);
+	if (!dpy) {
+		puts("UBWindow: X11.XOpenDisplay error!");
+		return 0;
+	}
+	root = XRootWindow(dpy, 0);
+	return 1;
 }
 
 static unsigned char event[sizeof(XEvent)];
@@ -62,8 +63,8 @@ int ubwHandleEvent(void) {
 
 			break;
 		case ClientMessage:
-			ubwSum--;
-			if (!ubwSum) {
+			wndCount--;
+			if (!wndCount) {
 				XCloseDisplay(dpy);
 				return 0;
 			}
@@ -79,7 +80,7 @@ UBW ubwCreate(void) {
 
 	XSetWindowAttributes attr = {};
 	attr.background_pixel = XWhitePixel(dpy, 0);
-	wnd->pNtv = (void *)XCreateWindow(
+	wnd->ntvPtr = (void *)XCreateWindow(
 		dpy,
 		root,
 		0,
@@ -94,24 +95,24 @@ UBW ubwCreate(void) {
 		&attr
 	);
 
-	if (!wnd->pNtv) {
+	if (!wnd->ntvPtr) {
 		puts("UBWindow: X11.XCreateSimpleWindow error!");
 		return NULL;
 	}
 
 	Atom wmDelete = XInternAtom(dpy, "WM_DELETE_WINDOW", True);
-	XSetWMProtocols(dpy, (Window)wnd->pNtv, &wmDelete, 1);
-	XSelectInput(dpy, (Window)wnd->pNtv, ExposureMask | KeyPressMask | StructureNotifyMask);
+	XSetWMProtocols(dpy, (Window)wnd->ntvPtr, &wmDelete, 1);
+	XSelectInput(dpy, (Window)wnd->ntvPtr, ExposureMask | KeyPressMask | StructureNotifyMask);
 
 	wnd->width = 10;
 	wnd->height = 10;
 
-	ubwSum++;
+	wndCount++;
 	wndListAdd(wnd);
 	return (UBW)wnd;
 }
 
-#define _XWND (Window)((_UBWPVT *)wnd)->pNtv
+#define _XWND (Window)((_UBWPVT *)wnd)->ntvPtr
 
 int ubwGetTitle(UBW wnd, char *str8) {
 	//XGetWMName(dpy, _XWND, &xtpTitle);

@@ -4,14 +4,14 @@
 
 #include <windows.h>
 
-static HMODULE hProcess;
-static WNDCLASSEXW wndCls;
-static int lenWndExtra;
+static HMODULE mainModule;
+static WNDCLASSEXW wndClass;
+static int wndExtraLen;
 
-static LRESULT CALLBACK ubwProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+static LRESULT CALLBACK wmHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	if (uMsg == WM_DESTROY) {
-		ubwSum--;
-		if (!ubwSum) {
+		wndCount--;
+		if (!wndCount) {
 			PostQuitMessage(0);
 			return 0;
 		}
@@ -19,35 +19,32 @@ static LRESULT CALLBACK ubwProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 }
 
-static DWORD dwExStyle;
-static DWORD dwStyle;
+static DWORD baseExStyle;
+static DWORD baseStyle;
 
 int ubwInit(void) {
-	hProcess = GetModuleHandleW(NULL);
-	HICON hiApp = LoadIconW(NULL, (LPCWSTR)IDI_APPLICATION);
-	HICON hiLogo = LoadIconW(NULL, (LPCWSTR)IDI_WINLOGO);
-	HCURSOR hcArrow = LoadCursorW(NULL, (LPCWSTR)IDC_ARROW);
+	mainModule = GetModuleHandleW(NULL);
 
-	wndCls.style = CS_DBLCLKS;
-	wndCls.hInstance = hProcess;
-	wndCls.hIcon = hiApp;
-	wndCls.hIconSm = hiLogo;
-	wndCls.hCursor = hcArrow;
-	wndCls.hbrBackground = (HBRUSH)COLOR_WINDOW;
-	wndCls.lpszClassName = L"UBWindow";
-	lenWndExtra = 10;
-	wndCls.cbWndExtra = sizeof(void *) * lenWndExtra;
-	wndCls.lpfnWndProc = ubwProc;
-	wndCls.cbSize = sizeof(wndCls);
+	wndClass.style = CS_DBLCLKS;
+	wndClass.hInstance = mainModule;
+	wndClass.hIcon = LoadIconW(NULL, (LPCWSTR)IDI_APPLICATION);
+	wndClass.hIconSm = LoadIconW(NULL, (LPCWSTR)IDI_WINLOGO);
+	wndClass.hCursor = LoadCursorW(NULL, (LPCWSTR)IDC_ARROW);
+	wndClass.hbrBackground = (HBRUSH)COLOR_WINDOW;
+	wndClass.lpszClassName = L"UBWindow";
+	wndExtraLen = 10;
+	wndClass.cbWndExtra = sizeof(void *) * wndExtraLen;
+	wndClass.lpfnWndProc = wmHandler;
+	wndClass.cbSize = sizeof(wndClass);
 
-	ATOM ok = RegisterClassExW(&wndCls);
+	ATOM ok = RegisterClassExW(&wndClass);
 	if (!ok) {
 		puts("UBWindow: Win32.RegisterClassExW error!");
 		return 0;
 	}
 
-	dwExStyle = WS_EX_DLGMODALFRAME;
-	dwStyle = WS_CAPTION | WS_SYSMENU | WS_OVERLAPPED | WS_THICKFRAME | WS_MAXIMIZEBOX | WS_MINIMIZEBOX;
+	baseExStyle = WS_EX_DLGMODALFRAME;
+	baseStyle = WS_CAPTION | WS_SYSMENU | WS_OVERLAPPED | WS_THICKFRAME | WS_MAXIMIZEBOX | WS_MINIMIZEBOX;
 
 	return 1;
 }
@@ -67,63 +64,63 @@ int ubwHandleEvent(void) {
 UBW ubwCreate(void) {
 	_UBWPVT *wnd = calloc(1, sizeof(_UBWPVT));
 
-	wnd->pNtv = (void *)CreateWindowExW(
-		dwExStyle,
-		wndCls.lpszClassName,
+	wnd->ntvPtr = (void *)CreateWindowExW(
+		baseExStyle,
+		wndClass.lpszClassName,
 		NULL,
-		dwStyle,
+		baseStyle,
 		0, 0, 0, 0, NULL, NULL,
-		hProcess,
+		mainModule,
 		NULL
 	);
-	if (!wnd->pNtv) {
+	if (!wnd->ntvPtr) {
 		puts("UBWindow: Win32.CreateWindowExW error!");
 		return NULL;
 	}
 
-	RECT bdNonCont = { 500, 500, 1000, 1000 };
-	BOOL ok = AdjustWindowRectEx(&bdNonCont, dwStyle, FALSE, dwExStyle);
+	RECT rect = { 500, 500, 1000, 1000 };
+	BOOL ok = AdjustWindowRectEx(&rect, baseStyle, FALSE, baseExStyle);
 	if (!ok) {
 		puts("UBWindow: Win32.AdjustWindowRectEx error!");
 		return 0;
 	}
-	wnd->ncWidth = (500 - bdNonCont.left) + (bdNonCont.right - 1000);
-	wnd->ncHeight = (500 - bdNonCont.top) + (bdNonCont.bottom - 1000);
+	wnd->ncWidth = (500 - rect.left) + (rect.right - 1000);
+	wnd->ncHeight = (500 - rect.top) + (rect.bottom - 1000);
 
-	ubwSum++;
-	SetWindowLongPtr((HWND)wnd->pNtv, lenWndExtra - 1, (LONG_PTR)wnd);
+	wndCount++;
+	SetWindowLongPtr((HWND)wnd->ntvPtr, wndExtraLen - 1, (LONG_PTR)wnd);
 	return (UBW)wnd;
 }
 
-#define _HWND (HWND)((_UBWPVT *)wnd)->pNtv
+#define _HWND (HWND)((_UBWPVT *)wnd)->ntvPtr
 
 int ubwGetTitle(UBW wnd, char *str8) {
-	int lenStr16 = GetWindowTextLengthW(_HWND);
-	if (!lenStr16) {
+	int str16Len = GetWindowTextLengthW(_HWND);
+	if (!str16Len) {
 		return 0;
 	}
-	WCHAR *str16 = calloc(lenStr16 + 1, sizeof(WCHAR));
-	GetWindowTextW(_HWND, str16, lenStr16);
+	WCHAR *str16 = calloc(str16Len + 1, sizeof(WCHAR));
+	GetWindowTextW(_HWND, str16, str16Len);
 
-	int lenStr8 = WideCharToMultiByte(CP_UTF8, 0, str16, -1, NULL, 0, NULL, NULL);
-	if (lenStr8 && str8) {
-		WideCharToMultiByte(CP_UTF8, 0, str16, -1, str8, lenStr8, NULL, NULL);
+	int str8Len = WideCharToMultiByte(CP_UTF8, 0, str16, -1, NULL, 0, NULL, NULL);
+	if (str8Len && str8) {
+		WideCharToMultiByte(CP_UTF8, 0, str16, -1, str8, str8Len, NULL, NULL);
 	}
 
 	free(str16);
-	return lenStr8;
+	return str8Len;
 }
 
 int ubwSetTitle(UBW wnd, char *str8) {
 	if (!str8) {
 		return 0;
 	}
-	int lenStr16 = MultiByteToWideChar(CP_UTF8, 0, str8, -1, NULL, 0);
-	if (!lenStr16) {
-		return lenStr16;
+	int str16Len = MultiByteToWideChar(CP_UTF8, 0, str8, -1, NULL, 0);
+	if (!str16Len) {
+		return str16Len;
 	}
-	WCHAR *str16 = calloc(lenStr16 + 1, sizeof(WCHAR));
-	MultiByteToWideChar(CP_UTF8, 0, str8, -1, str16, lenStr16);
+	WCHAR *str16 = calloc(str16Len + 1, sizeof(WCHAR));
+	MultiByteToWideChar(CP_UTF8, 0, str8, -1, str16, str16Len);
 
 	BOOL ok = SetWindowTextW(_HWND, str16);
 
@@ -181,37 +178,33 @@ void ubwHide(UBW wnd) {
 }
 
 int ubwIsVisible(UBW wnd) {
-	LONG dwStyle = GetWindowLongW(_HWND, GWL_STYLE);
-	return dwStyle & WS_VISIBLE;
+	LONG style = GetWindowLongW(_HWND, GWL_STYLE);
+	return style & WS_VISIBLE;
 }
 
 void ubwSetView(UBW wnd, int flag) {
-	int nCmdShow = 0;
 	switch (flag)
 	{
 	case UBW_VIEW_MAXIMIZE:
-		nCmdShow = SW_MAXIMIZE;
+		ShowWindow(_HWND, SW_MAXIMIZE);
 		break;
 	case UBW_VIEW_MINIMIZE:
-		nCmdShow = SW_MINIMIZE;
+		ShowWindow(_HWND, SW_MINIMIZE);
 		break;
 	case UBW_VIEW_RESTORE:
-		nCmdShow = SW_RESTORE;
+		ShowWindow(_HWND, SW_RESTORE);
 		break;
 	case UBW_VIEW_NORMAL:
-		nCmdShow = SW_SHOWNORMAL;
-	}
-	if (nCmdShow) {
-		ShowWindow(_HWND, nCmdShow);
+		ShowWindow(_HWND, SW_SHOWNORMAL);
 	}
 }
 
 int ubwGetView(UBW wnd) {
-	LONG dwStyle = GetWindowLongW(_HWND, GWL_STYLE);
-	if (dwStyle & WS_MAXIMIZE) {
+	LONG style = GetWindowLongW(_HWND, GWL_STYLE);
+	if (style & WS_MAXIMIZE) {
 		return UBW_VIEW_MAXIMIZE;
 	}
-	else if (dwStyle & WS_MAXIMIZE) {
+	else if (style & WS_MAXIMIZE) {
 		return UBW_VIEW_MINIMIZE;
 	}
 	return UBW_VIEW_NORMAL;
