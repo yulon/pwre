@@ -14,9 +14,10 @@ int ubwInit() {
 	dpy = XOpenDisplay(NULL);
 	if (!dpy) {
 		puts("UBWindow: X11.XOpenDisplay error!");
-		return NULL;
+		return 0;
 	}
 	root = XRootWindow(dpy, 0);
+	return 1;
 }
 
 static void _UbwListAdd(_Ubw* wnd) {
@@ -38,30 +39,27 @@ static int _UbwListIx(Window xWnd) {
 			return i;
 		}
 	}
+	return -1;
 }
 
 static unsigned char event[sizeof(XEvent)];
 
 int ubwHandleEvent() {
 	XNextEvent(dpy, (XEvent*)event);
-
 	int ixWnd = _UbwListIx(((XAnyEvent*)event)->window);
 	if (ixWnd != -1) {
 		switch (((XAnyEvent*)event)->type)
 		{
 		case ConfigureNotify:
 			if (((XConfigureEvent*)event)->x != 0 || ((XConfigureEvent*)event)->y != 0) {
-				_UbwList[ixWnd]->rect.left = ((XConfigureEvent*)event)->x;
-				_UbwList[ixWnd]->rect.top = ((XConfigureEvent*)event)->y;
+				_UbwList[ixWnd]->x = ((XConfigureEvent*)event)->x;
+				_UbwList[ixWnd]->y = ((XConfigureEvent*)event)->y;
 			}
-			_UbwList[ixWnd]->rect.width = ((XConfigureEvent*)event)->width;
-			_UbwList[ixWnd]->rect.height = ((XConfigureEvent*)event)->height;
-			printf("ConfigureNotify %d %d %d %d\n", ((XConfigureEvent*)event)->x, ((XConfigureEvent*)event)->y, ((XConfigureEvent*)event)->width, ((XConfigureEvent*)event)->height);
-			ubwGetRect(_UbwList[ixWnd], NULL);
+			_UbwList[ixWnd]->width = ((XConfigureEvent*)event)->width;
+			_UbwList[ixWnd]->height = ((XConfigureEvent*)event)->height;
 			break;
 		case Expose:
-			puts("Expose");
-			ubwGetRect(_UbwList[ixWnd], NULL);
+
 			break;
 		case ClientMessage:
 			ubwSum--;
@@ -86,8 +84,8 @@ Ubw ubwCreate() {
 		root,
 		0,
 		0,
-		100,
-		100,
+		10,
+		10,
 		0,
 		XDefaultDepth(dpy, 0),
 		InputOutput,
@@ -105,11 +103,8 @@ Ubw ubwCreate() {
 	XSetWMProtocols(dpy, (Window)wnd->pNtv, &wmDelete, 1);
 	XSelectInput(dpy, (Window)wnd->pNtv, ExposureMask | KeyPressMask | StructureNotifyMask);
 
-	wnd->rect.width = 10;
-	wnd->rect.height = 10;
-
-	wnd->szNonCont.width = 10;
-	wnd->szNonCont.height = 50;
+	wnd->width = 10;
+	wnd->height = 10;
 
 	ubwSum++;
 	_UbwListAdd(wnd);
@@ -138,78 +133,21 @@ int ubwSetTitle(Ubw wnd, char* str8) {
 	return 1;
 }
 
-static Window get_toplevel_parent(Display * display, Window window)
-{
-	Window parent;
-	Window root;
-	Window * children;
-	unsigned int num_children;
-
-	while (1) {
-		if (0 == XQueryTree(display, window, &root,
-			&parent, &children, &num_children)) {
-			fprintf(stderr, "XQueryTree error\n");
-			abort(); //change to whatever error handling you prefer
-		}
-		if (children) { //must test for null
-			XFree(children);
-		}
-		if (window == root || parent == root) {
-			return window;
-		}
-		else {
-			window = parent;
-		}
-	}
-}
-
-void ubwGetRect(Ubw wnd, UbwRect* pRect) {
-	Window toplevel_parent_of_focus;
-	XWindowAttributes attr;
-	toplevel_parent_of_focus = get_toplevel_parent(dpy, _UBW_XWND);
-	XGetWindowAttributes(dpy, toplevel_parent_of_focus, &attr);
-	printf("XGetWindowAttributes %d %d %d %d\n", attr.x, attr.y, attr.width, attr.height);
-	//pRect->left = attr.x;
-	//pRect->top = attr.y;
-	//pRect->width = attr.width;
-	//pRect->height = attr.height;
-	if (!pRect) {
-		return;
-	}
-	pRect->left = ((_Ubw*)wnd)->rect.left;
-	pRect->top = ((_Ubw*)wnd)->rect.top;
-	pRect->width = ((_Ubw*)wnd)->rect.width;
-	pRect->height = ((_Ubw*)wnd)->rect.height;
-}
-
-void ubwSetRect(Ubw wnd, UbwRect rect) {
-	if (XMoveResizeWindow(dpy, _UBW_XWND, rect.left, rect.top, rect.width, rect.height)) {
-		((_Ubw*)wnd)->rect.left = rect.left;
-		((_Ubw*)wnd)->rect.top = rect.top;
-		((_Ubw*)wnd)->rect.width = rect.width;
-		((_Ubw*)wnd)->rect.height = rect.width;
-	}
-}
-
-void ubwMove(Ubw wnd, UbwPoint point) {
-	if (XMoveWindow(dpy, _UBW_XWND, point.left, point.top)) {
-		((_Ubw*)wnd)->rect.left = point.left;
-		((_Ubw*)wnd)->rect.top = point.top;
+void ubwMove(Ubw wnd, int x, int y) {
+	if (XMoveWindow(dpy, _UBW_XWND, x, y)) {
+		((_Ubw*)wnd)->x = x;
+		((_Ubw*)wnd)->y = y;
 	}
 }
 
 void ubwMoveToScreenCenter(Ubw wnd) {
-	UbwRect rect = {0, 0, 10, 10};
-	ubwGetRect(wnd, &rect);
-	rect.left = (DisplayWidth(dpy, 0) - rect.width) / 2;
-	rect.top = (DisplayHeight(dpy, 0) - rect.height) / 2;
-	ubwSetRect(wnd, rect);
+	ubwMove(wnd, (DisplayWidth(dpy, 0) - ((_Ubw*)wnd)->width) / 2, (DisplayHeight(dpy, 0) - ((_Ubw*)wnd)->height) / 2);
 }
 
-void ubwResize(Ubw wnd, UbwSize size) {
-	if (XResizeWindow(dpy, _UBW_XWND, size.width, size.height)) {
-		((_Ubw*)wnd)->rect.width = size.width;
-		((_Ubw*)wnd)->rect.height = size.width;
+void ubwResize(Ubw wnd, int width, int height) {
+	if (XResizeWindow(dpy, _UBW_XWND, width, height)) {
+		((_Ubw*)wnd)->width = width;
+		((_Ubw*)wnd)->height = width;
 	}
 }
 

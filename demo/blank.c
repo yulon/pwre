@@ -5,8 +5,7 @@ int main(void) {
 
 	Ubw wnd = ubwCreate();
 	ubwSetTitle(wnd, "Hello Window!");
-	UbwSize size = { 500, 500 };
-	ubwResizeFromContentSize(wnd, size);
+	ubwResize(wnd, 500, 500);
 	ubwShow(wnd);
 	ubwMoveToScreenCenter(wnd);
 

@@ -9,10 +9,8 @@ static int ubwSum;
 
 typedef struct _Ubw {
 	void* pNtv;
-	UbwRect rect;
-	UbwBounds borders;
-	UbwBounds paddings;
-	UbwSize szNonCont;
+	int x, y, width, height;
+	int ncWidth, ncHeight;
 } _Ubw;
 
 #if !defined(UBWINDOW_WIN32) && !defined(UBWINDOW_X11) && !defined(UBWINDOW_COCOA)
@@ -21,7 +19,7 @@ typedef struct _Ubw {
 	#elif defined(__APPLE__) && defined(__MACH__)
 		#define UBWINDOW_COCOA
 	#elif defined(__unix__)
-		#define UBWINDOW_XCB
+		#define UBWINDOW_X11
 	#endif
 #endif
 

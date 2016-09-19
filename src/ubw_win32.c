@@ -87,24 +87,8 @@ Ubw ubwCreate() {
 		puts("UBWindow: Win32.AdjustWindowRectEx error!");
 		return 0;
 	}
-
-	bdNonCont.left = 500 - bdNonCont.left;
-	bdNonCont.top = 500 - bdNonCont.top;
-	bdNonCont.right -= 1000;
-	bdNonCont.bottom -= 1000;
-
-	wnd->borders.left = bdNonCont.left;
-	wnd->borders.top = bdNonCont.bottom;
-	wnd->borders.right = bdNonCont.right;
-	wnd->borders.bottom = bdNonCont.bottom;
-
-	wnd->paddings.left = 0;
-	wnd->paddings.top = bdNonCont.top - bdNonCont.bottom;
-	wnd->paddings.right = 0;
-	wnd->paddings.bottom = 0;
-
-	wnd->szNonCont.width = bdNonCont.left + bdNonCont.right;
-	wnd->szNonCont.height = bdNonCont.top + bdNonCont.bottom;
+	wnd->ncWidth = (500 - bdNonCont.left) + (bdNonCont.right - 1000);
+	wnd->ncHeight = (500 - bdNonCont.top) + (bdNonCont.bottom - 1000);
 
 	ubwSum++;
 	SetWindowLongPtr((HWND)wnd->pNtv, lenWndExtra - 1, (LONG_PTR)wnd);
@@ -147,25 +131,41 @@ int ubwSetTitle(Ubw wnd, char* str8) {
 	return ok;
 }
 
-void ubwGetRect(Ubw wnd, UbwRect* pRect) {
-	if (!pRect) {
-		return;
-	}
-	GetWindowRect(_UBW_HWND, (LPRECT)pRect);
-	pRect->width -= pRect->left;
-	pRect->height -= pRect->top;
-}
-
-void ubwSetRect(Ubw wnd, UbwRect rect) {
-	MoveWindow(_UBW_HWND, rect.left, rect.top, rect.width, rect.height, TRUE);
-}
-
 void ubwMoveToScreenCenter(Ubw wnd) {
-	UbwRect rect;
-	ubwGetRect(wnd, &rect);
-	rect.left = (GetSystemMetrics(SM_CXSCREEN) - rect.width) / 2;
-	rect.top = (GetSystemMetrics(SM_CYSCREEN) - rect.height) / 2;
-	ubwSetRect(wnd, rect);
+	RECT rect;
+	GetWindowRect(_UBW_HWND, &rect);
+	int width = rect.right - rect.left;
+	int height = rect.bottom - rect.top;
+	MoveWindow(
+		_UBW_HWND,
+		(GetSystemMetrics(SM_CXSCREEN) - width) / 2,
+		(GetSystemMetrics(SM_CYSCREEN) - height) / 2,
+		width - rect.left + ((_Ubw*)wnd)->ncWidth,
+		height - rect.top + ((_Ubw*)wnd)->ncHeight,
+		TRUE
+	);
+}
+
+void ubwSize(Ubw wnd, int* width, int* height) {
+	RECT rect;
+	GetWindowRect(_UBW_HWND, &rect);
+	if (width) {
+		*width = rect.right - rect.left - ((_Ubw*)wnd)->ncWidth;
+	}
+	if (height) {
+		*height = rect.bottom - rect.top - ((_Ubw*)wnd)->ncHeight;
+	}
+}
+
+void ubwResize(Ubw wnd, int width, int height) {
+	RECT rect;
+	GetWindowRect(_UBW_HWND, &rect);
+	MoveWindow(
+		_UBW_HWND, rect.left, rect.top,
+		width + ((_Ubw*)wnd)->ncWidth,
+		height + ((_Ubw*)wnd)->ncHeight,
+		TRUE
+	);
 }
 
 void ubwActive(Ubw wnd) {
