@@ -5,11 +5,11 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
-static Display* dpy;
+static Display *dpy;
 static Window root;
-static _Ubw* _UbwList[256];
+static _UBWPVT *wndList[256];
 
-int ubwInit() {
+int ubwInit(void) {
 	XInitThreads();
 	dpy = XOpenDisplay(NULL);
 	if (!dpy) {
@@ -20,22 +20,22 @@ int ubwInit() {
 	return 1;
 }
 
-static void _UbwListAdd(_Ubw* wnd) {
+static void wndListAdd(_UBWPVT *wnd) {
 	for (int i = 0; i < 256; i++) {
-		if (!_UbwList[i]) {
-			_UbwList[i] = wnd;
+		if (!wndList[i]) {
+			wndList[i] = wnd;
 			return;
 		}
 	}
 	puts("UBWindow: Create the number exceeds the upper limit!");
 }
 
-static int _UbwListIx(Window xWnd) {
+static int wndListIx(Window XWnd) {
 	for (int i = 0; i < 256; i++) {
-		if (!_UbwList[i]) {
+		if (!wndList[i]) {
 			return -1;
 		}
-		if ((Window)_UbwList[i]->pNtv == xWnd) {
+		if ((Window)wndList[i]->pNtv == XWnd) {
 			return i;
 		}
 	}
@@ -44,19 +44,19 @@ static int _UbwListIx(Window xWnd) {
 
 static unsigned char event[sizeof(XEvent)];
 
-int ubwHandleEvent() {
-	XNextEvent(dpy, (XEvent*)event);
-	int ixWnd = _UbwListIx(((XAnyEvent*)event)->window);
+int ubwHandleEvent(void) {
+	XNextEvent(dpy, (XEvent *)event);
+	int ixWnd = wndListIx(((XAnyEvent *)event)->window);
 	if (ixWnd != -1) {
-		switch (((XAnyEvent*)event)->type)
+		switch (((XAnyEvent *)event)->type)
 		{
 		case ConfigureNotify:
-			if (((XConfigureEvent*)event)->x != 0 || ((XConfigureEvent*)event)->y != 0) {
-				_UbwList[ixWnd]->x = ((XConfigureEvent*)event)->x;
-				_UbwList[ixWnd]->y = ((XConfigureEvent*)event)->y;
+			if (((XConfigureEvent *)event)->x != 0 || ((XConfigureEvent *)event)->y != 0) {
+				wndList[ixWnd]->x = ((XConfigureEvent *)event)->x;
+				wndList[ixWnd]->y = ((XConfigureEvent *)event)->y;
 			}
-			_UbwList[ixWnd]->width = ((XConfigureEvent*)event)->width;
-			_UbwList[ixWnd]->height = ((XConfigureEvent*)event)->height;
+			wndList[ixWnd]->width = ((XConfigureEvent *)event)->width;
+			wndList[ixWnd]->height = ((XConfigureEvent *)event)->height;
 			break;
 		case Expose:
 
@@ -67,19 +67,19 @@ int ubwHandleEvent() {
 				XCloseDisplay(dpy);
 				return 0;
 			}
-			_UbwList[ixWnd] = NULL;
+			wndList[ixWnd] = NULL;
 			break;
 		}
 	}
 	return 1;
 }
 
-Ubw ubwCreate() {
-	_Ubw* wnd = calloc(1, sizeof(_Ubw));
+UBW ubwCreate(void) {
+	_UBWPVT *wnd = calloc(1, sizeof(_UBWPVT));
 
 	XSetWindowAttributes attr = {};
 	attr.background_pixel = XWhitePixel(dpy, 0);
-	wnd->pNtv = (void*)XCreateWindow(
+	wnd->pNtv = (void *)XCreateWindow(
 		dpy,
 		root,
 		0,
@@ -107,19 +107,19 @@ Ubw ubwCreate() {
 	wnd->height = 10;
 
 	ubwSum++;
-	_UbwListAdd(wnd);
-	return (Ubw)wnd;
+	wndListAdd(wnd);
+	return (UBW)wnd;
 }
 
-#define _UBW_XWND (Window)((_Ubw*)wnd)->pNtv
+#define _XWND (Window)((_UBWPVT *)wnd)->pNtv
 
-int ubwGetTitle(Ubw wnd, char* str8) {
-	//XGetWMName(dpy, _UBW_XWND, &xtpTitle);
+int ubwGetTitle(UBW wnd, char *str8) {
+	//XGetWMName(dpy, _XWND, &xtpTitle);
 
 	return 0;
 }
 
-int ubwSetTitle(Ubw wnd, char* str8) {
+int ubwSetTitle(UBW wnd, char *str8) {
 	if (!str8) {
 		return 0;
 	}
@@ -128,36 +128,36 @@ int ubwSetTitle(Ubw wnd, char* str8) {
 	if (!ok) {
 		return 0;
 	}
-	XSetWMName(dpy, _UBW_XWND, &xtpTitle);
-	XSetWMIconName(dpy, _UBW_XWND, &xtpTitle);
+	XSetWMName(dpy, _XWND, &xtpTitle);
+	XSetWMIconName(dpy, _XWND, &xtpTitle);
 	return 1;
 }
 
-void ubwMove(Ubw wnd, int x, int y) {
-	if (XMoveWindow(dpy, _UBW_XWND, x, y)) {
-		((_Ubw*)wnd)->x = x;
-		((_Ubw*)wnd)->y = y;
+void ubwMove(UBW wnd, int x, int y) {
+	if (XMoveWindow(dpy, _XWND, x, y)) {
+		((_UBWPVT *)wnd)->x = x;
+		((_UBWPVT *)wnd)->y = y;
 	}
 }
 
-void ubwMoveToScreenCenter(Ubw wnd) {
-	ubwMove(wnd, (DisplayWidth(dpy, 0) - ((_Ubw*)wnd)->width) / 2, (DisplayHeight(dpy, 0) - ((_Ubw*)wnd)->height) / 2);
+void ubwMoveToScreenCenter(UBW wnd) {
+	ubwMove(wnd, (DisplayWidth(dpy, 0) - ((_UBWPVT *)wnd)->width) / 2, (DisplayHeight(dpy, 0) - ((_UBWPVT *)wnd)->height) / 2);
 }
 
-void ubwResize(Ubw wnd, int width, int height) {
-	if (XResizeWindow(dpy, _UBW_XWND, width, height)) {
-		((_Ubw*)wnd)->width = width;
-		((_Ubw*)wnd)->height = width;
+void ubwResize(UBW wnd, int width, int height) {
+	if (XResizeWindow(dpy, _XWND, width, height)) {
+		((_UBWPVT *)wnd)->width = width;
+		((_UBWPVT *)wnd)->height = width;
 	}
 }
 
-void ubwShow(Ubw wnd) {
-	XMapWindow(dpy, _UBW_XWND);
+void ubwShow(UBW wnd) {
+	XMapWindow(dpy, _XWND);
 }
 
-void ubwHide(Ubw wnd) {
-	XUnmapWindow(dpy, _UBW_XWND);
+void ubwHide(UBW wnd) {
+	XUnmapWindow(dpy, _XWND);
 }
 
-#undef _UBW_XWND
+#undef _XWND
 #endif // UBWINDOW_X11

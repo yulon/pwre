@@ -3,7 +3,7 @@
 int main(void) {
 	ubwInit();
 
-	Ubw wnd = ubwCreate();
+	UBW wnd = ubwCreate();
 	ubwSetTitle(wnd, "Hello Window!");
 	ubwResize(wnd, 500, 500);
 	ubwShow(wnd);

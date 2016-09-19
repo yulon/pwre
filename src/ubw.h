@@ -7,11 +7,11 @@
 
 static int ubwSum;
 
-typedef struct _Ubw {
-	void* pNtv;
+typedef struct _UBWPVT {
+	void *pNtv;
 	int x, y, width, height;
 	int ncWidth, ncHeight;
-} _Ubw;
+} _UBWPVT;
 
 #if !defined(UBWINDOW_WIN32) && !defined(UBWINDOW_X11) && !defined(UBWINDOW_COCOA)
 	#if defined(_WIN32)

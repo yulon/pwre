@@ -5,32 +5,32 @@
 extern "C" {
 #endif
 
-int ubwInit();
-int ubwHandleEvent();
-void ubwHandleEventsAndStuck();
+int ubwInit(void);
+int ubwHandleEvent(void);
+void ubwHandleEventsAndStuck(void);
 
-typedef void* Ubw;
-Ubw ubwCreate();
-void ubwClose(Ubw);
+typedef void *UBW;
+UBW ubwCreate(void);
+void ubwClose(UBW);
 
-void* ubwNativePointer(Ubw);
+void *ubwNativePointer(UBW);
 
-void ubwShow(Ubw);
-void ubwHide(Ubw);
-int ubwIsVisible(Ubw);
-void ubwActive(Ubw);
+void ubwShow(UBW);
+void ubwHide(UBW);
+int ubwIsVisible(UBW);
+void ubwActive(UBW);
 
-int ubwGetTitle(Ubw, char*);
-int ubwSetTitle(Ubw, char*);
+int ubwGetTitle(UBW, char *);
+int ubwSetTitle(UBW, char *);
 
-void ubwMove(Ubw, int x, int y);
-void ubwMoveToScreenCenter(Ubw);
+void ubwMove(UBW, int x, int y);
+void ubwMoveToScreenCenter(UBW);
 
-void ubwSize(Ubw, int* width, int* height);
-void ubwResize(Ubw, int width, int height);
+void ubwSize(UBW, int *width, int *height);
+void ubwResize(UBW, int width, int height);
 
-void ubwSetView(Ubw, int);
-int ubwGetView(Ubw);
+void ubwSetView(UBW, int);
+int ubwGetView(UBW);
 #define UBW_VIEW_MAXIMIZE 0
 #define UBW_VIEW_MINIMIZE 1
 #define UBW_VIEW_RESTORE 2
