@@ -57,6 +57,11 @@ int ubwHandleEvent() {
 			_UbwList[ixWnd]->rect.width = ((XConfigureEvent*)event)->width;
 			_UbwList[ixWnd]->rect.height = ((XConfigureEvent*)event)->height;
 			printf("ConfigureNotify %d %d %d %d\n", ((XConfigureEvent*)event)->x, ((XConfigureEvent*)event)->y, ((XConfigureEvent*)event)->width, ((XConfigureEvent*)event)->height);
+			ubwGetRect(_UbwList[ixWnd], NULL);
+			break;
+		case Expose:
+			puts("Expose");
+			ubwGetRect(_UbwList[ixWnd], NULL);
 			break;
 		case ClientMessage:
 			ubwSum--;
@@ -168,7 +173,9 @@ void ubwGetRect(Ubw wnd, UbwRect* pRect) {
 	//pRect->top = attr.y;
 	//pRect->width = attr.width;
 	//pRect->height = attr.height;
-
+	if (!pRect) {
+		return;
+	}
 	pRect->left = ((_Ubw*)wnd)->rect.left;
 	pRect->top = ((_Ubw*)wnd)->rect.top;
 	pRect->width = ((_Ubw*)wnd)->rect.width;

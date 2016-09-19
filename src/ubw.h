@@ -21,7 +21,7 @@ typedef struct _Ubw {
 	#elif defined(__APPLE__) && defined(__MACH__)
 		#define UBWINDOW_COCOA
 	#elif defined(__unix__)
-		#define UBWINDOW_X11
+		#define UBWINDOW_XCB
 	#endif
 #endif
 
