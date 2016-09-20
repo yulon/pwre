@@ -21,7 +21,7 @@ int ubwIsVisible(UBW);
 void ubwActive(UBW);
 
 int ubwGetTitle(UBW, char *);
-int ubwSetTitle(UBW, char *);
+void ubwSetTitle(UBW, const char *);
 
 void ubwMove(UBW, int x, int y);
 void ubwMoveToScreenCenter(UBW);

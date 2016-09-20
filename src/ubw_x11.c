@@ -2,6 +2,8 @@
 
 #ifdef UBWINDOW_X11
 
+#include <string.h>
+#include <limits.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
@@ -31,6 +33,9 @@ static int wndListIx(Window XWnd) {
 
 static Display *dpy;
 static Window root;
+Atom netWmName;
+Atom utf8str;
+Atom wmDelete;
 
 int ubwInit(void) {
 	XInitThreads();
@@ -40,6 +45,9 @@ int ubwInit(void) {
 		return 0;
 	}
 	root = XRootWindow(dpy, 0);
+	netWmName = XInternAtom(dpy, "_NET_WM_NAME", False);
+	utf8str = XInternAtom(dpy, "UTF8_STRING", False);
+	wmDelete = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
 	return 1;
 }
 
@@ -100,7 +108,6 @@ UBW ubwCreate(void) {
 		return NULL;
 	}
 
-	Atom wmDelete = XInternAtom(dpy, "WM_DELETE_WINDOW", True);
 	XSetWMProtocols(dpy, (Window)wnd->ntvPtr, &wmDelete, 1);
 	XSelectInput(dpy, (Window)wnd->ntvPtr, ExposureMask | KeyPressMask | StructureNotifyMask);
 
@@ -114,24 +121,25 @@ UBW ubwCreate(void) {
 
 #define _XWND (Window)((_UBWPVT *)wnd)->ntvPtr
 
-int ubwGetTitle(UBW wnd, char *str8) {
-	//XGetWMName(dpy, _XWND, &xtpTitle);
-
+int ubwGetTitle(UBW wnd, char *title) {
+	Atom type;
+	int format;
+	unsigned long nitems, after;
+	unsigned char *data;
+	if (Success == XGetWindowProperty(dpy, _XWND, netWmName, 0, LONG_MAX, False, utf8str, &type, &format, &nitems, &after, &data) && data) {
+		if (title) {
+			strcpy(title, (const char *)data);
+		}
+		int titleLen = strlen((const char *)data);
+		XFree(data);
+		return titleLen;
+	}
 	return 0;
 }
 
-int ubwSetTitle(UBW wnd, char *str8) {
-	if (!str8) {
-		return 0;
-	}
-	XTextProperty xtpTitle;
-	Status ok = XStringListToTextProperty(&str8, 1, &xtpTitle);
-	if (!ok) {
-		return 0;
-	}
-	XSetWMName(dpy, _XWND, &xtpTitle);
-	XSetWMIconName(dpy, _XWND, &xtpTitle);
-	return 1;
+void ubwSetTitle(UBW wnd, const char *title) {
+	XChangeProperty(dpy, _XWND, netWmName, utf8str, 8, PropModeReplace, (const unsigned char *)title, strlen(title));
+	return;
 }
 
 void ubwMove(UBW wnd, int x, int y) {

@@ -111,21 +111,21 @@ int ubwGetTitle(UBW wnd, char *str8) {
 	return str8Len;
 }
 
-int ubwSetTitle(UBW wnd, char *str8) {
+void ubwSetTitle(UBW wnd, const char *str8) {
 	if (!str8) {
-		return 0;
+		return;
 	}
 	int str16Len = MultiByteToWideChar(CP_UTF8, 0, str8, -1, NULL, 0);
 	if (!str16Len) {
-		return str16Len;
+		return;
 	}
 	WCHAR *str16 = calloc(str16Len + 1, sizeof(WCHAR));
 	MultiByteToWideChar(CP_UTF8, 0, str8, -1, str16, str16Len);
 
-	BOOL ok = SetWindowTextW(_HWND, str16);
+	SetWindowTextW(_HWND, str16);
 
 	free(str16);
-	return ok;
+	return;
 }
 
 void ubwMoveToScreenCenter(UBW wnd) {
