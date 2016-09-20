@@ -67,7 +67,7 @@ workspace "UBWindow"
 	project "ubwindow"
 		language "C"
 		includedirs { "src", "include" }
-		files { "src/*.c" }
+		files { "src/*.c", "src/*.h", "include/*.h" }
 		kind "StaticLib"
 		targetdir("lib")
 		warnings "Extra"
