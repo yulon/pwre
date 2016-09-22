@@ -13,26 +13,6 @@ end
 
 add_includedirs("include")
 
-target("demo_blank")
-
-	set_kind("binary")
-
-	set_targetdir("bin")
-
-	add_linkdirs("lib")
-
-	add_files("demo/*.c")
-
-	add_links("ubwindow")
-
-	if is_plat("linux") then
-		add_links("X11")
-	end
-
-	if is_plat("macosx") then
-		add_ldflags("-framework Cocoa")
-	end
-
 target("ubwindow")
 
 	set_kind("static")
@@ -45,4 +25,34 @@ target("ubwindow")
 
 	if is_plat("macosx") then
 		add_files("src/*.m")
+	end
+
+target("demo_blank")
+
+	add_deps("ubwindow")
+
+	set_kind("binary")
+
+	set_targetdir("bin")
+
+	add_linkdirs("lib")
+
+	add_files("demo/*.c")
+
+	add_links("ubwindow")
+
+	if is_plat("windows") then
+		add_links("user32")
+	end
+
+	if is_plat("mingw") then
+		add_ldflags("-static")
+	end
+
+	if is_plat("linux") then
+		add_links("X11")
+	end
+
+	if is_plat("macosx") then
+		add_ldflags("-framework Cocoa")
 	end
