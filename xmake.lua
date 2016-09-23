@@ -1,11 +1,13 @@
 set_project("UBWindow")
 
 if is_mode("debug") then
+	add_defines("DEBUG")
 	set_symbols("debug")
 	set_optimize("none")
 end
 
 if is_mode("release") then
+	add_defines("NDEBUG")
 	set_symbols("hidden")
 	set_optimize("fastest")
 	set_strip("all")
