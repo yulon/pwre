@@ -6,7 +6,6 @@
 
 static HMODULE mainModule;
 static WNDCLASSEXW wndClass;
-static int wndExtraLen;
 
 static LRESULT CALLBACK wmHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	if (uMsg == WM_DESTROY) {
@@ -22,10 +21,13 @@ static LRESULT CALLBACK wmHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 static DWORD baseExStyle;
 static DWORD baseStyle;
 
+#ifndef UBWINDOW_WIN32_WNDEXTRA
+#define UBWINDOW_WIN32_WNDEXTRA 10
+#endif
+
 int ubwInit(void) {
 	mainModule = GetModuleHandleW(NULL);
 
-	wndClass = {};
 	wndClass.style = CS_DBLCLKS;
 	wndClass.hInstance = mainModule;
 	wndClass.hIcon = LoadIconW(NULL, (LPCWSTR)IDI_APPLICATION);
@@ -33,8 +35,7 @@ int ubwInit(void) {
 	wndClass.hCursor = LoadCursorW(NULL, (LPCWSTR)IDC_ARROW);
 	wndClass.hbrBackground = (HBRUSH)COLOR_WINDOW;
 	wndClass.lpszClassName = L"UBWindow";
-	wndExtraLen = 10;
-	wndClass.cbWndExtra = sizeof(void *) * wndExtraLen;
+	wndClass.cbWndExtra = sizeof(void *) * UBWINDOW_WIN32_WNDEXTRA;
 	wndClass.lpfnWndProc = wmHandler;
 	wndClass.cbSize = sizeof(wndClass);
 
@@ -91,7 +92,7 @@ UBW ubwCreate(void) {
 	wnd->ncWidth = (500 - rect.left) + (rect.right - 1000);
 	wnd->ncHeight = (500 - rect.top) + (rect.bottom - 1000);
 
-	SetWindowLongPtr(hWnd, wndExtraLen - 1, (LONG_PTR)wnd);
+	SetWindowLongPtr(hWnd, UBWINDOW_WIN32_WNDEXTRA - 1, (LONG_PTR)wnd);
 	return (UBW)wnd;
 }
 
