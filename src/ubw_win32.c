@@ -25,6 +25,7 @@ static DWORD baseStyle;
 int ubwInit(void) {
 	mainModule = GetModuleHandleW(NULL);
 
+	wndClass = {};
 	wndClass.style = CS_DBLCLKS;
 	wndClass.hInstance = mainModule;
 	wndClass.hIcon = LoadIconW(NULL, (LPCWSTR)IDI_APPLICATION);
@@ -62,9 +63,7 @@ int ubwHandleEvent(void) {
 }
 
 UBW ubwCreate(void) {
-	_UBWPVT *wnd = calloc(1, sizeof(_UBWPVT));
-
-	wnd->ntvPtr = (void *)CreateWindowExW(
+	HWND hWnd = CreateWindowExW(
 		baseExStyle,
 		wndClass.lpszClassName,
 		NULL,
@@ -73,7 +72,7 @@ UBW ubwCreate(void) {
 		mainModule,
 		NULL
 	);
-	if (!wnd->ntvPtr) {
+	if (!hWnd) {
 		puts("UBWindow: Win32.CreateWindowExW error!");
 		return NULL;
 	}
@@ -84,11 +83,15 @@ UBW ubwCreate(void) {
 		puts("UBWindow: Win32.AdjustWindowRectEx error!");
 		return 0;
 	}
+
+	wndCount++;
+	_UBWPVT *wnd = calloc(1, sizeof(_UBWPVT));
+	wnd->ntvPtr = (void *)hWnd;
+
 	wnd->ncWidth = (500 - rect.left) + (rect.right - 1000);
 	wnd->ncHeight = (500 - rect.top) + (rect.bottom - 1000);
 
-	wndCount++;
-	SetWindowLongPtr((HWND)wnd->ntvPtr, wndExtraLen - 1, (LONG_PTR)wnd);
+	SetWindowLongPtr(hWnd, wndExtraLen - 1, (LONG_PTR)wnd);
 	return (UBW)wnd;
 }
 

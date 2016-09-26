@@ -84,11 +84,9 @@ int ubwHandleEvent(void) {
 }
 
 UBW ubwCreate(void) {
-	_UBWPVT *wnd = calloc(1, sizeof(_UBWPVT));
-
 	XSetWindowAttributes attr = {};
 	attr.background_pixel = XWhitePixel(dpy, 0);
-	wnd->ntvPtr = (void *)XCreateWindow(
+	Window xWnd = XCreateWindow(
 		dpy,
 		root,
 		0,
@@ -102,20 +100,21 @@ UBW ubwCreate(void) {
 		CWBackPixel,
 		&attr
 	);
-
-	if (!wnd->ntvPtr) {
+	if (!xWnd) {
 		puts("UBWindow: X11.XCreateSimpleWindow error!");
 		return NULL;
 	}
 
-	XSetWMProtocols(dpy, (Window)wnd->ntvPtr, &wmDelete, 1);
-	XSelectInput(dpy, (Window)wnd->ntvPtr, ExposureMask | KeyPressMask | StructureNotifyMask);
+	XSetWMProtocols(dpy, xWnd, &wmDelete, 1);
+	XSelectInput(dpy, xWnd, ExposureMask | KeyPressMask | StructureNotifyMask);
 
+	wndCount++;
+	_UBWPVT *wnd = calloc(1, sizeof(_UBWPVT));
+	wnd->ntvPtr = (void *)xWnd;
 	wnd->width = 10;
 	wnd->height = 10;
 
-	wndCount++;
-	wndListAdd(wnd);
+ 	wndListAdd(wnd);
 	return (UBW)wnd;
 }
 
