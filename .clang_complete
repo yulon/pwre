@@ -1,0 +1,9 @@
+-I./include
+-I./src
+-DUBWINDOW_WIN32
+-DUBWINDOW_X11
+-DUBWINDOW_COCOA
+-D_WIN32
+-D__unix__
+-D__APPLE__
+-D__MACH__
