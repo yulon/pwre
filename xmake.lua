@@ -16,7 +16,6 @@ end
 add_includedirs("include")
 
 target("ubwindow")
-
 	set_kind("static")
 
 	set_targetdir("lib")
@@ -27,6 +26,12 @@ target("ubwindow")
 
 	if is_plat("macosx") then
 		add_files("src/*.m")
+	end
+
+	if is_plat("mingw") then
+		after_build(function ()
+			os.run("mv ./lib/ubwindow.lib ./lib/libubwindow.a")
+		end)
 	end
 
 target("demo_blank")
