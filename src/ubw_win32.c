@@ -15,7 +15,6 @@
 static LRESULT CALLBACK wndMsgHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	_EVT_VARS((_UbwPvt *)GetWindowLongPtrW(hWnd, UBWINDOW_WIN32_WNDEXTRA_I));
 	if (wnd) {
-		int processed;
 		switch (uMsg) {
 			case WM_PAINT:
 				_EVT_SEND(, UBW_EVENT_PAINT, NULL,
