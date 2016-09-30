@@ -3,9 +3,9 @@
 #include <ubwindow.h>
 
 int main(void) {
-	ubwInit();
+	ubwInit(NULL);
 
-	UBW wnd = ubwCreate();
+	Ubw wnd = ubwCreate();
 	ubwSetTitle(wnd, "我只是一个空白窗口_(:з」∠)_");
 	ubwResize(wnd, 500, 500);
 	ubwShow(wnd);
@@ -16,6 +16,6 @@ int main(void) {
 	ubwGetTitle(wnd, title);
 	printf("%d %s\n", titleLen, title);
 
-	ubwHandleEventsAndStuck();
+	ubwRun();
 	return 0;
 }

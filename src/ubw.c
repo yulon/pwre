@@ -1,10 +1,6 @@
 #include "ubwindow.h"
 #include "ubw.h"
 
-void ubwHandleEventsAndStuck(void) {
-	while (ubwHandleEvent());
-}
-
-void *ubwNativePointer(UBW wnd) {
-	return ((_UBWPVT *)wnd)->ntvPtr;
+void *ubwNativePointer(Ubw wnd) {
+	return ((_UbwPvt *)wnd)->ntvPtr;
 }

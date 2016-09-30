@@ -5,32 +5,54 @@
 extern "C" {
 #endif
 
-int ubwInit(void);
-int ubwHandleEvent(void);
-void ubwHandleEventsAndStuck(void);
+typedef struct UbwSize {
+	int width, height;
+} UbwSize;
 
-typedef void *UBW;
-UBW ubwCreate(void);
-void ubwClose(UBW);
+typedef struct UbwPoint {
+	int x, y;
+} UbwPoint;
 
-void *ubwNativePointer(UBW);
+typedef void *Ubw;
 
-void ubwShow(UBW);
-void ubwHide(UBW);
-int ubwIsVisible(UBW);
-void ubwActive(UBW);
+typedef int (*UbwEventHandler)(Ubw, int event, void *data);
+#define UBW_EVENT_CLOSE -1
+#define UBW_EVENT_DESTROY -2
+#define UBW_EVENT_SIZE -10
+#define UBW_EVENT_MOVE -20
+#define UBW_EVENT_PAINT -30
+#define UBW_EVENT_MOUSE_MOVE 10
+#define UBW_EVENT_MOUSE_DOWN 11
+#define UBW_EVENT_MOUSE_UP 12
+#define UBW_EVENT_KEY_DOWN 20
+#define UBW_EVENT_KEY_UP 21
 
-int ubwGetTitle(UBW, char *);
-void ubwSetTitle(UBW, const char *);
+int ubwInit(UbwEventHandler);
+int ubwStep(void);
+void ubwRun(void);
 
-void ubwMove(UBW, int x, int y);
-void ubwMoveToScreenCenter(UBW);
+Ubw ubwCreate(void);
+void ubwClose(Ubw);
+void ubwDestroy(Ubw);
 
-void ubwSize(UBW, int *width, int *height);
-void ubwResize(UBW, int width, int height);
+void *ubwNativePointer(Ubw);
 
-void ubwSetView(UBW, int);
-int ubwGetView(UBW);
+void ubwShow(Ubw);
+void ubwHide(Ubw);
+int ubwIsVisible(Ubw);
+void ubwActive(Ubw);
+
+int ubwGetTitle(Ubw, char *);
+void ubwSetTitle(Ubw, const char *);
+
+void ubwMove(Ubw, int x, int y);
+void ubwMoveToScreenCenter(Ubw);
+
+void ubwSize(Ubw, int *width, int *height);
+void ubwResize(Ubw, int width, int height);
+
+void ubwSetView(Ubw, int);
+int ubwGetView(Ubw);
 #define UBW_VIEW_MAXIMIZE 0
 #define UBW_VIEW_MINIMIZE 1
 #define UBW_VIEW_RESTORE 2

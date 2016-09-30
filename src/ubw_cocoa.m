@@ -4,27 +4,28 @@
 
 #import <Cocoa/Cocoa.h>
 
-static NSAutoreleasePool* pool;
-static NSApplication* app;
+static NSAutoreleasePool *pool;
+static NSApplication *app;
 static NSUInteger uiStyle;
 static NSBackingStoreType backingStoreStyle;
 
-int ubwInit(void) {
+int ubwInit(UbwEventHandler evtHdr) {
 	pool = [[NSAutoreleasePool alloc] init];
 	app = [NSApplication sharedApplication];
 	uiStyle = NSTitledWindowMask | NSResizableWindowMask | NSClosableWindowMask;
 	backingStoreStyle = NSBackingStoreBuffered;
+
+	dftEvtHdr = evtHdr;
 	return 1;
 }
 
-int ubwHandleEvent(void) {
+void ubwRun(void) {
 	[NSApp run];
 	[pool drain];
-	return 0;
 }
 
 UBW ubwCreate(void) {
-	NSWindow* win = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 500, 500) styleMask:uiStyle backing:backingStoreStyle defer:NO];
+	NSWindow *win = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 500, 500) styleMask:uiStyle backing:backingStoreStyle defer:NO];
 	[win makeKeyAndOrderFront:win];
 	[win makeMainWindow];
 	_UBWPVT *wnd = calloc(1, sizeof(_UBWPVT));

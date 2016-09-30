@@ -7,9 +7,9 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
-static _UBWPVT *wndList[256];
+static _UbwPvt *wndList[256];
 
-static void wndListAdd(_UBWPVT *wnd) {
+static void wndListAdd(_UbwPvt *wnd) {
 	for (int i = 0; i < 256; i++) {
 		if (!wndList[i]) {
 			wndList[i] = wnd;
@@ -36,8 +36,9 @@ static Window root;
 Atom netWmName;
 Atom utf8str;
 Atom wmDelete;
+Atom wmProtocols;
 
-int ubwInit(void) {
+int ubwInit(UbwEventHandler evtHdr) {
 	XInitThreads();
 	dpy = XOpenDisplay(NULL);
 	if (!dpy) {
@@ -48,42 +49,75 @@ int ubwInit(void) {
 	netWmName = XInternAtom(dpy, "_NET_WM_NAME", False);
 	utf8str = XInternAtom(dpy, "UTF8_STRING", False);
 	wmDelete = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
+	wmProtocols = XInternAtom(dpy, "WM_PROTOCOLS", False);
+
+	dftEvtHdr = evtHdr;
 	return 1;
 }
 
-static unsigned char event[sizeof(XEvent)];
+static int handleXEvent(XAnyEvent *event) {
+	int wndIx = wndListIx(event->window);
+	if (wndIx != -1) {
+		_EVT_VARS(wndList[wndIx])
+		switch (event->type) {
+			case ConfigureNotify:
+				if (((XConfigureEvent *)event)->x != 0 || ((XConfigureEvent *)event)->y != 0) {
+					wnd->x = ((XConfigureEvent *)event)->x;
+					wnd->y = ((XConfigureEvent *)event)->y;
+				}
+				wnd->width = ((XConfigureEvent *)event)->width;
+				wnd->height = ((XConfigureEvent *)event)->height;
 
-int ubwHandleEvent(void) {
-	XNextEvent(dpy, (XEvent *)event);
-	int ixWnd = wndListIx(((XAnyEvent *)event)->window);
-	if (ixWnd != -1) {
-		switch (((XAnyEvent *)event)->type)
-		{
-		case ConfigureNotify:
-			if (((XConfigureEvent *)event)->x != 0 || ((XConfigureEvent *)event)->y != 0) {
-				wndList[ixWnd]->x = ((XConfigureEvent *)event)->x;
-				wndList[ixWnd]->y = ((XConfigureEvent *)event)->y;
-			}
-			wndList[ixWnd]->width = ((XConfigureEvent *)event)->width;
-			wndList[ixWnd]->height = ((XConfigureEvent *)event)->height;
-			break;
-		case Expose:
-
-			break;
-		case ClientMessage:
-			wndCount--;
-			if (!wndCount) {
-				XCloseDisplay(dpy);
-				return 0;
-			}
-			wndList[ixWnd] = NULL;
-			break;
+				_EVT_POST(
+					size.width = wnd->width;
+					size.height = wnd->height;
+					,
+					UBW_EVENT_SIZE, (void *)&size)
+				break;
+			case Expose:
+				_EVT_POST(, UBW_EVENT_PAINT, NULL)
+				break;
+			case ClientMessage:
+				if (((XClientMessageEvent *)event)->message_type == wmProtocols) {
+					_EVT_SEND(, UBW_EVENT_CLOSE, NULL,
+						return 1;
+					)
+					XDestroyWindow(dpy, event->window);
+				}
+				break;
+			case DestroyNotify:
+				_EVT_POST(, UBW_EVENT_DESTROY, NULL)
+				wndCount--;
+				if (!wndCount) {
+					XCloseDisplay(dpy);
+					return 0;
+				}
+				wndList[wndIx] = NULL;
+				free(wnd);
 		}
 	}
 	return 1;
 }
 
-UBW ubwCreate(void) {
+int ubwStep(void) {
+	XEvent event;
+	if (XPeekEvent(dpy, &event)) {
+		XNextEvent(dpy, &event);
+		return handleXEvent((XAnyEvent *)&event);
+	}
+	return 1;
+}
+
+void ubwRun(void) {
+	XEvent event;
+	int run = 1;
+	while (run) {
+		XNextEvent(dpy, &event);
+		run = handleXEvent((XAnyEvent *)&event);
+	}
+}
+
+Ubw ubwCreate() {
 	XSetWindowAttributes attr = {};
 	attr.background_pixel = XWhitePixel(dpy, 0);
 	Window xWnd = XCreateWindow(
@@ -109,18 +143,18 @@ UBW ubwCreate(void) {
 	XSelectInput(dpy, xWnd, ExposureMask | KeyPressMask | StructureNotifyMask);
 
 	wndCount++;
-	_UBWPVT *wnd = calloc(1, sizeof(_UBWPVT));
+	_UbwPvt *wnd = calloc(1, sizeof(_UbwPvt));
 	wnd->ntvPtr = (void *)xWnd;
 	wnd->width = 10;
 	wnd->height = 10;
 
  	wndListAdd(wnd);
-	return (UBW)wnd;
+	return (Ubw)wnd;
 }
 
-#define _XWND (Window)((_UBWPVT *)wnd)->ntvPtr
+#define _XWND (Window)((_UbwPvt *)wnd)->ntvPtr
 
-int ubwGetTitle(UBW wnd, char *title) {
+int ubwGetTitle(Ubw wnd, char *title) {
 	Atom type;
 	int format;
 	unsigned long nitems, after;
@@ -136,34 +170,33 @@ int ubwGetTitle(UBW wnd, char *title) {
 	return 0;
 }
 
-void ubwSetTitle(UBW wnd, const char *title) {
+void ubwSetTitle(Ubw wnd, const char *title) {
 	XChangeProperty(dpy, _XWND, netWmName, utf8str, 8, PropModeReplace, (const unsigned char *)title, strlen(title));
-	return;
 }
 
-void ubwMove(UBW wnd, int x, int y) {
+void ubwMove(Ubw wnd, int x, int y) {
 	if (XMoveWindow(dpy, _XWND, x, y)) {
-		((_UBWPVT *)wnd)->x = x;
-		((_UBWPVT *)wnd)->y = y;
+		((_UbwPvt *)wnd)->x = x;
+		((_UbwPvt *)wnd)->y = y;
 	}
 }
 
-void ubwMoveToScreenCenter(UBW wnd) {
-	ubwMove(wnd, (DisplayWidth(dpy, 0) - ((_UBWPVT *)wnd)->width) / 2, (DisplayHeight(dpy, 0) - ((_UBWPVT *)wnd)->height) / 2);
+void ubwMoveToScreenCenter(Ubw wnd) {
+	ubwMove(wnd, (DisplayWidth(dpy, 0) - ((_UbwPvt *)wnd)->width) / 2, (DisplayHeight(dpy, 0) - ((_UbwPvt *)wnd)->height) / 2);
 }
 
-void ubwResize(UBW wnd, int width, int height) {
+void ubwResize(Ubw wnd, int width, int height) {
 	if (XResizeWindow(dpy, _XWND, width, height)) {
-		((_UBWPVT *)wnd)->width = width;
-		((_UBWPVT *)wnd)->height = width;
+		((_UbwPvt *)wnd)->width = width;
+		((_UbwPvt *)wnd)->height = width;
 	}
 }
 
-void ubwShow(UBW wnd) {
+void ubwShow(Ubw wnd) {
 	XMapWindow(dpy, _XWND);
 }
 
-void ubwHide(UBW wnd) {
+void ubwHide(Ubw wnd) {
 	XUnmapWindow(dpy, _XWND);
 }
 
