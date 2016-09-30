@@ -154,6 +154,16 @@ Ubw ubwCreate() {
 
 #define _XWND (Window)((_UbwPvt *)wnd)->ntvPtr
 
+void ubwClose(Ubw wnd) {
+	if (((_UbwPvt *)wnd)->evtHdr && !(*((_UbwPvt *)wnd)->evtHdr)(wnd, UBW_EVENT_CLOSE, NULL)) {
+		XDestroyWindow(dpy, _XWND);
+	}
+}
+
+void ubwDestroy(Ubw wnd) {
+	XDestroyWindow(dpy, _XWND);
+}
+
 int ubwGetTitle(Ubw wnd, char *title) {
 	Atom type;
 	int format;

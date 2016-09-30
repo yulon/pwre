@@ -23,6 +23,11 @@ static LRESULT CALLBACK wndMsgHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 					return 0;
 				)
 				break;
+			case WM_CLOSE:
+				_EVT_SEND(, UBW_EVENT_CLOSE, NULL,
+					return 0;
+				)
+				break;
 			case WM_DESTROY:
 				_EVT_POST(, UBW_EVENT_DESTROY, NULL);
 				wndCount--;
@@ -117,6 +122,14 @@ Ubw ubwCreate(void) {
 }
 
 #define _HWND (HWND)((_UbwPvt *)wnd)->ntvPtr
+
+void ubwClose(Ubw wnd) {
+	CloseWindow(_HWND);
+}
+
+void ubwDestroy(Ubw wnd) {
+	DestroyWindow(_HWND);
+}
 
 int ubwGetTitle(Ubw wnd, char *str8) {
 	int str16Len = GetWindowTextLengthW(_HWND);
