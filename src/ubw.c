@@ -1,4 +1,3 @@
-#include "ubwindow.h"
 #include "ubw.h"
 
 void *ubwNativePointer(Ubw wnd) {
