@@ -79,7 +79,7 @@ int ubwStep(void) {
 }
 
 void ubwRun(void) {
-	MSG msg = {};
+	MSG msg = { .message = 0 };
 	while (msg.message != WM_QUIT) {
 		if (GetMessageW(&msg, NULL, 0, 0) > 0) {
 			TranslateMessage(&msg);

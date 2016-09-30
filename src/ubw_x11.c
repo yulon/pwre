@@ -119,7 +119,8 @@ void ubwRun(void) {
 }
 
 Ubw ubwCreate() {
-	XSetWindowAttributes attr = {};
+	XSetWindowAttributes attr;
+	memset(&attr, 0, sizeof(XSetWindowAttributes));
 	attr.background_pixel = XWhitePixel(dpy, 0);
 	Window xWnd = XCreateWindow(
 		dpy,
