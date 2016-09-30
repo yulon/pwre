@@ -1,7 +1,8 @@
-#include "ubw.h"
+#include "pdbe.h"
 
 #ifdef UBWINDOW_COCOA
 
+#include "ubw.h"
 #import <Cocoa/Cocoa.h>
 
 static NSAutoreleasePool *pool;

@@ -1,7 +1,8 @@
-#include "ubw.h"
+#include "pdbe.h"
 
 #ifdef UBWINDOW_WIN32
 
+#include "ubw.h"
 #include <windows.h>
 
 #ifndef UBWINDOW_WIN32_WNDEXTRA

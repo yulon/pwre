@@ -1,7 +1,8 @@
-#include "ubw.h"
+#include "pdbe.h"
 
 #ifdef UBWINDOW_X11
 
+#include "ubw.h"
 #include <string.h>
 #include <limits.h>
 #include <X11/Xlib.h>
