@@ -8,9 +8,9 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
-static _UbwPvt *wndList[256];
+static _UbwPvt wndList[256];
 
-static void wndListAdd(_UbwPvt *wnd) {
+static void wndListAdd(_UbwPvt wnd) {
 	for (int i = 0; i < 256; i++) {
 		if (!wndList[i]) {
 			wndList[i] = wnd;
@@ -145,7 +145,7 @@ Ubw ubwCreate() {
 	XSelectInput(dpy, xWnd, ExposureMask | KeyPressMask | StructureNotifyMask);
 
 	wndCount++;
-	_UbwPvt *wnd = calloc(1, sizeof(_UbwPvt));
+	_UbwPvt wnd = calloc(1, sizeof(struct _UbwPvt));
 	wnd->ntvPtr = (void *)xWnd;
 	wnd->width = 10;
 	wnd->height = 10;
@@ -154,10 +154,10 @@ Ubw ubwCreate() {
 	return (Ubw)wnd;
 }
 
-#define _XWND (Window)((_UbwPvt *)wnd)->ntvPtr
+#define _XWND (Window)((_UbwPvt)wnd)->ntvPtr
 
 void ubwClose(Ubw wnd) {
-	if (((_UbwPvt *)wnd)->evtHdr && !(*((_UbwPvt *)wnd)->evtHdr)(wnd, UBW_EVENT_CLOSE, NULL)) {
+	if (((_UbwPvt)wnd)->evtHdr && !(*((_UbwPvt)wnd)->evtHdr)(wnd, UBW_EVENT_CLOSE, NULL)) {
 		XDestroyWindow(dpy, _XWND);
 	}
 }
@@ -188,28 +188,28 @@ void ubwSetTitle(Ubw wnd, const char *title) {
 
 void ubwMove(Ubw wnd, int x, int y) {
 	if (XMoveWindow(dpy, _XWND, x, y)) {
-		((_UbwPvt *)wnd)->x = x;
-		((_UbwPvt *)wnd)->y = y;
+		((_UbwPvt)wnd)->x = x;
+		((_UbwPvt)wnd)->y = y;
 	}
 }
 
 void ubwMoveToScreenCenter(Ubw wnd) {
-	ubwMove(wnd, (DisplayWidth(dpy, 0) - ((_UbwPvt *)wnd)->width) / 2, (DisplayHeight(dpy, 0) - ((_UbwPvt *)wnd)->height) / 2);
+	ubwMove(wnd, (DisplayWidth(dpy, 0) - ((_UbwPvt)wnd)->width) / 2, (DisplayHeight(dpy, 0) - ((_UbwPvt)wnd)->height) / 2);
 }
 
 void ubwSize(Ubw wnd, int *width, int *height) {
 	if (width) {
-		*width = ((_UbwPvt *)wnd)->width;
+		*width = ((_UbwPvt)wnd)->width;
 	}
 	if (height) {
-		*height = ((_UbwPvt *)wnd)->height;
+		*height = ((_UbwPvt)wnd)->height;
 	}
 }
 
 void ubwResize(Ubw wnd, int width, int height) {
 	if (XResizeWindow(dpy, _XWND, width, height)) {
-		((_UbwPvt *)wnd)->width = width;
-		((_UbwPvt *)wnd)->height = width;
+		((_UbwPvt)wnd)->width = width;
+		((_UbwPvt)wnd)->height = width;
 	}
 }
 

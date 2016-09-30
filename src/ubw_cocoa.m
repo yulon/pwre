@@ -29,13 +29,13 @@ Ubw ubwCreate(void) {
 	NSWindow *win = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 500, 500) styleMask:uiStyle backing:backingStoreStyle defer:NO];
 	[win makeKeyAndOrderFront:win];
 	[win makeMainWindow];
-	_UbwPvt *wnd = calloc(1, sizeof(_UbwPvt));
+	_UbwPvt wnd = calloc(1, sizeof(struct _UbwPvt));
 	wnd->ntvPtr = (void *)win;
 	wndCount++;
 	return (Ubw)wnd;
 }
 
-#define _NSWND (NSWindow)((_UbwPvt *)wnd)->ntvPtr
+#define _NSWND (NSWindow)((_UbwPvt)wnd)->ntvPtr
 
 int ubwGetTitle(Ubw wnd, char *title) {
 	return 0;

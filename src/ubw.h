@@ -13,10 +13,10 @@ typedef struct _UbwPvt {
 	int x, y, width, height;
 	int ncWidth, ncHeight;
 	UbwEventHandler *evtHdr;
-} _UbwPvt;
+} *_UbwPvt;
 
 #define _EVT_VARS(_wnd) \
-	_UbwPvt *wnd = _wnd; \
+	_UbwPvt wnd = _wnd; \
 	int processed; \
 	UbwSize size;
 

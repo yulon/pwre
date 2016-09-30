@@ -14,7 +14,7 @@
 #endif
 
 static LRESULT CALLBACK wndMsgHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-	_EVT_VARS((_UbwPvt *)GetWindowLongPtrW(hWnd, UBWINDOW_WIN32_WNDEXTRA_I));
+	_EVT_VARS((_UbwPvt)GetWindowLongPtrW(hWnd, UBWINDOW_WIN32_WNDEXTRA_I));
 	if (wnd) {
 		switch (uMsg) {
 			case WM_PAINT:
@@ -111,7 +111,7 @@ Ubw ubwCreate(void) {
 	}
 
 	wndCount++;
-	_UbwPvt *wnd = calloc(1, sizeof(_UbwPvt));
+	_UbwPvt wnd = calloc(1, sizeof(struct _UbwPvt));
 	wnd->ntvPtr = (void *)hWnd;
 
 	wnd->ncWidth = (500 - rect.left) + (rect.right - 1000);
@@ -121,7 +121,7 @@ Ubw ubwCreate(void) {
 	return (Ubw)wnd;
 }
 
-#define _HWND (HWND)((_UbwPvt *)wnd)->ntvPtr
+#define _HWND (HWND)((_UbwPvt)wnd)->ntvPtr
 
 void ubwClose(Ubw wnd) {
 	CloseWindow(_HWND);
@@ -173,8 +173,8 @@ void ubwMoveToScreenCenter(Ubw wnd) {
 		_HWND,
 		(GetSystemMetrics(SM_CXSCREEN) - width) / 2,
 		(GetSystemMetrics(SM_CYSCREEN) - height) / 2,
-		width - rect.left + ((_UbwPvt *)wnd)->ncWidth,
-		height - rect.top + ((_UbwPvt *)wnd)->ncHeight,
+		width - rect.left + ((_UbwPvt)wnd)->ncWidth,
+		height - rect.top + ((_UbwPvt)wnd)->ncHeight,
 		TRUE
 	);
 }
@@ -183,10 +183,10 @@ void ubwSize(Ubw wnd, int *width, int *height) {
 	RECT rect;
 	GetWindowRect(_HWND, &rect);
 	if (width) {
-		*width = rect.right - rect.left - ((_UbwPvt *)wnd)->ncWidth;
+		*width = rect.right - rect.left - ((_UbwPvt)wnd)->ncWidth;
 	}
 	if (height) {
-		*height = rect.bottom - rect.top - ((_UbwPvt *)wnd)->ncHeight;
+		*height = rect.bottom - rect.top - ((_UbwPvt)wnd)->ncHeight;
 	}
 }
 
@@ -195,8 +195,8 @@ void ubwResize(Ubw wnd, int width, int height) {
 	GetWindowRect(_HWND, &rect);
 	MoveWindow(
 		_HWND, rect.left, rect.top,
-		width + ((_UbwPvt *)wnd)->ncWidth,
-		height + ((_UbwPvt *)wnd)->ncHeight,
+		width + ((_UbwPvt)wnd)->ncWidth,
+		height + ((_UbwPvt)wnd)->ncHeight,
 		TRUE
 	);
 }
