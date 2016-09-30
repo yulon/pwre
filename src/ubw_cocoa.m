@@ -25,43 +25,43 @@ void ubwRun(void) {
 	[pool drain];
 }
 
-UBW ubwCreate(void) {
+Ubw ubwCreate(void) {
 	NSWindow *win = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 500, 500) styleMask:uiStyle backing:backingStoreStyle defer:NO];
 	[win makeKeyAndOrderFront:win];
 	[win makeMainWindow];
-	_UBWPVT *wnd = calloc(1, sizeof(_UBWPVT));
+	_UbwPvt *wnd = calloc(1, sizeof(_UbwPvt));
 	wnd->ntvPtr = (void *)win;
 	wndCount++;
-	return (UBW)wnd;
+	return (Ubw)wnd;
 }
 
-#define _NSWND (NSWindow)((_UBWPVT *)wnd)->ntvPtr
+#define _NSWND (NSWindow)((_UbwPvt *)wnd)->ntvPtr
 
-int ubwGetTitle(UBW wnd, char *title) {
+int ubwGetTitle(Ubw wnd, char *title) {
 	return 0;
 }
 
-void ubwSetTitle(UBW wnd, const char *title) {
+void ubwSetTitle(Ubw wnd, const char *title) {
 
 }
 
-void ubwMove(UBW wnd, int x, int y) {
+void ubwMove(Ubw wnd, int x, int y) {
 
 }
 
-void ubwMoveToScreenCenter(UBW wnd) {
+void ubwMoveToScreenCenter(Ubw wnd) {
 
 }
 
-void ubwResize(UBW wnd, int width, int height) {
+void ubwResize(Ubw wnd, int width, int height) {
 
 }
 
-void ubwShow(UBW wnd) {
+void ubwShow(Ubw wnd) {
 
 }
 
-void ubwHide(UBW wnd) {
+void ubwHide(Ubw wnd) {
 
 }
 
