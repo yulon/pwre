@@ -62,7 +62,7 @@ static int handleXEvent(XAnyEvent *event) {
 		_EVT_VARS(wndList[wndIx])
 		switch (event->type) {
 			case ConfigureNotify:
-				if (((XConfigureEvent *)event)->x != 0 || ((XConfigureEvent *)event)->y != 0) {
+				if (((XConfigureEvent *)event)->x || ((XConfigureEvent *)event)->y) {
 					wnd->x = ((XConfigureEvent *)event)->x;
 					wnd->y = ((XConfigureEvent *)event)->y;
 				}
@@ -195,6 +195,15 @@ void ubwMove(Ubw wnd, int x, int y) {
 
 void ubwMoveToScreenCenter(Ubw wnd) {
 	ubwMove(wnd, (DisplayWidth(dpy, 0) - ((_UbwPvt *)wnd)->width) / 2, (DisplayHeight(dpy, 0) - ((_UbwPvt *)wnd)->height) / 2);
+}
+
+void ubwSize(Ubw wnd, int *width, int *height) {
+	if (width) {
+		*width = ((_UbwPvt *)wnd)->width;
+	}
+	if (height) {
+		*height = ((_UbwPvt *)wnd)->height;
+	}
 }
 
 void ubwResize(Ubw wnd, int width, int height) {
