@@ -3,34 +3,13 @@
 #ifdef UBWINDOW_X11
 
 #include "ubw.h"
+#include "modmap.h"
 #include <string.h>
 #include <limits.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
-static _UbwPvt wndList[256];
-
-static void wndListAdd(_UbwPvt wnd) {
-	for (int i = 0; i < 256; i++) {
-		if (!wndList[i]) {
-			wndList[i] = wnd;
-			return;
-		}
-	}
-	puts("UBWindow: Create the number exceeds the upper limit!");
-}
-
-static int wndListIx(Window XWnd) {
-	for (int i = 0; i < 256; i++) {
-		if (!wndList[i]) {
-			return -1;
-		}
-		if ((Window)wndList[i]->ntvPtr == XWnd) {
-			return i;
-		}
-	}
-	return -1;
-}
+static ModMap wndMap;
 
 static Display *dpy;
 static Window root;
@@ -53,13 +32,13 @@ int ubwInit(UbwEventHandler evtHdr) {
 	wmProtocols = XInternAtom(dpy, "WM_PROTOCOLS", False);
 
 	dftEvtHdr = evtHdr;
+	wndMap = mdmpNew(256);
 	return 1;
 }
 
 static int handleXEvent(XAnyEvent *event) {
-	int wndIx = wndListIx(event->window);
-	if (wndIx != -1) {
-		_EVT_VARS(wndList[wndIx])
+	_EVT_VARS(mdmpGet(wndMap, (void *)event->window))
+	if (wnd) {
 		switch (event->type) {
 			case ConfigureNotify:
 				if (((XConfigureEvent *)event)->x || ((XConfigureEvent *)event)->y) {
@@ -93,7 +72,7 @@ static int handleXEvent(XAnyEvent *event) {
 					XCloseDisplay(dpy);
 					return 0;
 				}
-				wndList[wndIx] = NULL;
+				mdmpDelete(wndMap, wnd->ntvPtr);
 				free(wnd);
 		}
 	}
@@ -150,7 +129,7 @@ Ubw ubwCreate() {
 	wnd->width = 10;
 	wnd->height = 10;
 
- 	wndListAdd(wnd);
+ 	mdmpSet(wndMap, (void *)xWnd, (void *)wnd);
 	return (Ubw)wnd;
 }
 
