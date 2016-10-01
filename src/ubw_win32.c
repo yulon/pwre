@@ -181,12 +181,12 @@ void ubwMoveToScreenCenter(Ubw wnd) {
 
 void ubwSize(Ubw wnd, int *width, int *height) {
 	RECT rect;
-	GetWindowRect(_HWND, &rect);
+	GetClientRect(_HWND, &rect);
 	if (width) {
-		*width = rect.right - rect.left - ((_UbwPvt)wnd)->ncWidth;
+		*width = rect.right;
 	}
 	if (height) {
-		*height = rect.bottom - rect.top - ((_UbwPvt)wnd)->ncHeight;
+		*height = rect.bottom;
 	}
 }
 
