@@ -29,9 +29,12 @@ Ubw ubwCreate(void) {
 	NSWindow *win = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 500, 500) styleMask:uiStyle backing:backingStoreStyle defer:NO];
 	[win makeKeyAndOrderFront:win];
 	[win makeMainWindow];
+
+	wndCount++;
 	_UbwPvt wnd = calloc(1, sizeof(struct _UbwPvt));
 	wnd->ntvPtr = (void *)win;
-	wndCount++;
+	wnd->evtHdr = dftEvtHdr;
+
 	return (Ubw)wnd;
 }
 

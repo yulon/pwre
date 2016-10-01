@@ -2,8 +2,13 @@
 #include <stdio.h>
 #include <ubwindow.h>
 
+int eventHandler(Ubw wnd, int event, void *data) {
+	printf("event: %d\n", event);
+	return 0;
+}
+
 int main(void) {
-	ubwInit(NULL);
+	ubwInit(eventHandler);
 
 	Ubw wnd = ubwCreate();
 	ubwSetTitle(wnd, "我只是一个空白窗口_(:з」∠)_");

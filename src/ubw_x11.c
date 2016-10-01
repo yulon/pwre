@@ -126,6 +126,7 @@ Ubw ubwCreate() {
 	wndCount++;
 	_UbwPvt wnd = calloc(1, sizeof(struct _UbwPvt));
 	wnd->ntvPtr = (void *)xWnd;
+	wnd->evtHdr = dftEvtHdr;
 	wnd->width = 10;
 	wnd->height = 10;
 
