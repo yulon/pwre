@@ -1,6 +1,8 @@
 #ifndef _UBWINDOW_H
 #define _UBWINDOW_H
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -15,7 +17,7 @@ typedef struct UbwPoint {
 
 typedef void *Ubw;
 
-typedef int (*UbwEventHandler)(Ubw, int event, void *data);
+typedef bool (*UbwEventHandler)(Ubw, int event, void *data);
 #define UBW_EVENT_CLOSE -1
 #define UBW_EVENT_DESTROY -2
 #define UBW_EVENT_SIZE -10
@@ -27,8 +29,8 @@ typedef int (*UbwEventHandler)(Ubw, int event, void *data);
 #define UBW_EVENT_KEY_DOWN 20
 #define UBW_EVENT_KEY_UP 21
 
-int ubwInit(UbwEventHandler);
-int ubwStep(void);
+bool ubwInit(UbwEventHandler);
+bool ubwStep(void);
 void ubwRun(void);
 
 Ubw ubwCreate(void);

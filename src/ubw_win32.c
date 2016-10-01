@@ -44,7 +44,7 @@ static LRESULT CALLBACK wndMsgHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 static HMODULE mainModule;
 static WNDCLASSEXW wndClass;
 
-int ubwInit(UbwEventHandler evtHdr) {
+bool ubwInit(UbwEventHandler evtHdr) {
 	mainModule = GetModuleHandleW(NULL);
 
 	wndClass.style = CS_DBLCLKS | CS_OWNDC;
@@ -61,21 +61,21 @@ int ubwInit(UbwEventHandler evtHdr) {
 	ATOM ok = RegisterClassExW(&wndClass);
 	if (!ok) {
 		puts("UBWindow: Win32.RegisterClassExW error!");
-		return 0;
+		return false;
 	}
 
 	dftEvtHdr = evtHdr;
-	return 1;
+	return true;
 }
 
-int ubwStep(void) {
+bool ubwStep(void) {
 	MSG msg;
 	if (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE) > 0) {
 		TranslateMessage(&msg);
 		DispatchMessageW(&msg);
 		return msg.message != WM_QUIT;
 	}
-	return 1;
+	return true;
 }
 
 void ubwRun(void) {

@@ -17,7 +17,7 @@ typedef struct _UbwPvt {
 
 #define _EVT_VARS(_wnd) \
 	_UbwPvt wnd = _wnd; \
-	int processed; \
+	bool processed; \
 	UbwSize size;
 
 #define _EVT_POST(_hdr_existent_code, _event, _data) \
@@ -31,7 +31,7 @@ typedef struct _UbwPvt {
 		_hdr_existent_code \
 		processed = (*wnd->evtHdr)((Ubw)wnd, _event, _data); \
 	} else { \
-		processed = 0; \
+		processed = false; \
 	} \
 	if (processed) { \
 		_hdr_processed_code \

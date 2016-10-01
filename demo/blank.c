@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <ubwindow.h>
 
-int eventHandler(Ubw wnd, int event, void *data) {
+bool eventHandler(Ubw wnd, int event, void *data) {
 	printf("event: %d\n", event);
-	return 0;
+	return false;
 }
 
 int main(void) {

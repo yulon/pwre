@@ -10,14 +10,14 @@ static NSApplication *app;
 static NSUInteger uiStyle;
 static NSBackingStoreType backingStoreStyle;
 
-int ubwInit(UbwEventHandler evtHdr) {
+bool ubwInit(UbwEventHandler evtHdr) {
 	pool = [[NSAutoreleasePool alloc] init];
 	app = [NSApplication sharedApplication];
 	uiStyle = NSTitledWindowMask | NSResizableWindowMask | NSClosableWindowMask;
 	backingStoreStyle = NSBackingStoreBuffered;
 
 	dftEvtHdr = evtHdr;
-	return 1;
+	return true;
 }
 
 void ubwRun(void) {

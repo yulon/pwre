@@ -1,6 +1,7 @@
 #ifndef _MODMAP_H
 #define _MODMAP_H
 
+#include <stdbool.h>
 #include <string.h>
 
 typedef void *ModMap;
@@ -26,9 +27,9 @@ ModMap mdmpNew(size_t baseSize) {
 
 #define _MAP ((_ModMapPvt)map)
 
-int mdmpResize(ModMap map, size_t size) {
+bool mdmpResize(ModMap map, size_t size) {
 	if (size <= _MAP->base) {
-		return 0;
+		return false;
 	}
 	_Kavs newList = calloc(size, sizeof(struct _Kav));
 	_Kavs oldList = _MAP->list;
@@ -36,16 +37,16 @@ int mdmpResize(ModMap map, size_t size) {
 	_MAP->list = newList;
 	_MAP->size = size;
 	free(oldList);
-	return 1;
+	return true;
 }
 
-int mdmpSet(ModMap map, void *key, void *value) {
+bool mdmpSet(ModMap map, void *key, void *value) {
 	for (size_t dvdnd = _MAP->base; dvdnd <= _MAP->size; dvdnd += _MAP->base) {
 		size_t ix = (size_t)key % dvdnd;
 		if (!_MAP->list[ix].key) {
 			_MAP->list[ix].key = key;
 			_MAP->list[ix].value = value;
-			return 1;
+			return true;
 		}
 	}
 	for (size_t size = _MAP->size * 2; size <= (size_t)-1; size = size * 2) {
@@ -56,17 +57,17 @@ int mdmpSet(ModMap map, void *key, void *value) {
 					_MAP->list[ix].key = key;
 					_MAP->list[ix].value = value;
 					mdmpResize(map, size);
-					return 1;
+					return true;
 				}
 			} else {
 				mdmpResize(map, size);
 				_MAP->list[ix].key = key;
 				_MAP->list[ix].value = value;
-				return 1;
+				return true;
 			}
 		}
 	}
-	return 0;
+	return false;
 }
 
 void *mdmpGet(ModMap map, void *key) {

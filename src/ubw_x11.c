@@ -18,12 +18,12 @@ Atom utf8str;
 Atom wmDelete;
 Atom wmProtocols;
 
-int ubwInit(UbwEventHandler evtHdr) {
+bool ubwInit(UbwEventHandler evtHdr) {
 	XInitThreads();
 	dpy = XOpenDisplay(NULL);
 	if (!dpy) {
 		puts("UBWindow: X11.XOpenDisplay error!");
-		return 0;
+		return false;
 	}
 	root = XRootWindow(dpy, 0);
 	netWmName = XInternAtom(dpy, "_NET_WM_NAME", False);
@@ -33,10 +33,10 @@ int ubwInit(UbwEventHandler evtHdr) {
 
 	dftEvtHdr = evtHdr;
 	wndMap = mdmpNew(256);
-	return 1;
+	return true;
 }
 
-static int handleXEvent(XAnyEvent *event) {
+static bool handleXEvent(XAnyEvent *event) {
 	_EVT_VARS(mdmpGet(wndMap, (void *)event->window))
 	if (wnd) {
 		switch (event->type) {
@@ -60,7 +60,7 @@ static int handleXEvent(XAnyEvent *event) {
 			case ClientMessage:
 				if (((XClientMessageEvent *)event)->message_type == wmProtocols) {
 					_EVT_SEND(, UBW_EVENT_CLOSE, NULL,
-						return 1;
+						return true;
 					)
 					XDestroyWindow(dpy, event->window);
 				}
@@ -70,27 +70,27 @@ static int handleXEvent(XAnyEvent *event) {
 				wndCount--;
 				if (!wndCount) {
 					XCloseDisplay(dpy);
-					return 0;
+					return false;
 				}
 				mdmpDelete(wndMap, wnd->ntvPtr);
 				free(wnd);
 		}
 	}
-	return 1;
+	return true;
 }
 
-int ubwStep(void) {
+bool ubwStep(void) {
 	XEvent event;
 	if (XPeekEvent(dpy, &event)) {
 		XNextEvent(dpy, &event);
 		return handleXEvent((XAnyEvent *)&event);
 	}
-	return 1;
+	return true;
 }
 
 void ubwRun(void) {
 	XEvent event;
-	int run = 1;
+	bool run = true;
 	while (run) {
 		XNextEvent(dpy, &event);
 		run = handleXEvent((XAnyEvent *)&event);
