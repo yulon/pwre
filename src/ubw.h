@@ -10,9 +10,8 @@ static UbwEventHandler dftEvtHdr;
 
 typedef struct _UbwPvt {
 	void *ntvPtr;
-	int x, y, width, height;
-	int ncWidth, ncHeight;
 	UbwEventHandler evtHdr;
+	int ncWidth, ncHeight;
 } *_UbwPvt;
 
 #define _EVT_VARS(_wnd) \

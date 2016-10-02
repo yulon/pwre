@@ -202,48 +202,45 @@ void ubwResize(Ubw wnd, int width, int height) {
 	);
 }
 
-void ubwActive(Ubw wnd) {
-	SetActiveWindow(_HWND);
-}
-
-void ubwShow(Ubw wnd) {
-	ShowWindow(_HWND, SW_SHOW);
-}
-
-void ubwHide(Ubw wnd) {
-	ShowWindow(_HWND, SW_HIDE);
-}
-
-int ubwIsVisible(Ubw wnd) {
-	LONG style = GetWindowLongW(_HWND, GWL_STYLE);
-	return style & WS_VISIBLE;
-}
-
-void ubwSetView(Ubw wnd, int flag) {
+int ubwView(Ubw wnd, int flag) {
+	LONG style;
+	if (!flag) {
+		style = GetWindowLongW(_HWND, GWL_STYLE);
+		if (style & WS_VISIBLE) {
+			if (style & WS_MAXIMIZE) {
+				return UBW_VIEW_MAXIMIZATION;
+			} else
+			if (style & WS_MINIMIZE) {
+				return UBW_VIEW_MINIMIZATION;
+			}
+			return UBW_VIEW_ADJUSTABLE;
+		}
+		return UBW_VIEW_HIDDEN;
+	}
 	switch (flag) {
-		case UBW_VIEW_MAXIMIZE:
-			ShowWindow(_HWND, SW_MAXIMIZE);
+		case UBW_VIEW_VISIBLE:
+			style = GetWindowLongW(_HWND, GWL_STYLE);
+			if (style & WS_VISIBLE) {
+				if (style & WS_MINIMIZE) {
+					ShowWindow(_HWND, SW_RESTORE);
+				}
+			} else {
+				ShowWindow(_HWND, SW_SHOW);
+			}
 			break;
-		case UBW_VIEW_MINIMIZE:
+		case UBW_VIEW_HIDDEN:
+			ShowWindow(_HWND, SW_HIDE);
+			break;
+		case UBW_VIEW_MINIMIZATION:
 			ShowWindow(_HWND, SW_MINIMIZE);
 			break;
-		case UBW_VIEW_RESTORE:
-			ShowWindow(_HWND, SW_RESTORE);
+		case UBW_VIEW_MAXIMIZATION:
+			ShowWindow(_HWND, SW_MAXIMIZE);
 			break;
-		case UBW_VIEW_NORMAL:
+		case UBW_VIEW_ADJUSTABLE:
 			ShowWindow(_HWND, SW_SHOWNORMAL);
 	}
-}
-
-int ubwGetView(Ubw wnd) {
-	LONG style = GetWindowLongW(_HWND, GWL_STYLE);
-	if (style & WS_MAXIMIZE) {
-		return UBW_VIEW_MAXIMIZE;
-	}
-	else if (style & WS_MAXIMIZE) {
-		return UBW_VIEW_MINIMIZE;
-	}
-	return UBW_VIEW_NORMAL;
+	return 0;
 }
 
 #undef _HWND

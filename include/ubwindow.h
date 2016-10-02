@@ -39,11 +39,6 @@ void ubwDestroy(Ubw);
 
 void *ubwNativePointer(Ubw);
 
-void ubwShow(Ubw);
-void ubwHide(Ubw);
-int ubwIsVisible(Ubw);
-void ubwActive(Ubw);
-
 int ubwGetTitle(Ubw, char *);
 void ubwSetTitle(Ubw, const char *);
 
@@ -53,12 +48,12 @@ void ubwMoveToScreenCenter(Ubw);
 void ubwSize(Ubw, int *width, int *height);
 void ubwResize(Ubw, int width, int height);
 
-void ubwSetView(Ubw, int);
-int ubwGetView(Ubw);
-#define UBW_VIEW_MAXIMIZE 0
-#define UBW_VIEW_MINIMIZE 1
-#define UBW_VIEW_RESTORE 2
-#define UBW_VIEW_NORMAL 3
+int ubwView(Ubw, int);
+#define UBW_VIEW_HIDDEN 1
+#define UBW_VIEW_VISIBLE 2
+#define UBW_VIEW_ADJUSTABLE 3
+#define UBW_VIEW_MINIMIZATION 4
+#define UBW_VIEW_MAXIMIZATION 5
 
 #ifdef __cplusplus
 }

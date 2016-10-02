@@ -13,7 +13,7 @@ int main(void) {
 	Ubw wnd = ubwCreate();
 	ubwSetTitle(wnd, "我只是一个空白窗口_(:з」∠)_");
 	ubwResize(wnd, 500, 500);
-	ubwShow(wnd);
+	ubwView(wnd, UBW_VIEW_VISIBLE);
 	ubwMoveToScreenCenter(wnd);
 
 	int titleLen = ubwGetTitle(wnd, NULL);
