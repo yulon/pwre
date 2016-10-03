@@ -4,7 +4,6 @@
 
 #include "ubw.h"
 #include "modmap.h"
-#include <string.h>
 #include <limits.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>

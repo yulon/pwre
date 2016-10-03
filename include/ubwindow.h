@@ -54,6 +54,7 @@ int ubwView(Ubw, int);
 #define UBW_VIEW_ADJUSTABLE 3
 #define UBW_VIEW_MINIMIZATION 4
 #define UBW_VIEW_MAXIMIZATION 5
+#define UBW_VIEW_FULLSCREEN 6
 
 #ifdef __cplusplus
 }
