@@ -29,44 +29,44 @@ ModMap new_ModMap(size_t baseSize) {
 	return (ModMap)map;
 }
 
-#define _MAP ((_ModMapPvt)map)
+#define _MODMAP ((_ModMapPvt)map)
 
 bool ModMap_resize(ModMap map, size_t size) {
-	if (size <= _MAP->base) {
+	if (size <= _MODMAP->base) {
 		return false;
 	}
 	_ModMapKvList newList = calloc(size, sizeof(struct _ModMapKv));
-	_ModMapKvList oldList = _MAP->list;
-	memcpy(newList, oldList, _MAP->size);
-	_MAP->list = newList;
-	_MAP->size = size;
+	_ModMapKvList oldList = _MODMAP->list;
+	memcpy(newList, oldList, _MODMAP->size);
+	_MODMAP->list = newList;
+	_MODMAP->size = size;
 	free(oldList);
 	return true;
 }
 
 bool ModMap_set(ModMap map, void *key, void *value) {
-	for (size_t dvdnd = _MAP->base; dvdnd <= _MAP->size; dvdnd += _MAP->base) {
+	for (size_t dvdnd = _MODMAP->base; dvdnd <= _MODMAP->size; dvdnd += _MODMAP->base) {
 		size_t ix = (size_t)key % dvdnd;
-		if (!_MAP->list[ix].key) {
-			_MAP->list[ix].key = key;
-			_MAP->list[ix].value = value;
+		if (!_MODMAP->list[ix].key) {
+			_MODMAP->list[ix].key = key;
+			_MODMAP->list[ix].value = value;
 			return true;
 		}
 	}
-	for (size_t size = _MAP->size * 2; size <= (size_t)-1; size = size * 2) {
-		for (size_t dvdnd = _MAP->size + _MAP->base; dvdnd <= size; dvdnd += _MAP->base) {
+	for (size_t size = _MODMAP->size * 2; size <= (size_t)-1; size = size * 2) {
+		for (size_t dvdnd = _MODMAP->size + _MODMAP->base; dvdnd <= size; dvdnd += _MODMAP->base) {
 			size_t ix = (size_t)key % dvdnd;
-			if (ix < _MAP->size) {
-				if (!_MAP->list[ix].key) {
-					_MAP->list[ix].key = key;
-					_MAP->list[ix].value = value;
+			if (ix < _MODMAP->size) {
+				if (!_MODMAP->list[ix].key) {
+					_MODMAP->list[ix].key = key;
+					_MODMAP->list[ix].value = value;
 					ModMap_resize(map, size);
 					return true;
 				}
 			} else {
 				ModMap_resize(map, size);
-				_MAP->list[ix].key = key;
-				_MAP->list[ix].value = value;
+				_MODMAP->list[ix].key = key;
+				_MODMAP->list[ix].value = value;
 				return true;
 			}
 		}
@@ -75,31 +75,31 @@ bool ModMap_set(ModMap map, void *key, void *value) {
 }
 
 void *ModMap_get(ModMap map, void *key) {
-	for (size_t dvdnd = _MAP->base; dvdnd <= _MAP->size; dvdnd += _MAP->base) {
+	for (size_t dvdnd = _MODMAP->base; dvdnd <= _MODMAP->size; dvdnd += _MODMAP->base) {
 		size_t ix = (size_t)key % dvdnd;
-		if (_MAP->list[ix].key == key) {
-			return _MAP->list[ix].value;
+		if (_MODMAP->list[ix].key == key) {
+			return _MODMAP->list[ix].value;
 		}
 	}
 	return NULL;
 }
 
 void ModMap_delete(ModMap map, void *key) {
-	for (size_t dvdnd = _MAP->base; dvdnd <= _MAP->size; dvdnd += _MAP->base) {
+	for (size_t dvdnd = _MODMAP->base; dvdnd <= _MODMAP->size; dvdnd += _MODMAP->base) {
 		size_t ix = (size_t)key % dvdnd;
-		if (_MAP->list[ix].key == key) {
-			_MAP->list[ix].key = NULL;
-			_MAP->list[ix].value = NULL;
+		if (_MODMAP->list[ix].key == key) {
+			_MODMAP->list[ix].key = NULL;
+			_MODMAP->list[ix].value = NULL;
 		}
 	}
 }
 
 void ModMap_free(ModMap map) {
-	free(_MAP->list);
-	free(_MAP);
+	free(_MODMAP->list);
+	free(_MODMAP);
 }
 
-#undef _MAP
+#undef _MODMAP
 
 #ifdef __cplusplus
 }
