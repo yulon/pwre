@@ -4,35 +4,39 @@
 #include <stdbool.h>
 #include <string.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef void *ModMap;
 
-typedef struct _Kav {
+typedef struct _ModMapKv {
 	void *key;
 	void *value;
-} *_Kavs;
+} *_ModMapKvList;
 
 typedef struct _ModMapPvt {
 	size_t base;
 	size_t size;
-	_Kavs list;
+	_ModMapKvList list;
 } *_ModMapPvt;
 
-ModMap mdmpNew(size_t baseSize) {
+ModMap new_ModMap(size_t baseSize) {
 	_ModMapPvt map = calloc(1, sizeof(struct _ModMapPvt));
 	map->base = baseSize;
 	map->size = baseSize;
-	map->list = calloc(baseSize, sizeof(struct _Kav));
+	map->list = calloc(baseSize, sizeof(struct _ModMapKv));
 	return (ModMap)map;
 }
 
 #define _MAP ((_ModMapPvt)map)
 
-bool mdmpResize(ModMap map, size_t size) {
+bool ModMap_resize(ModMap map, size_t size) {
 	if (size <= _MAP->base) {
 		return false;
 	}
-	_Kavs newList = calloc(size, sizeof(struct _Kav));
-	_Kavs oldList = _MAP->list;
+	_ModMapKvList newList = calloc(size, sizeof(struct _ModMapKv));
+	_ModMapKvList oldList = _MAP->list;
 	memcpy(newList, oldList, _MAP->size);
 	_MAP->list = newList;
 	_MAP->size = size;
@@ -40,7 +44,7 @@ bool mdmpResize(ModMap map, size_t size) {
 	return true;
 }
 
-bool mdmpSet(ModMap map, void *key, void *value) {
+bool ModMap_set(ModMap map, void *key, void *value) {
 	for (size_t dvdnd = _MAP->base; dvdnd <= _MAP->size; dvdnd += _MAP->base) {
 		size_t ix = (size_t)key % dvdnd;
 		if (!_MAP->list[ix].key) {
@@ -56,11 +60,11 @@ bool mdmpSet(ModMap map, void *key, void *value) {
 				if (!_MAP->list[ix].key) {
 					_MAP->list[ix].key = key;
 					_MAP->list[ix].value = value;
-					mdmpResize(map, size);
+					ModMap_resize(map, size);
 					return true;
 				}
 			} else {
-				mdmpResize(map, size);
+				ModMap_resize(map, size);
 				_MAP->list[ix].key = key;
 				_MAP->list[ix].value = value;
 				return true;
@@ -70,7 +74,7 @@ bool mdmpSet(ModMap map, void *key, void *value) {
 	return false;
 }
 
-void *mdmpGet(ModMap map, void *key) {
+void *ModMap_get(ModMap map, void *key) {
 	for (size_t dvdnd = _MAP->base; dvdnd <= _MAP->size; dvdnd += _MAP->base) {
 		size_t ix = (size_t)key % dvdnd;
 		if (_MAP->list[ix].key == key) {
@@ -80,7 +84,7 @@ void *mdmpGet(ModMap map, void *key) {
 	return NULL;
 }
 
-void mdmpDelete(ModMap map, void *key) {
+void ModMap_delete(ModMap map, void *key) {
 	for (size_t dvdnd = _MAP->base; dvdnd <= _MAP->size; dvdnd += _MAP->base) {
 		size_t ix = (size_t)key % dvdnd;
 		if (_MAP->list[ix].key == key) {
@@ -90,10 +94,15 @@ void mdmpDelete(ModMap map, void *key) {
 	}
 }
 
-void mdmpFree(ModMap map) {
+void ModMap_free(ModMap map) {
 	free(_MAP->list);
 	free(_MAP);
 }
 
 #undef _MAP
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif // !_MODMAP_H
