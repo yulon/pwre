@@ -29,7 +29,6 @@ Ubw ubwCreate(void) {
 	NSWindow *nsWnd = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 1, 1) styleMask:uiStyle backing:backingStoreStyle defer:NO];
 	[nsWnd makeKeyAndOrderFront:nsWnd];
 	[app hide:nsWnd];
-	nsWnd.canHide = NO;
 	nsWnd.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
 
 	wndCount++;
@@ -76,41 +75,58 @@ void ubwResize(Ubw wnd, int width, int height) {
 	[_NSWND setContentSize:NSMakeSize(width, height)];
 }
 
-int ubwView(Ubw wnd, int flag) {
-	if (!flag) {
-		return 0;
-	}
-	switch (flag) {
+void ubwView(Ubw wnd, int type) {
+	switch (type) {
 		case UBW_VIEW_VISIBLE:
-			if (_NSWND.miniaturized) {
-				[_NSWND deminiaturize:_NSWND];
-			} else if (!_NSWND.canHide) {
-				[app unhide:_NSWND];
-				_NSWND.canHide = YES;
-			}
-			break;
-		case UBW_VIEW_HIDDEN:
 			[app unhide:_NSWND];
-			_NSWND.canHide = NO;
 			break;
-		case UBW_VIEW_MINIMIZATION:
+		case UBW_VIEW_STAY:
 			[_NSWND miniaturize:_NSWND];
 			break;
-		case UBW_VIEW_MAXIMIZATION:
+		case UBW_VIEW_ZOOM:
 			if (!_NSWND.zoomed) {
 				[_NSWND zoom:_NSWND];
 			}
 			break;
-		case UBW_VIEW_ADJUSTABLE:
+		case UBW_VIEW_FULLSCREEN:
+			if (!(_NSWND.styleMask & NSWindowStyleMaskFullScreen)) {
+				[_NSWND toggleFullScreen:_NSWND];
+			}
+	}
+}
+
+void ubwUnview(Ubw wnd, int type) {
+	switch (type) {
+		case UBW_VIEW_VISIBLE:
+			[app hide:_NSWND];
+			break;
+		case UBW_VIEW_STAY:
+			[_NSWND deminiaturize:_NSWND];
+			break;
+		case UBW_VIEW_ZOOM:
 			if (_NSWND.zoomed) {
 				[_NSWND zoom:_NSWND];
 			}
 			break;
 		case UBW_VIEW_FULLSCREEN:
-			[_NSWND toggleFullScreen:_NSWND];
-			break;
+			if (_NSWND.styleMask & NSWindowStyleMaskFullScreen) {
+				[_NSWND toggleFullScreen:_NSWND];
+			}
 	}
-	return 0;
+}
+
+bool ubwViewed(Ubw wnd, int type) {
+	switch (type) {
+		case UBW_VIEW_VISIBLE:
+			return _NSWND.visible;
+		case UBW_VIEW_STAY:
+			return _NSWND.miniaturized;
+		case UBW_VIEW_ZOOM:
+			return _NSWND.zoomed;
+		case UBW_VIEW_FULLSCREEN:
+			return _NSWND.styleMask & NSWindowStyleMaskFullScreen;
+	}
+	return false;
 }
 
 #undef _NSWND

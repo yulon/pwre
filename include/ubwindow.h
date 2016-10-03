@@ -17,7 +17,6 @@ typedef struct UbwPoint {
 
 typedef void *Ubw;
 
-typedef bool (*UbwEventHandler)(Ubw, int event, void *data);
 #define UBW_EVENT_CLOSE -1
 #define UBW_EVENT_DESTROY -2
 #define UBW_EVENT_SIZE -10
@@ -28,6 +27,7 @@ typedef bool (*UbwEventHandler)(Ubw, int event, void *data);
 #define UBW_EVENT_MOUSE_UP 12
 #define UBW_EVENT_KEY_DOWN 20
 #define UBW_EVENT_KEY_UP 21
+typedef bool (*UbwEventHandler)(Ubw, int event, void *data);
 
 bool ubwInit(UbwEventHandler);
 bool ubwStep(void);
@@ -48,13 +48,13 @@ void ubwMoveToScreenCenter(Ubw);
 void ubwSize(Ubw, int *width, int *height);
 void ubwResize(Ubw, int width, int height);
 
-int ubwView(Ubw, int);
-#define UBW_VIEW_HIDDEN 1
-#define UBW_VIEW_VISIBLE 2
-#define UBW_VIEW_ADJUSTABLE 3
-#define UBW_VIEW_MINIMIZATION 4
-#define UBW_VIEW_MAXIMIZATION 5
-#define UBW_VIEW_FULLSCREEN 6
+#define UBW_VIEW_VISIBLE 1
+#define UBW_VIEW_STAY 2
+#define UBW_VIEW_ZOOM 3
+#define UBW_VIEW_FULLSCREEN 4
+void ubwView(Ubw, int type);
+void ubwUnview(Ubw, int type);
+bool ubwViewed(Ubw, int type);
 
 #ifdef __cplusplus
 }
