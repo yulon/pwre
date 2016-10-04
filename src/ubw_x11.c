@@ -47,13 +47,13 @@ bool ubwInit(UbwEventHandler evtHdr) {
 	netWmStateFullscreen = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
 
 	dftEvtHdr = evtHdr;
-	wndMap = mdmpNew(256);
+	wndMap = new_ModMap(256);
 	return true;
 }
 
 static bool handleXEvent(XEvent *event) {
 	XNextEvent(dpy, event);
-	_EVT_VARS(mdmpGet(wndMap, (void *)((XAnyEvent *)event)->window))
+	_EVT_VARS(ModMap_get(wndMap, (void *)((XAnyEvent *)event)->window))
 	if (wnd) {
 
 		switch (((XAnyEvent *)event)->type) {
@@ -82,7 +82,7 @@ static bool handleXEvent(XEvent *event) {
 					XCloseDisplay(dpy);
 					return false;
 				}
-				mdmpDelete(wndMap, wnd->ntvPtr);
+				ModMap_delete(wndMap, wnd->ntvPtr);
 				free(wnd);
 		}
 	}
@@ -133,7 +133,7 @@ Ubw ubwCreate() {
 	wnd->ntvPtr = (void *)xWnd;
 	wnd->evtHdr = dftEvtHdr;
 
- 	mdmpSet(wndMap, (void *)xWnd, (void *)wnd);
+ 	ModMap_set(wndMap, (void *)xWnd, (void *)wnd);
 	return (Ubw)wnd;
 }
 
@@ -222,47 +222,34 @@ void ubwResize(Ubw wnd, int width, int height) {
 	}
 }
 
-int ubwView(Ubw wnd, int flag) {
+static void visible(Ubw wnd) {
 	XWindowAttributes attrs;
-	if (!flag) {
-		return 0;
-	}
+	XGetWindowAttributes(dpy, _XWND, &attrs);
 	XEvent event;
-	bool hidden;
-	switch (flag) {
+	if (attrs.map_state != IsViewable && XMapWindow(dpy, _XWND) != BadWindow && attrs.map_state == IsUnmapped) {
+		while (handleXEvent(&event)) {
+			if (
+				((XAnyEvent *)&event)->window == _XWND &&
+				((XAnyEvent *)&event)->type == MapNotify
+			) {
+				break;
+			}
+		}
+	}
+}
+
+void ubwView(Ubw wnd, int type) {
+	XEvent event;
+	switch (type) {
 		case UBW_VIEW_VISIBLE:
-			hidden = false;
-			XGetWindowAttributes(dpy, _XWND, &attrs);
-			if (attrs.map_state != 2) {
-				hidden = true;
-			}
-			if (XMapWindow(dpy, _XWND) != BadWindow && hidden) {
-				while (handleXEvent(&event)) {
-					if (
-						((XAnyEvent *)&event)->window == _XWND &&
-						((XAnyEvent *)&event)->type == MapNotify
-					) {
-						break;
-					}
-				}
-			}
+			visible(wnd);
 			break;
-		case UBW_VIEW_HIDDEN:
-			if (XUnmapWindow(dpy, _XWND) != BadWindow) {
-				while (handleXEvent(&event)) {
-					if (
-						((XAnyEvent *)&event)->window == _XWND &&
-						((XAnyEvent *)&event)->type == UnmapNotify
-					) {
-						break;
-					}
-				}
-			}
-			break;
-		case UBW_VIEW_MINIMIZATION:
+		case UBW_VIEW_MINIMIZE:
+			visible(wnd);
 			XIconifyWindow(dpy, _XWND, 0);
 			break;
-		case UBW_VIEW_MAXIMIZATION:
+		case UBW_VIEW_MAXIMIZE:
+			visible(wnd);
 			memset(&event, 0, sizeof(event));
 			event.type = ClientMessage;
 			event.xclient.window = _XWND;
@@ -273,7 +260,31 @@ int ubwView(Ubw wnd, int flag) {
 			event.xclient.data.l[2] = netWmStateMaxHorz;
 			XSendEvent(dpy, root, False, StructureNotifyMask, &event);
 			break;
-		case UBW_VIEW_ADJUSTABLE:
+		case UBW_VIEW_FULLSCREEN:
+			visible(wnd);
+			memset(&event, 0, sizeof(event));
+			event.type = ClientMessage;
+			event.xclient.window = _XWND;
+			event.xclient.message_type = netWmState;
+			event.xclient.format = 32;
+			event.xclient.data.l[0] = netWmStateAdd;
+			event.xclient.data.l[1] = netWmStateFullscreen;
+			XSendEvent(dpy, root, False, StructureNotifyMask, &event);
+	}
+	return;
+}
+
+void ubwUnview(Ubw wnd, int type) {
+	XEvent event;
+	switch (type) {
+		case UBW_VIEW_VISIBLE:
+			visible(wnd);
+			break;
+		case UBW_VIEW_MINIMIZE:
+			visible(wnd);
+			break;
+		case UBW_VIEW_MAXIMIZE:
+			visible(wnd);
 			memset(&event, 0, sizeof(event));
 			event.type = ClientMessage;
 			event.xclient.window = _XWND;
@@ -283,8 +294,18 @@ int ubwView(Ubw wnd, int flag) {
 			event.xclient.data.l[1] = netWmStateMaxVert;
 			event.xclient.data.l[2] = netWmStateMaxHorz;
 			XSendEvent(dpy, root, False, StructureNotifyMask, &event);
+			break;
+		case UBW_VIEW_FULLSCREEN:
+			visible(wnd);
+			memset(&event, 0, sizeof(event));
+			event.type = ClientMessage;
+			event.xclient.window = _XWND;
+			event.xclient.message_type = netWmState;
+			event.xclient.format = 32;
+			event.xclient.data.l[0] = netWmStateRemove;
+			event.xclient.data.l[1] = netWmStateFullscreen;
+			XSendEvent(dpy, root, False, StructureNotifyMask, &event);
 	}
-	return 0;
 }
 
 #undef _XWND

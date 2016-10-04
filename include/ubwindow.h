@@ -49,8 +49,8 @@ void ubwSize(Ubw, int *width, int *height);
 void ubwResize(Ubw, int width, int height);
 
 #define UBW_VIEW_VISIBLE 1
-#define UBW_VIEW_STAY 2
-#define UBW_VIEW_ZOOM 3
+#define UBW_VIEW_MINIMIZE 2
+#define UBW_VIEW_MAXIMIZE 3
 #define UBW_VIEW_FULLSCREEN 4
 void ubwView(Ubw, int type);
 void ubwUnview(Ubw, int type);

@@ -75,22 +75,35 @@ void ubwResize(Ubw wnd, int width, int height) {
 	[_NSWND setContentSize:NSMakeSize(width, height)];
 }
 
+static void visible(Ubw wnd) {
+	if (!_NSWND.visible) {
+		[app unhide:_NSWND];
+	}
+}
+
 void ubwView(Ubw wnd, int type) {
 	switch (type) {
 		case UBW_VIEW_VISIBLE:
-			[app unhide:_NSWND];
+			visible(wnd);
 			break;
-		case UBW_VIEW_STAY:
+		case UBW_VIEW_MINIMIZE:
+			visible(wnd);
 			[_NSWND miniaturize:_NSWND];
 			break;
-		case UBW_VIEW_ZOOM:
+		case UBW_VIEW_MAXIMIZE:
+			visible(wnd);
 			if (!_NSWND.zoomed) {
 				[_NSWND zoom:_NSWND];
+			} else if (_NSWND.miniaturized) {
+				[_NSWND deminiaturize:_NSWND];
 			}
 			break;
 		case UBW_VIEW_FULLSCREEN:
+			visible(wnd);
 			if (!(_NSWND.styleMask & NSWindowStyleMaskFullScreen)) {
 				[_NSWND toggleFullScreen:_NSWND];
+			} else if (_NSWND.miniaturized) {
+				[_NSWND deminiaturize:_NSWND];
 			}
 	}
 }
@@ -100,17 +113,24 @@ void ubwUnview(Ubw wnd, int type) {
 		case UBW_VIEW_VISIBLE:
 			[app hide:_NSWND];
 			break;
-		case UBW_VIEW_STAY:
+		case UBW_VIEW_MINIMIZE:
+			visible(wnd);
 			[_NSWND deminiaturize:_NSWND];
 			break;
-		case UBW_VIEW_ZOOM:
+		case UBW_VIEW_MAXIMIZE:
+			visible(wnd);
 			if (_NSWND.zoomed) {
 				[_NSWND zoom:_NSWND];
+			} else if (_NSWND.miniaturized) {
+				[_NSWND deminiaturize:_NSWND];
 			}
 			break;
 		case UBW_VIEW_FULLSCREEN:
+			visible(wnd);
 			if (_NSWND.styleMask & NSWindowStyleMaskFullScreen) {
 				[_NSWND toggleFullScreen:_NSWND];
+			} else if (_NSWND.miniaturized) {
+				[_NSWND deminiaturize:_NSWND];
 			}
 	}
 }
@@ -119,9 +139,9 @@ bool ubwViewed(Ubw wnd, int type) {
 	switch (type) {
 		case UBW_VIEW_VISIBLE:
 			return _NSWND.visible;
-		case UBW_VIEW_STAY:
+		case UBW_VIEW_MINIMIZE:
 			return _NSWND.miniaturized;
-		case UBW_VIEW_ZOOM:
+		case UBW_VIEW_MAXIMIZE:
 			return _NSWND.zoomed;
 		case UBW_VIEW_FULLSCREEN:
 			return _NSWND.styleMask & NSWindowStyleMaskFullScreen;
