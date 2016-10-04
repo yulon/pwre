@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <string.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,7 +54,7 @@ bool ModMap_set(ModMap map, void *key, void *value) {
 			return true;
 		}
 	}
-	for (size_t size = _MODMAP->size * 2; size <= (size_t)-1; size = size * 2) {
+	for (size_t size = _MODMAP->size * 2; size <= SIZE_MAX; size = size * 2) {
 		for (size_t dvdnd = _MODMAP->size + _MODMAP->base; dvdnd <= size; dvdnd += _MODMAP->base) {
 			size_t ix = (size_t)key % dvdnd;
 			if (ix < _MODMAP->size) {
