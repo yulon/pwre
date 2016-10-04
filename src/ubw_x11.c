@@ -53,9 +53,8 @@ bool ubwInit(UbwEventHandler evtHdr) {
 
 static bool handleXEvent(XEvent *event) {
 	XNextEvent(dpy, event);
-	_EVT_VARS(ModMap_get(wndMap, (void *)((XAnyEvent *)event)->window))
+	_EVT_VARS((_UbwPvt)ModMap_get(wndMap, ((XAnyEvent *)event)->window))
 	if (wnd) {
-
 		switch (((XAnyEvent *)event)->type) {
 			case ConfigureNotify:
 				_EVT_POST(
@@ -133,7 +132,7 @@ Ubw ubwCreate() {
 	wnd->ntvPtr = (void *)xWnd;
 	wnd->evtHdr = dftEvtHdr;
 
- 	ModMap_set(wndMap, (void *)xWnd, (void *)wnd);
+ 	ModMap_set(wndMap, xWnd, wnd);
 	return (Ubw)wnd;
 }
 
