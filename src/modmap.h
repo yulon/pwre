@@ -45,7 +45,7 @@ bool ModMap_resize(ModMap map, size_t size) {
 	return true;
 }
 
-bool ModMap_set(ModMap map, void *key, void *value) {
+bool _ModMap_set(ModMap map, void *key, void *value) {
 	for (size_t dvdnd = _MODMAP->base; dvdnd <= _MODMAP->size; dvdnd += _MODMAP->base) {
 		size_t ix = (size_t)key % dvdnd;
 		if (!_MODMAP->list[ix].key) {
@@ -74,8 +74,9 @@ bool ModMap_set(ModMap map, void *key, void *value) {
 	}
 	return false;
 }
+#define ModMap_set(map, key, value) _ModMap_set(map, (void *)key, (void *)value)
 
-void *ModMap_get(ModMap map, void *key) {
+void *_ModMap_get(ModMap map, void *key) {
 	for (size_t dvdnd = _MODMAP->base; dvdnd <= _MODMAP->size; dvdnd += _MODMAP->base) {
 		size_t ix = (size_t)key % dvdnd;
 		if (_MODMAP->list[ix].key == key) {
@@ -84,8 +85,9 @@ void *ModMap_get(ModMap map, void *key) {
 	}
 	return NULL;
 }
+#define ModMap_get(map, key) _ModMap_get(map, (void *)key)
 
-void ModMap_delete(ModMap map, void *key) {
+void _ModMap_delete(ModMap map, void *key) {
 	for (size_t dvdnd = _MODMAP->base; dvdnd <= _MODMAP->size; dvdnd += _MODMAP->base) {
 		size_t ix = (size_t)key % dvdnd;
 		if (_MODMAP->list[ix].key == key) {
@@ -94,6 +96,7 @@ void ModMap_delete(ModMap map, void *key) {
 		}
 	}
 }
+#define ModMap_delete(map, key) _ModMap_delete(map, (void *)key)
 
 void ModMap_free(ModMap map) {
 	free(_MODMAP->list);
