@@ -41,7 +41,7 @@ void PrWnd_destroy(PrWnd);
 
 void *PrWnd_nativePointer(PrWnd);
 
-int PrWnd_getTitle(PrWnd, char *);
+const char *PrWnd_getTitle(PrWnd);
 void PrWnd_setTitle(PrWnd, const char *);
 
 void PrWnd_move(PrWnd, int x, int y);

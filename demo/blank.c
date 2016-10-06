@@ -16,10 +16,7 @@ int main(void) {
 	PrWnd_view(wnd, PrView_visible);
 	PrWnd_moveToScreenCenter(wnd);
 
-	int titleLen = PrWnd_getTitle(wnd, NULL);
-	char *title = calloc(titleLen + 1, sizeof(char));
-	PrWnd_getTitle(wnd, title);
-	printf("%d %s\n", titleLen, title);
+	printf("title: %s\n", PrWnd_getTitle(wnd));
 
 	pwreRun();
 	return 0;

@@ -82,7 +82,7 @@ static bool handleXEvent(XEvent *event) {
 					return false;
 				}
 				ModMap_delete(wndMap, wnd->ntvPtr);
-				free(wnd);
+				PrWndPvt_free(wnd);
 		}
 	}
 	return true;
@@ -128,7 +128,7 @@ PrWnd new_PrWnd(void) {
 	XSelectInput(dpy, xWnd, ExposureMask | KeyPressMask | StructureNotifyMask);
 
 	wndCount++;
-	PrWndPvt wnd = calloc(1, sizeof(struct PrWndPvt));
+	PrWndPvt wnd = new_PrWndPvt();
 	wnd->ntvPtr = (void *)xWnd;
 	wnd->evtHdr = dftEvtHdr;
 
@@ -148,20 +148,18 @@ void PrWnd_destroy(PrWnd wnd) {
 	XDestroyWindow(dpy, _XWND);
 }
 
-int PrWnd_getTitle(PrWnd wnd, char *title) {
+const char *PrWnd_getTitle(PrWnd wnd) {
 	Atom type;
 	int format;
 	unsigned long nitems, after;
 	unsigned char *data;
 	if (Success == XGetWindowProperty(dpy, _XWND, netWmName, 0, LONG_MAX, False, utf8str, &type, &format, &nitems, &after, &data) && data) {
-		if (title) {
-			strcpy(title, (const char *)data);
-		}
-		int titleLen = strlen((const char *)data);
+		PrWndPvt_copyTitle((PrWndPvt)wnd, (const char *)data);
 		XFree(data);
-		return titleLen;
+	} else {
+		PrWndPvt_blankTitle((PrWndPvt)wnd, 0);
 	}
-	return 0;
+	return (const char *)((PrWndPvt)wnd)->titleBuf;
 }
 
 void PrWnd_setTitle(PrWnd wnd, const char *title) {

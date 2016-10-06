@@ -31,11 +31,11 @@ static LRESULT CALLBACK wndMsgHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 			case WM_DESTROY:
 				_EVT_POST(, PrEvent_destroy, NULL);
 				wndCount--;
-				free(wnd);
 				if (!wndCount) {
 					PostQuitMessage(0);
 					return 0;
 				}
+				PrWndPvt_free(wnd);
 		}
 	}
 	return DefWindowProcW(hWnd, uMsg, wParam, lParam);
@@ -111,7 +111,7 @@ PrWnd new_PrWnd(void) {
 	}
 
 	wndCount++;
-	PrWndPvt wnd = calloc(1, sizeof(struct PrWndPvt));
+	PrWndPvt wnd = new_PrWndPvt();
 	wnd->ntvPtr = (void *)hWnd;
 	wnd->evtHdr = dftEvtHdr;
 
@@ -132,21 +132,23 @@ void PrWnd_destroy(PrWnd wnd) {
 	DestroyWindow(_HWND);
 }
 
-int PrWnd_getTitle(PrWnd wnd, char *str8) {
+const char *PrWnd_getTitle(PrWnd wnd) {
 	int str16Len = GetWindowTextLengthW(_HWND);
-	if (!str16Len) {
-		return 0;
-	}
-	WCHAR *str16 = calloc(str16Len + 1, sizeof(WCHAR));
-	GetWindowTextW(_HWND, str16, str16Len);
+	if (str16Len) {
+		str16Len++;
+		WCHAR *str16 = calloc(str16Len, sizeof(WCHAR));
+		GetWindowTextW(_HWND, str16, str16Len);
 
-	int str8Len = WideCharToMultiByte(CP_UTF8, 0, str16, -1, NULL, 0, NULL, NULL);
-	if (str8Len && str8) {
-		WideCharToMultiByte(CP_UTF8, 0, str16, -1, str8, str8Len, NULL, NULL);
+		int str8Len = WideCharToMultiByte(CP_UTF8, 0, str16, -1, NULL, 0, NULL, NULL);
+		PrWndPvt_blankTitle((PrWndPvt)wnd, str8Len);
+		if (str8Len) {
+			WideCharToMultiByte(CP_UTF8, 0, str16, -1, ((PrWndPvt)wnd)->titleBuf, str8Len, NULL, NULL);
+		}
+		free(str16);
+	} else {
+		PrWndPvt_blankTitle((PrWndPvt)wnd, 0);
 	}
-
-	free(str16);
-	return str8Len;
+	return (const char *)((PrWndPvt)wnd)->titleBuf;
 }
 
 void PrWnd_setTitle(PrWnd wnd, const char *str8) {

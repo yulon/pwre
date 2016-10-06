@@ -32,7 +32,7 @@ PrWnd new_PrWnd(void) {
 	nsWnd.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
 
 	wndCount++;
-	PrWndPvt wnd = calloc(1, sizeof(struct PrWndPvt));
+	PrWndPvt wnd = new_PrWndPvt();
 	wnd->ntvPtr = (void *)nsWnd;
 	wnd->evtHdr = dftEvtHdr;
 
@@ -41,11 +41,8 @@ PrWnd new_PrWnd(void) {
 
 #define _NSWND ((NSWindow *)((PrWndPvt)wnd)->ntvPtr)
 
-int PrWnd_getTitle(PrWnd wnd, char *title) {
-	if (title) {
-		strcpy(title, _NSWND.title.UTF8String);
-	}
-	return strlen(_NSWND.title.UTF8String);
+const char *PrWnd_getTitle(PrWnd wnd) {
+	return _NSWND.title.UTF8String;
 }
 
 void PrWnd_setTitle(PrWnd wnd, const char *title) {
