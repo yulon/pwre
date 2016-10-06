@@ -1,40 +1,39 @@
-#ifndef _UBWINDOW_PRIVATE_H
-#define _UBWINDOW_PRIVATE_H
-
-#include "ubwindow.h"
+#include "pwre.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 static int wndCount;
-static UbwEventHandler dftEvtHdr;
+static PrEventHandler dftEvtHdr;
 
-typedef struct _UbwPvt {
+typedef struct PrWndPvt {
 	void *ntvPtr;
-	UbwEventHandler evtHdr;
+	PrEventHandler evtHdr;
 	int ncWidth, ncHeight;
-} *_UbwPvt;
+} *PrWndPvt;
+
+void *PrWnd_nativePointer(PrWnd wnd) {
+	return ((PrWndPvt)wnd)->ntvPtr;
+}
 
 #define _EVT_VARS(_wnd) \
-	_UbwPvt wnd = _wnd; \
+	PrWndPvt wnd = _wnd; \
 	bool processed; \
-	UbwSize size;
+	PrSize size;
 
 #define _EVT_POST(_hdr_existent_code, _event, _data) \
 	if (wnd->evtHdr) { \
 		_hdr_existent_code \
-		(*wnd->evtHdr)((Ubw)wnd, _event, _data); \
+		(*wnd->evtHdr)((PrWnd)wnd, _event, _data); \
 	}
 
 #define _EVT_SEND(_hdr_existent_code, _event, _data, _hdr_processed_code) \
 	if (wnd->evtHdr) { \
 		_hdr_existent_code \
-		processed = (*wnd->evtHdr)((Ubw)wnd, _event, _data); \
+		processed = (*wnd->evtHdr)((PrWnd)wnd, _event, _data); \
 	} else { \
 		processed = false; \
 	} \
 	if (processed) { \
 		_hdr_processed_code \
 	}
-
-#endif // !_UBWINDOW_PRIVATE_H

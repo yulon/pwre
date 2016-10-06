@@ -59,12 +59,12 @@ end
 
 ---------------------------------------------------------------------------
 
-workspace "UBWindow"
+workspace "Pwre"
 	location ( "build" )
 	configurations { "Debug", "Release" }
 	platforms {"native", "x64", "x32"}
 
-	project "ubwindow"
+	project "pwre"
 		language "C"
 		includedirs { "src", "include" }
 		files { "src/*.c", "src/*.h", "include/*.h" }
@@ -95,16 +95,16 @@ workspace "UBWindow"
 
 		configuration "windows"
 			kind "WindowedApp"
-			links { "ubwindow" }
+			links { "pwre" }
 
-		--[[configuration "macosx"
+		configuration "macosx"
 			kind "WindowedApp"
-			links { "ubwindow" }
-			linkoptions { "-framework Cocoa" }]]
+			links { "pwre" }
+			linkoptions { "-framework Cocoa" }
 
 		configuration "linux"
 			kind "ConsoleApp"
-			links { "ubwindow", "X11" }
+			links { "pwre", "X11" }
 
 		configuration "Debug"
 			defines { "DEBUG" }

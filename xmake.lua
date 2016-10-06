@@ -1,4 +1,4 @@
-set_project("UBWindow")
+set_project("Pwre")
 
 if is_mode("debug") then
 	add_defines("DEBUG")
@@ -15,7 +15,7 @@ end
 
 add_includedirs("include")
 
-target("ubwindow")
+target("pwre")
 	set_kind("static")
 
 	set_targetdir("lib")
@@ -30,13 +30,13 @@ target("ubwindow")
 
 	if is_plat("mingw") then
 		after_build(function ()
-			os.run("mv ./lib/ubwindow.lib ./lib/libubwindow.a")
+			os.run("mv ./lib/pwre.lib ./lib/libpwre.a")
 		end)
 	end
 
 target("demo_blank")
 
-	add_deps("ubwindow")
+	add_deps("pwre")
 
 	set_kind("binary")
 
@@ -46,7 +46,7 @@ target("demo_blank")
 
 	add_files("demo/*.c")
 
-	add_links("ubwindow")
+	add_links("pwre")
 
 	if is_plat("windows") then
 		add_links("user32")

@@ -1,14 +1,14 @@
-#ifndef _UBWINDOW_PDBE_H
-#define _UBWINDOW_PDBE_H
+#ifndef _PWRE_PDBE_H
+#define _PWRE_PDBE_H
 
-#if !defined(UBWINDOW_WIN32) && !defined(UBWINDOW_X11) && !defined(UBWINDOW_COCOA)
+#if !defined(PWRE_BE_WIN32) && !defined(PWRE_BE_X11) && !defined(PWRE_BE_COCOA)
 	#if defined(_WIN32)
-		#define UBWINDOW_WIN32
+		#define PWRE_BE_WIN32
 	#elif defined(__APPLE__) && defined(__MACH__)
-		#define UBWINDOW_COCOA
+		#define PWRE_BE_COCOA
 	#elif defined(__unix__)
-		#define UBWINDOW_X11
+		#define PWRE_BE_X11
 	#endif
 #endif
 
-#endif // !_UBWINDOW_PDBE_H
+#endif // !_PWRE_PDBE_H

@@ -1,8 +1,8 @@
 #include "pdbe.h"
 
-#ifdef UBWINDOW_COCOA
+#ifdef PWRE_BE_COCOA
 
-#include "ubw.h"
+#include "uni.h"
 #import <Cocoa/Cocoa.h>
 
 static NSAutoreleasePool *pool;
@@ -10,7 +10,7 @@ static NSApplication *app;
 static NSUInteger uiStyle;
 static NSBackingStoreType backingStoreStyle;
 
-bool ubwInit(UbwEventHandler evtHdr) {
+bool pwreInit(PrEventHandler evtHdr) {
 	pool = [[NSAutoreleasePool alloc] init];
 	app = [NSApplication sharedApplication];
 	uiStyle = NSWindowStyleMaskTitled | NSWindowStyleMaskMiniaturizable| NSWindowStyleMaskResizable | NSWindowStyleMaskClosable;
@@ -20,48 +20,48 @@ bool ubwInit(UbwEventHandler evtHdr) {
 	return true;
 }
 
-void ubwRun(void) {
+void pwreRun(void) {
 	[NSApp run];
 	[pool drain];
 }
 
-Ubw ubwCreate(void) {
+PrWnd new_PrWnd(void) {
 	NSWindow *nsWnd = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 1, 1) styleMask:uiStyle backing:backingStoreStyle defer:NO];
 	[nsWnd makeKeyAndOrderFront:nsWnd];
 	[app hide:nsWnd];
 	nsWnd.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
 
 	wndCount++;
-	_UbwPvt wnd = calloc(1, sizeof(struct _UbwPvt));
+	PrWndPvt wnd = calloc(1, sizeof(struct PrWndPvt));
 	wnd->ntvPtr = (void *)nsWnd;
 	wnd->evtHdr = dftEvtHdr;
 
-	return (Ubw)wnd;
+	return (PrWnd)wnd;
 }
 
-#define _NSWND ((NSWindow *)((_UbwPvt)wnd)->ntvPtr)
+#define _NSWND ((NSWindow *)((PrWndPvt)wnd)->ntvPtr)
 
-int ubwGetTitle(Ubw wnd, char *title) {
+int PrWnd_getTitle(PrWnd wnd, char *title) {
 	if (title) {
 		strcpy(title, _NSWND.title.UTF8String);
 	}
 	return strlen(_NSWND.title.UTF8String);
 }
 
-void ubwSetTitle(Ubw wnd, const char *title) {
+void PrWnd_setTitle(PrWnd wnd, const char *title) {
 	_NSWND.title = [NSString stringWithUTF8String:title];
 }
 
-void ubwMove(Ubw wnd, int x, int y) {
+void PrWnd_move(PrWnd wnd, int x, int y) {
 	[_NSWND setFrameOrigin:NSMakePoint(x, y)];
 }
 
-void ubwMoveToScreenCenter(Ubw wnd) {
+void PrWnd_moveToScreenCenter(PrWnd wnd) {
 	NSSize scrSize = [[NSScreen mainScreen] frame].size;
-	ubwMove(wnd, (scrSize.width - _NSWND.frame.size.width) / 2, (scrSize.height - _NSWND.frame.size.height) / 2);
+	PrWnd_move(wnd, (scrSize.width - _NSWND.frame.size.width) / 2, (scrSize.height - _NSWND.frame.size.height) / 2);
 }
 
-void ubwSize(Ubw wnd, int *width, int *height) {
+void PrWnd_size(PrWnd wnd, int *width, int *height) {
 	NSSize size = [_NSWND contentLayoutRect].size;
 	if (width) {
 		*width = size.width;
@@ -71,26 +71,26 @@ void ubwSize(Ubw wnd, int *width, int *height) {
 	}
 }
 
-void ubwResize(Ubw wnd, int width, int height) {
+void PrWnd_resize(PrWnd wnd, int width, int height) {
 	[_NSWND setContentSize:NSMakeSize(width, height)];
 }
 
-static void visible(Ubw wnd) {
+static void visible(PrWnd wnd) {
 	if (!_NSWND.visible) {
 		[app unhide:_NSWND];
 	}
 }
 
-void ubwView(Ubw wnd, int type) {
+void PrWnd_view(PrWnd wnd, PrView type) {
 	switch (type) {
-		case UBW_VIEW_VISIBLE:
+		case PrView_visible:
 			visible(wnd);
 			break;
-		case UBW_VIEW_MINIMIZE:
+		case PrView_minimize:
 			visible(wnd);
 			[_NSWND miniaturize:_NSWND];
 			break;
-		case UBW_VIEW_MAXIMIZE:
+		case PrView_maximize:
 			visible(wnd);
 			if (!_NSWND.zoomed) {
 				[_NSWND zoom:_NSWND];
@@ -98,7 +98,7 @@ void ubwView(Ubw wnd, int type) {
 				[_NSWND deminiaturize:_NSWND];
 			}
 			break;
-		case UBW_VIEW_FULLSCREEN:
+		case PrView_fullscreen:
 			visible(wnd);
 			if (!(_NSWND.styleMask & NSWindowStyleMaskFullScreen)) {
 				[_NSWND toggleFullScreen:_NSWND];
@@ -108,16 +108,16 @@ void ubwView(Ubw wnd, int type) {
 	}
 }
 
-void ubwUnview(Ubw wnd, int type) {
+void PrWnd_unview(PrWnd wnd, PrView type) {
 	switch (type) {
-		case UBW_VIEW_VISIBLE:
+		case PrView_visible:
 			[app hide:_NSWND];
 			break;
-		case UBW_VIEW_MINIMIZE:
+		case PrView_minimize:
 			visible(wnd);
 			[_NSWND deminiaturize:_NSWND];
 			break;
-		case UBW_VIEW_MAXIMIZE:
+		case PrView_maximize:
 			visible(wnd);
 			if (_NSWND.zoomed) {
 				[_NSWND zoom:_NSWND];
@@ -125,7 +125,7 @@ void ubwUnview(Ubw wnd, int type) {
 				[_NSWND deminiaturize:_NSWND];
 			}
 			break;
-		case UBW_VIEW_FULLSCREEN:
+		case PrView_fullscreen:
 			visible(wnd);
 			if (_NSWND.styleMask & NSWindowStyleMaskFullScreen) {
 				[_NSWND toggleFullScreen:_NSWND];
@@ -135,19 +135,19 @@ void ubwUnview(Ubw wnd, int type) {
 	}
 }
 
-bool ubwViewed(Ubw wnd, int type) {
+bool PrWnd_viewed(PrWnd wnd, PrView type) {
 	switch (type) {
-		case UBW_VIEW_VISIBLE:
+		case PrView_visible:
 			return _NSWND.visible;
-		case UBW_VIEW_MINIMIZE:
+		case PrView_minimize:
 			return _NSWND.miniaturized;
-		case UBW_VIEW_MAXIMIZE:
+		case PrView_maximize:
 			return _NSWND.zoomed;
-		case UBW_VIEW_FULLSCREEN:
+		case PrView_fullscreen:
 			return _NSWND.styleMask & NSWindowStyleMaskFullScreen;
 	}
 	return false;
 }
 
 #undef _NSWND
-#endif // UBWINDOW_COCOA
+#endif // PWRE_BE_COCOA
