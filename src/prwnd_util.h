@@ -67,13 +67,13 @@ static PrEventHandler dftEvtHdr;
 #define _EVT_POST(_hdr_existent_code, _event, _data) \
 	if (wnd->evtHdr) { \
 		_hdr_existent_code \
-		(*wnd->evtHdr)((PrWnd)wnd, _event, _data); \
+		wnd->evtHdr((PrWnd)wnd, _event, _data); \
 	}
 
 #define _EVT_SEND(_hdr_existent_code, _event, _data, _hdr_processed_code) \
 	if (wnd->evtHdr) { \
 		_hdr_existent_code \
-		processed = (*wnd->evtHdr)((PrWnd)wnd, _event, _data); \
+		processed = wnd->evtHdr((PrWnd)wnd, _event, _data); \
 	} else { \
 		processed = false; \
 	} \
