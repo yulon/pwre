@@ -81,8 +81,7 @@ workspace "Pwre"
 
 		configuration "Debug"
 			defines { "DEBUG" }
-			--symbols "On"
-			flags { "Symbols" }
+			symbols "On"
 
 		configuration "Release"
 			defines { "NDEBUG" }
@@ -111,8 +110,7 @@ workspace "Pwre"
 
 		configuration "Debug"
 			defines { "DEBUG" }
-			--symbols "On"
-			flags { "Symbols" }
+			symbols "On"
 
 		configuration "Release"
 			defines { "NDEBUG" }
