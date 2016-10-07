@@ -70,7 +70,6 @@ workspace "Pwre"
 		files { "src/*.c", "src/*.h", "include/*.h" }
 		kind "StaticLib"
 		targetdir("lib")
-		warnings "Extra"
 
 		configuration {"windows", "gmake" }
 			targetprefix "lib"
@@ -82,6 +81,7 @@ workspace "Pwre"
 		configuration "Debug"
 			defines { "DEBUG" }
 			symbols "On"
+			warnings "Extra"
 
 		configuration "Release"
 			defines { "NDEBUG" }
@@ -93,24 +93,24 @@ workspace "Pwre"
 		libdirs { "lib" }
 		files { "demo/blank.c" }
 		targetdir("bin")
-		warnings "Extra"
+		links { "pwre" }
 
 		configuration "windows"
 			kind "WindowedApp"
-			links { "user32", "pwre" }
+			links { "user32" }
 
 		configuration "macosx"
 			kind "WindowedApp"
-			links { "pwre" }
 			linkoptions { "-framework Cocoa" }
 
 		configuration "linux"
 			kind "ConsoleApp"
-			links { "pwre", "X11" }
+			links { "X11" }
 
 		configuration "Debug"
 			defines { "DEBUG" }
 			symbols "On"
+			warnings "Extra"
 
 		configuration "Release"
 			defines { "NDEBUG" }
