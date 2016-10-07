@@ -2,7 +2,7 @@
 
 #ifdef PWRE_BE_WIN32
 
-#include "prwnd_util.h"
+#include "prwnd.h"
 #include <windows.h>
 
 #ifndef PWRE_BE_WIN32_WNDEXTRA
@@ -14,7 +14,7 @@
 #endif
 
 static LRESULT CALLBACK wndMsgHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-	_EVT_VARS((PrWndPvt)GetWindowLongPtrW(hWnd, PWRE_BE_WIN32_WNDEXTRA_I));
+	_EVT_VARS((PrWnd)GetWindowLongPtrW(hWnd, PWRE_BE_WIN32_WNDEXTRA_I));
 	if (wnd) {
 		switch (uMsg) {
 			case WM_PAINT:
@@ -35,7 +35,7 @@ static LRESULT CALLBACK wndMsgHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 					PostQuitMessage(0);
 					return 0;
 				}
-				PrWndPvt_free(wnd);
+				PrWnd__free(wnd);
 		}
 	}
 	return DefWindowProcW(hWnd, uMsg, wParam, lParam);
@@ -111,7 +111,7 @@ PrWnd new_PrWnd(void) {
 	}
 
 	wndCount++;
-	PrWndPvt wnd = new_PrWndPvt();
+	PrWnd wnd = calloc(1, sizeof(struct PrWnd));
 	wnd->ntvPtr = (void *)hWnd;
 	wnd->evtHdr = dftEvtHdr;
 
@@ -119,10 +119,10 @@ PrWnd new_PrWnd(void) {
 	wnd->ncHeight = (500 - rect.top) + (rect.bottom - 1000);
 
 	SetWindowLongPtrW(hWnd, PWRE_BE_WIN32_WNDEXTRA_I, (LONG_PTR)wnd);
-	return (PrWnd)wnd;
+	return wnd;
 }
 
-#define _HWND (HWND)((PrWndPvt)wnd)->ntvPtr
+#define _HWND (HWND)wnd->ntvPtr
 
 void PrWnd_close(PrWnd wnd) {
 	CloseWindow(_HWND);
@@ -140,15 +140,15 @@ const char *PrWnd_getTitle(PrWnd wnd) {
 		GetWindowTextW(_HWND, str16, str16Len);
 
 		int str8Len = WideCharToMultiByte(CP_UTF8, 0, str16, -1, NULL, 0, NULL, NULL);
-		PrWndPvt_blankTitle((PrWndPvt)wnd, str8Len);
+		PrWnd__clearTitleBuf(wnd, str8Len);
 		if (str8Len) {
-			WideCharToMultiByte(CP_UTF8, 0, str16, -1, ((PrWndPvt)wnd)->titleBuf, str8Len, NULL, NULL);
+			WideCharToMultiByte(CP_UTF8, 0, str16, -1, wnd->titleBuf, str8Len, NULL, NULL);
 		}
 		free(str16);
 	} else {
-		PrWndPvt_blankTitle((PrWndPvt)wnd, 0);
+		PrWnd__clearTitleBuf(wnd, 0);
 	}
-	return (const char *)((PrWndPvt)wnd)->titleBuf;
+	return (const char *)wnd->titleBuf;
 }
 
 void PrWnd_setTitle(PrWnd wnd, const char *str8) {
@@ -176,8 +176,8 @@ void PrWnd_moveToScreenCenter(PrWnd wnd) {
 		_HWND,
 		(GetSystemMetrics(SM_CXSCREEN) - width) / 2,
 		(GetSystemMetrics(SM_CYSCREEN) - height) / 2,
-		width - rect.left + ((PrWndPvt)wnd)->ncWidth,
-		height - rect.top + ((PrWndPvt)wnd)->ncHeight,
+		width - rect.left + wnd->ncWidth,
+		height - rect.top + wnd->ncHeight,
 		TRUE
 	);
 }
@@ -198,8 +198,8 @@ void PrWnd_resize(PrWnd wnd, int width, int height) {
 	GetWindowRect(_HWND, &rect);
 	MoveWindow(
 		_HWND, rect.left, rect.top,
-		width + ((PrWndPvt)wnd)->ncWidth,
-		height + ((PrWndPvt)wnd)->ncHeight,
+		width + wnd->ncWidth,
+		height + wnd->ncHeight,
 		TRUE
 	);
 }

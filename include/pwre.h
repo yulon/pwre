@@ -15,9 +15,7 @@ typedef struct {
 	int x, y;
 } PrPoint;
 
-typedef struct {
-	const void *nativePointer;
-} *PrWnd;
+typedef struct PrWnd *PrWnd;
 
 typedef enum {
 	PrEvent_close = -1,

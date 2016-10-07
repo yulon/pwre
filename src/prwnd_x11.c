@@ -2,7 +2,7 @@
 
 #ifdef PWRE_BE_X11
 
-#include "prwnd_util.h"
+#include "prwnd.h"
 #include "modmap.h"
 #include <limits.h>
 #include <X11/Xlib.h>
@@ -53,7 +53,7 @@ bool pwreInit(PrEventHandler evtHdr) {
 
 static bool handleXEvent(XEvent *event) {
 	XNextEvent(dpy, event);
-	_EVT_VARS((PrWndPvt)ModMap_get(wndMap, ((XAnyEvent *)event)->window))
+	_EVT_VARS((PrWnd)ModMap_get(wndMap, ((XAnyEvent *)event)->window))
 	if (wnd) {
 		switch (((XAnyEvent *)event)->type) {
 			case ConfigureNotify:
@@ -82,7 +82,7 @@ static bool handleXEvent(XEvent *event) {
 					return false;
 				}
 				ModMap_delete(wndMap, wnd->ntvPtr);
-				PrWndPvt_free(wnd);
+				PrWnd__free(wnd);
 		}
 	}
 	return true;
@@ -128,18 +128,18 @@ PrWnd new_PrWnd(void) {
 	XSelectInput(dpy, xWnd, ExposureMask | KeyPressMask | StructureNotifyMask);
 
 	wndCount++;
-	PrWndPvt wnd = new_PrWndPvt();
+	PrWnd wnd = calloc(1, sizeof(struct PrWnd));
 	wnd->ntvPtr = (void *)xWnd;
 	wnd->evtHdr = dftEvtHdr;
 
  	ModMap_set(wndMap, xWnd, wnd);
-	return (PrWnd)wnd;
+	return wnd;
 }
 
-#define _XWND (Window)((PrWndPvt)wnd)->ntvPtr
+#define _XWND (Window)wnd->ntvPtr
 
 void PrWnd_close(PrWnd wnd) {
-	if (((PrWndPvt)wnd)->evtHdr && !(*((PrWndPvt)wnd)->evtHdr)(wnd, PrEvent_close, NULL)) {
+	if (wnd->evtHdr && !wnd->evtHdr(wnd, PrEvent_close, NULL)) {
 		XDestroyWindow(dpy, _XWND);
 	}
 }
@@ -154,12 +154,12 @@ const char *PrWnd_getTitle(PrWnd wnd) {
 	unsigned long nitems, after;
 	unsigned char *data;
 	if (Success == XGetWindowProperty(dpy, _XWND, netWmName, 0, LONG_MAX, False, utf8str, &type, &format, &nitems, &after, &data) && data) {
-		PrWndPvt_copyTitle((PrWndPvt)wnd, (const char *)data);
+		PrWnd__updateTitleBuf(wnd, (const char *)data);
 		XFree(data);
 	} else {
-		PrWndPvt_blankTitle((PrWndPvt)wnd, 0);
+		PrWnd__clearTitleBuf(wnd, 0);
 	}
-	return (const char *)((PrWndPvt)wnd)->titleBuf;
+	return (const char *)wnd->titleBuf;
 }
 
 void PrWnd_setTitle(PrWnd wnd, const char *title) {

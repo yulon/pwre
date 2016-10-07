@@ -2,7 +2,7 @@
 
 #ifdef PWRE_BE_COCOA
 
-#include "prwnd_util.h"
+#include "prwnd.h"
 #import <Cocoa/Cocoa.h>
 
 static NSAutoreleasePool *pool;
@@ -32,14 +32,14 @@ PrWnd new_PrWnd(void) {
 	nsWnd.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
 
 	wndCount++;
-	PrWndPvt wnd = new_PrWndPvt();
+	PrWnd wnd = calloc(1, sizeof(struct PrWnd));
 	wnd->ntvPtr = (void *)nsWnd;
 	wnd->evtHdr = dftEvtHdr;
 
-	return (PrWnd)wnd;
+	return wnd;
 }
 
-#define _NSWND ((NSWindow *)((PrWndPvt)wnd)->ntvPtr)
+#define _NSWND ((NSWindow *)wnd->ntvPtr)
 
 const char *PrWnd_getTitle(PrWnd wnd) {
 	return _NSWND.title.UTF8String;
