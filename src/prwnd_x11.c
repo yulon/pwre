@@ -2,7 +2,7 @@
 
 #ifdef PWRE_BE_X11
 
-#include "uni.h"
+#include "prwnd_util.h"
 #include "modmap.h"
 #include <limits.h>
 #include <X11/Xlib.h>

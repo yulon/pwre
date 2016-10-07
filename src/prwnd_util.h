@@ -3,9 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int wndCount;
-static PrEventHandler dftEvtHdr;
-
 typedef struct PrWndPvt {
 	void *ntvPtr;
 	PrEventHandler evtHdr;
@@ -59,9 +56,8 @@ static void PrWndPvt_copyTitle(PrWndPvt wndPvt, const char *newTitle) {
 	strcpy(wndPvt->titleBuf, newTitle);
 }
 
-void *PrWnd_nativePointer(PrWnd wnd) {
-	return ((PrWndPvt)wnd)->ntvPtr;
-}
+static int wndCount;
+static PrEventHandler dftEvtHdr;
 
 #define _EVT_VARS(_wnd) \
 	PrWndPvt wnd = _wnd; \
