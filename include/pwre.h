@@ -15,7 +15,9 @@ typedef struct {
 	int x, y;
 } PrPoint;
 
-typedef void *PrWnd;
+typedef struct {
+	const void *nativePointer;
+} *PrWnd;
 
 typedef enum {
 	PrEvent_close = -1,
@@ -38,8 +40,6 @@ void pwreRun(void);
 PrWnd new_PrWnd(void);
 void PrWnd_close(PrWnd);
 void PrWnd_destroy(PrWnd);
-
-void *PrWnd_nativePointer(PrWnd);
 
 const char *PrWnd_getTitle(PrWnd);
 void PrWnd_setTitle(PrWnd, const char *);
