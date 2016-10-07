@@ -45,8 +45,8 @@ newaction {
 			end
 		end
 		--cp_file("bin/*", "/bin" .. instBinSuffix)
-		cp_file("include/*.h", "/include" .. instIncSuffix)
-		cp_file("lib/*.a", "/lib" .. instLibSuffix)
+		cp_file("include/*", "/include" .. instIncSuffix)
+		cp_file("lib/*", "/lib" .. instLibSuffix)
 	end
 }
 
@@ -76,6 +76,9 @@ workspace "Pwre"
 			targetprefix "lib"
 			targetextension ".a"
 
+		configuration "macosx"
+			files { "src/*.m" }
+
 		configuration "Debug"
 			defines { "DEBUG" }
 			--symbols "On"
@@ -95,7 +98,7 @@ workspace "Pwre"
 
 		configuration "windows"
 			kind "WindowedApp"
-			links { "pwre" }
+			links { "user32", "pwre" }
 
 		configuration "macosx"
 			kind "WindowedApp"
