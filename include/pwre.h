@@ -39,6 +39,11 @@ PrWnd new_PrWnd(void);
 void PrWnd_close(PrWnd);
 void PrWnd_destroy(PrWnd);
 
+void *PrWnd_nativePointer(PrWnd);
+
+PrEventHandler PrWnd_getEventHandler(PrWnd);
+void PrWnd_setEventHandler(PrWnd, PrEventHandler);
+
 const char *PrWnd_getTitle(PrWnd);
 void PrWnd_setTitle(PrWnd, const char *);
 

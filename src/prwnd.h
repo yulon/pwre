@@ -52,6 +52,18 @@ static void PrWnd__updateTitleBuf(PrWnd wnd, const char *newTitle) {
 	strcpy(wnd->titleBuf, newTitle);
 }
 
+void *PrWnd_nativePointer(PrWnd wnd) {
+	return wnd->ntvPtr;
+}
+
+PrEventHandler PrWnd_getEventHandler(PrWnd wnd) {
+	return wnd->evtHdr;
+}
+
+void PrWnd_setEventHandler(PrWnd wnd, PrEventHandler evtHdr) {
+	wnd->evtHdr = evtHdr;
+}
+
 static int wndCount;
 static PrEventHandler dftEvtHdr;
 
