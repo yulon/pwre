@@ -2,7 +2,7 @@
 
 #ifdef PWRE_BE_WIN32
 
-#include "prwnd.h"
+#include "uni.h"
 #include <windows.h>
 
 #ifndef PWRE_BE_WIN32_WNDEXTRA

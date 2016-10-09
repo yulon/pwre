@@ -2,7 +2,7 @@
 
 #ifdef PWRE_BE_COCOA
 
-#include "prwnd.h"
+#include "uni.h"
 #import <Cocoa/Cocoa.h>
 
 static NSAutoreleasePool *pool;
