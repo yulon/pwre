@@ -11,14 +11,14 @@ struct PrWnd {
 	size_t titleBufLen;
 };
 
-static void PrWnd__free(PrWnd wnd) {
+static void _PrWnd_free(PrWnd wnd) {
 	if (wnd->titleBuf) {
 		free(wnd->titleBuf);
 	}
 	free(wnd);
 }
 
-static void PrWnd__clearTitleBuf(PrWnd wnd, size_t length) {
+static void _PrWnd_clearTitleBuf(PrWnd wnd, size_t length) {
 	if (length) {
 		length++;
 		if (wnd->titleBuf) {
@@ -38,17 +38,17 @@ static void PrWnd__clearTitleBuf(PrWnd wnd, size_t length) {
 	memset(wnd->titleBuf, 0, wnd->titleBufLen);
 }
 
-static void PrWnd__updateTitleBuf(PrWnd wnd, const char *newTitle) {
+static void _PrWnd_flushTitleBuf(PrWnd wnd, const char *newTitle) {
 	if (!newTitle) {
-		PrWnd__clearTitleBuf(wnd, 0);
+		_PrWnd_clearTitleBuf(wnd, 0);
 		return;
 	}
 	size_t newTitleLen = strlen(newTitle);
 	if (!newTitleLen) {
-		PrWnd__clearTitleBuf(wnd, 0);
+		_PrWnd_clearTitleBuf(wnd, 0);
 		return;
 	}
-	PrWnd__clearTitleBuf(wnd, newTitleLen);
+	_PrWnd_clearTitleBuf(wnd, newTitleLen);
 	strcpy(wnd->titleBuf, newTitle);
 }
 

@@ -82,7 +82,7 @@ static bool handleXEvent(XEvent *event) {
 					return false;
 				}
 				ModMap_delete(wndMap, wnd->ntvPtr);
-				PrWnd__free(wnd);
+				_PrWnd_free(wnd);
 		}
 	}
 	return true;
@@ -154,10 +154,10 @@ const char *PrWnd_getTitle(PrWnd wnd) {
 	unsigned long nitems, after;
 	unsigned char *data;
 	if (Success == XGetWindowProperty(dpy, _XWND, netWmName, 0, LONG_MAX, False, utf8str, &type, &format, &nitems, &after, &data) && data) {
-		PrWnd__updateTitleBuf(wnd, (const char *)data);
+		_PrWnd_flushTitleBuf(wnd, (const char *)data);
 		XFree(data);
 	} else {
-		PrWnd__clearTitleBuf(wnd, 0);
+		_PrWnd_clearTitleBuf(wnd, 0);
 	}
 	return (const char *)wnd->titleBuf;
 }

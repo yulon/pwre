@@ -35,7 +35,7 @@ static LRESULT CALLBACK wndMsgHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 					PostQuitMessage(0);
 					return 0;
 				}
-				PrWnd__free(wnd);
+				_PrWnd_free(wnd);
 		}
 	}
 	return DefWindowProcW(hWnd, uMsg, wParam, lParam);
@@ -140,13 +140,13 @@ const char *PrWnd_getTitle(PrWnd wnd) {
 		GetWindowTextW(_HWND, str16, str16Len);
 
 		int str8Len = WideCharToMultiByte(CP_UTF8, 0, str16, -1, NULL, 0, NULL, NULL);
-		PrWnd__clearTitleBuf(wnd, str8Len);
+		_PrWnd_clearTitleBuf(wnd, str8Len);
 		if (str8Len) {
 			WideCharToMultiByte(CP_UTF8, 0, str16, -1, wnd->titleBuf, str8Len, NULL, NULL);
 		}
 		free(str16);
 	} else {
-		PrWnd__clearTitleBuf(wnd, 0);
+		_PrWnd_clearTitleBuf(wnd, 0);
 	}
 	return (const char *)wnd->titleBuf;
 }
