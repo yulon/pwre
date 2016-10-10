@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-typedef void *ModMap;
+typedef struct ModMap *ModMap;
 
 typedef struct _ModMapKv {
 	void *key;
