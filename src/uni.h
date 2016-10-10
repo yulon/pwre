@@ -1,4 +1,5 @@
 #include "pwre.h"
+#include "iosync.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,12 +10,22 @@ struct PrWnd {
 	int ncWidth, ncHeight;
 	char *titleBuf;
 	size_t titleBufLen;
+	IosyMtx dataMtx;
 };
 
+static PrWnd _new_PrWnd(void) {
+	PrWnd wnd = calloc(1, sizeof(struct PrWnd));
+	wnd->dataMtx = new_IosyMtx();
+	return wnd;
+}
+
 static void _PrWnd_free(PrWnd wnd) {
+	IosyMtx_lock(wnd->dataMtx);
 	if (wnd->titleBuf) {
 		free(wnd->titleBuf);
 	}
+	IosyMtx_unlock(wnd->dataMtx);
+	IosyMtx_free(wnd->dataMtx);
 	free(wnd);
 }
 

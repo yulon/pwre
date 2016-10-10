@@ -128,7 +128,7 @@ PrWnd new_PrWnd(void) {
 	XSelectInput(dpy, xWnd, ExposureMask | KeyPressMask | StructureNotifyMask);
 
 	wndCount++;
-	PrWnd wnd = calloc(1, sizeof(struct PrWnd));
+	PrWnd wnd = _new_PrWnd();
 	wnd->ntvPtr = (void *)xWnd;
 	wnd->evtHdr = dftEvtHdr;
 
@@ -149,6 +149,7 @@ void PrWnd_destroy(PrWnd wnd) {
 }
 
 const char *PrWnd_getTitle(PrWnd wnd) {
+	IosyMtx_lock(wnd->dataMtx);
 	Atom type;
 	int format;
 	unsigned long nitems, after;
@@ -159,6 +160,7 @@ const char *PrWnd_getTitle(PrWnd wnd) {
 	} else {
 		_PrWnd_clearTitleBuf(wnd, 0);
 	}
+	IosyMtx_unlock(wnd->dataMtx);
 	return (const char *)wnd->titleBuf;
 }
 

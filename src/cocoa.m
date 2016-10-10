@@ -32,7 +32,7 @@ PrWnd new_PrWnd(void) {
 	nsWnd.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
 
 	wndCount++;
-	PrWnd wnd = calloc(1, sizeof(struct PrWnd));
+	PrWnd wnd = _new_PrWnd();
 	wnd->ntvPtr = (void *)nsWnd;
 	wnd->evtHdr = dftEvtHdr;
 

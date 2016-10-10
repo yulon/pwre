@@ -111,7 +111,7 @@ PrWnd new_PrWnd(void) {
 	}
 
 	wndCount++;
-	PrWnd wnd = calloc(1, sizeof(struct PrWnd));
+	PrWnd wnd = _new_PrWnd();
 	wnd->ntvPtr = (void *)hWnd;
 	wnd->evtHdr = dftEvtHdr;
 
@@ -133,6 +133,7 @@ void PrWnd_destroy(PrWnd wnd) {
 }
 
 const char *PrWnd_getTitle(PrWnd wnd) {
+	IosyMtx_lock(wnd->dataMtx);
 	int str16Len = GetWindowTextLengthW(_HWND);
 	if (str16Len) {
 		str16Len++;
@@ -148,6 +149,7 @@ const char *PrWnd_getTitle(PrWnd wnd) {
 	} else {
 		_PrWnd_clearTitleBuf(wnd, 0);
 	}
+	IosyMtx_unlock(wnd->dataMtx);
 	return (const char *)wnd->titleBuf;
 }
 
