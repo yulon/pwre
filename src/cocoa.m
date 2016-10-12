@@ -1,6 +1,6 @@
-#include "pdbe.h"
+#include "plat.h"
 
-#ifdef PWRE_BE_COCOA
+#ifdef PWRE_COCOA
 
 #include "uni.h"
 #import <Cocoa/Cocoa.h>
@@ -32,7 +32,7 @@ PrWnd new_PrWnd(void) {
 	nsWnd.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
 
 	wndCount++;
-	PrWnd wnd = _new_PrWnd();
+	PrWnd wnd = _alloc_PrWnd();
 	wnd->ntvPtr = (void *)nsWnd;
 	wnd->evtHdr = dftEvtHdr;
 
@@ -80,14 +80,14 @@ static void visible(PrWnd wnd) {
 
 void PrWnd_view(PrWnd wnd, PrView type) {
 	switch (type) {
-		case PrView_visible:
+		case PrView_Visible:
 			visible(wnd);
 			break;
-		case PrView_minimize:
+		case PrView_Minimize:
 			visible(wnd);
 			[_NSWND miniaturize:_NSWND];
 			break;
-		case PrView_maximize:
+		case PrView_Maximize:
 			visible(wnd);
 			if (!_NSWND.zoomed) {
 				[_NSWND zoom:_NSWND];
@@ -95,7 +95,7 @@ void PrWnd_view(PrWnd wnd, PrView type) {
 				[_NSWND deminiaturize:_NSWND];
 			}
 			break;
-		case PrView_fullscreen:
+		case PrView_Fullscreen:
 			visible(wnd);
 			if (!(_NSWND.styleMask & NSWindowStyleMaskFullScreen)) {
 				[_NSWND toggleFullScreen:_NSWND];
@@ -107,14 +107,14 @@ void PrWnd_view(PrWnd wnd, PrView type) {
 
 void PrWnd_unview(PrWnd wnd, PrView type) {
 	switch (type) {
-		case PrView_visible:
+		case PrView_Visible:
 			[app hide:_NSWND];
 			break;
-		case PrView_minimize:
+		case PrView_Minimize:
 			visible(wnd);
 			[_NSWND deminiaturize:_NSWND];
 			break;
-		case PrView_maximize:
+		case PrView_Maximize:
 			visible(wnd);
 			if (_NSWND.zoomed) {
 				[_NSWND zoom:_NSWND];
@@ -122,7 +122,7 @@ void PrWnd_unview(PrWnd wnd, PrView type) {
 				[_NSWND deminiaturize:_NSWND];
 			}
 			break;
-		case PrView_fullscreen:
+		case PrView_Fullscreen:
 			visible(wnd);
 			if (_NSWND.styleMask & NSWindowStyleMaskFullScreen) {
 				[_NSWND toggleFullScreen:_NSWND];
@@ -134,17 +134,17 @@ void PrWnd_unview(PrWnd wnd, PrView type) {
 
 bool PrWnd_viewed(PrWnd wnd, PrView type) {
 	switch (type) {
-		case PrView_visible:
+		case PrView_Visible:
 			return _NSWND.visible;
-		case PrView_minimize:
+		case PrView_Minimize:
 			return _NSWND.miniaturized;
-		case PrView_maximize:
+		case PrView_Maximize:
 			return _NSWND.zoomed;
-		case PrView_fullscreen:
+		case PrView_Fullscreen:
 			return _NSWND.styleMask & NSWindowStyleMaskFullScreen;
 	}
 	return false;
 }
 
 #undef _NSWND
-#endif // PWRE_BE_COCOA
+#endif // PWRE_COCOA

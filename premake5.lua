@@ -65,10 +65,10 @@ workspace "Pwre"
 	platforms {"native", "x64", "x32"}
 
 	project "pwre"
+		kind "StaticLib"
 		language "C"
 		includedirs { "src", "include" }
 		files { "src/*.c", "src/*.h", "include/*.h" }
-		kind "StaticLib"
 		targetdir("lib")
 
 		configuration {"windows", "gmake" }
@@ -88,6 +88,7 @@ workspace "Pwre"
 			optimize "Speed"
 
 	project "demo_blank"
+		kind "ConsoleApp"
 		language "C"
 		includedirs { "include" }
 		libdirs { "lib" }
@@ -96,7 +97,6 @@ workspace "Pwre"
 		links { "pwre" }
 
 		configuration "windows"
-			kind "WindowedApp"
 			links { "user32" }
 
 		configuration "macosx"
@@ -104,8 +104,36 @@ workspace "Pwre"
 			linkoptions { "-framework Cocoa" }
 
 		configuration "linux"
+			links { "X11", "GL" }
+
+		configuration "Debug"
+			defines { "DEBUG" }
+			symbols "On"
+			warnings "Extra"
+
+		configuration "Release"
+			defines { "NDEBUG" }
+			optimize "Speed"
+
+	project "demo_gl"
+		language "C"
+		includedirs { "include" }
+		libdirs { "lib" }
+		files { "demo/gl.c" }
+		targetdir("bin")
+		links { "pwre" }
+
+		configuration "windows"
+			kind "WindowedApp"
+			links { "user32", "gdi32", "opengl32" }
+
+		configuration "macosx"
+			kind "WindowedApp"
+			linkoptions { "-framework Cocoa", "-framework OpenGL" }
+
+		configuration "linux"
 			kind "ConsoleApp"
-			links { "X11" }
+			links { "X11", "GL" }
 
 		configuration "Debug"
 			defines { "DEBUG" }

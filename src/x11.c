@@ -1,17 +1,20 @@
-#include "pdbe.h"
+#include "plat.h"
 
-#ifdef PWRE_BE_X11
+#ifdef PWRE_X11
 
+#include "x11.h"
 #include "uni.h"
+#include "titlebuf.h"
+
 #include "modmap.h"
 #include <limits.h>
-#include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
 static ModMap wndMap;
+static Mutex wndMapMux;
 
-static Display *dpy;
-static Window root;
+Display *_pwre_x11_dpy;
+Window _pwre_x11_root;
 
 Atom netWmName;
 Atom utf8str;
@@ -46,43 +49,81 @@ bool pwreInit(PrEventHandler evtHdr) {
 	netWmStateMaxHorz = XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
 	netWmStateFullscreen = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
 
+	wndCountMux = new_Mutex();
 	dftEvtHdr = evtHdr;
 	wndMap = new_ModMap(256);
+	wndMapMux = new_Mutex();
 	return true;
+}
+
+static void _PrWnd_free(PrWnd wnd) {
+	if (wnd->onFree) {
+		wnd->onFree(wnd);
+	}
+	Mutex_lock(wnd->dataMux);
+	if (wnd->titleBuf) {
+		free(wnd->titleBuf);
+	}
+	Mutex_unlock(wnd->dataMux);
+	Mutex_free(wnd->dataMux);
+	free(wnd);
 }
 
 static bool handleXEvent(XEvent *event) {
 	XNextEvent(dpy, event);
-	_EVT_VARS((PrWnd)ModMap_get(wndMap, ((XAnyEvent *)event)->window))
+
+	Mutex_lock(wndMapMux);
+	eventTarget((PrWnd)ModMap_get(wndMap, ((XAnyEvent *)event)->window))
+	Mutex_unlock(wndMapMux);
 	if (wnd) {
 		switch (((XAnyEvent *)event)->type) {
 			case ConfigureNotify:
-				_EVT_POST(
+				eventPost(
+					PrSize size;
 					size.width = ((XConfigureEvent *)event)->width;
 					size.height = ((XConfigureEvent *)event)->height;
 					,
-					PrEvent_size, (void *)&size)
+					PrEvent_Size, (void *)&size)
 				break;
 			case Expose:
-				_EVT_POST(, PrEvent_paint, NULL)
+				eventPost(, PrEvent_Paint, NULL)
 				break;
 			case ClientMessage:
 				if (((XClientMessageEvent *)event)->message_type == wmProtocols && (Atom)((XClientMessageEvent *)event)->data.l[0] == wmDelWnd) {
-					_EVT_SEND(, PrEvent_close, NULL,
+					eventSend(, PrEvent_Close, NULL,
 						return true;
 					)
+
 					XDestroyWindow(dpy, ((XAnyEvent *)event)->window);
+					while (handleXEvent(event)) {
+						if (
+							((XAnyEvent *)event)->window == wnd->xWnd &&
+							((XAnyEvent *)event)->type == DestroyNotify
+						) {
+							return true;
+						}
+					}
+					return false;
 				}
 				break;
 			case DestroyNotify:
-				_EVT_POST(, PrEvent_destroy, NULL)
+				eventPost(, PrEvent_Destroy, NULL)
+
+				Mutex_lock(wndMapMux);
+				ModMap_delete(wndMap, wnd->xWnd);
+				Mutex_unlock(wndMapMux);
+
+				Mutex_lock(wndCountMux);
 				wndCount--;
+				_PrWnd_free(wnd);
 				if (!wndCount) {
+					Mutex_unlock(wndCountMux);
+					Mutex_free(wndCountMux);
+					Mutex_free(wndMapMux);
 					XCloseDisplay(dpy);
 					return false;
 				}
-				ModMap_delete(wndMap, wnd->ntvPtr);
-				_PrWnd_free(wnd);
+				Mutex_unlock(wndCountMux);
 		}
 	}
 	return true;
@@ -101,23 +142,35 @@ void pwreRun(void) {
 	while (handleXEvent(&event));
 }
 
-PrWnd new_PrWnd(void) {
-	XSetWindowAttributes attr;
-	memset(&attr, 0, sizeof(XSetWindowAttributes));
-	attr.background_pixel = XWhitePixel(dpy, 0);
+static void fixPos(int *x, int *y, int width, int height) {
+	if (*x == PrPos_ScreenCenter) {
+		*x = (DisplayWidth(dpy, 0) - width) / 2;
+	}
+	if (*y == PrPos_ScreenCenter) {
+		*y = (DisplayHeight(dpy, 0) - height) / 2;
+	}
+}
+
+PrWnd _alloc_PrWnd(
+	size_t size,
+	int x, int y, int width, int height,
+	int depth, Visual *visual, unsigned long valuemask, XSetWindowAttributes *swa
+) {
+	fixPos(&x, &y, width, height);
+
 	Window xWnd = XCreateWindow(
 		dpy,
 		root,
+		x,
+		y,
+		width,
+		height,
 		0,
-		0,
-		10,
-		10,
-		0,
-		XDefaultDepth(dpy, 0),
+		depth,
 		InputOutput,
-		XDefaultVisual(dpy, 0),
-		CWBackPixel,
-		&attr
+		visual,
+		valuemask,
+		swa
 	);
 	if (!xWnd) {
 		puts("Pwre: X11.XCreateSimpleWindow error!");
@@ -125,56 +178,70 @@ PrWnd new_PrWnd(void) {
 	}
 
 	XSetWMProtocols(dpy, xWnd, &wmDelWnd, 1);
-	XSelectInput(dpy, xWnd, ExposureMask | KeyPressMask | StructureNotifyMask);
 
-	wndCount++;
-	PrWnd wnd = _new_PrWnd();
-	wnd->ntvPtr = (void *)xWnd;
+	Mutex_lock(wndCountMux); wndCount++; Mutex_unlock(wndCountMux);
+
+	PrWnd wnd = calloc(1, size);
+	wnd->xWnd = xWnd;
 	wnd->evtHdr = dftEvtHdr;
 
- 	ModMap_set(wndMap, xWnd, wnd);
+ 	Mutex_lock(wndMapMux);
+	ModMap_set(wndMap, xWnd, wnd);
+	Mutex_unlock(wndMapMux);
 	return wnd;
 }
 
-#define _XWND (Window)wnd->ntvPtr
+PrWnd new_PrWnd(int x, int y, int width, int height) {
+	XSetWindowAttributes swa;
+	swa.event_mask = ExposureMask | KeyPressMask | StructureNotifyMask;
+	return _alloc_PrWnd(
+		sizeof(struct PrWnd),
+		x, y, width, height,
+		XDefaultDepth(dpy, 0), XDefaultVisual(dpy, 0), CWEventMask, &swa
+	);
+}
 
 void PrWnd_close(PrWnd wnd) {
-	if (wnd->evtHdr && !wnd->evtHdr(wnd, PrEvent_close, NULL)) {
-		XDestroyWindow(dpy, _XWND);
+	if (wnd->evtHdr && !wnd->evtHdr(wnd, PrEvent_Close, NULL)) {
+		XDestroyWindow(dpy, wnd->xWnd);
 	}
 }
 
 void PrWnd_destroy(PrWnd wnd) {
-	XDestroyWindow(dpy, _XWND);
+	XDestroyWindow(dpy, wnd->xWnd);
 }
 
 const char *PrWnd_getTitle(PrWnd wnd) {
-	IosyMtx_lock(wnd->dataMtx);
+	Mutex_lock(wnd->dataMux);
 	Atom type;
 	int format;
 	unsigned long nitems, after;
 	unsigned char *data;
-	if (Success == XGetWindowProperty(dpy, _XWND, netWmName, 0, LONG_MAX, False, utf8str, &type, &format, &nitems, &after, &data) && data) {
+	if (Success == XGetWindowProperty(dpy, wnd->xWnd, netWmName, 0, LONG_MAX, False, utf8str, &type, &format, &nitems, &after, &data) && data) {
 		_PrWnd_flushTitleBuf(wnd, (const char *)data);
 		XFree(data);
 	} else {
 		_PrWnd_clearTitleBuf(wnd, 0);
 	}
-	IosyMtx_unlock(wnd->dataMtx);
+	Mutex_unlock(wnd->dataMux);
 	return (const char *)wnd->titleBuf;
 }
 
 void PrWnd_setTitle(PrWnd wnd, const char *title) {
-	XChangeProperty(dpy, _XWND, netWmName, utf8str, 8, PropModeReplace, (const unsigned char *)title, strlen(title));
+	XChangeProperty(dpy, wnd->xWnd, netWmName, utf8str, 8, PropModeReplace, (const unsigned char *)title, strlen(title));
 }
 
 void PrWnd_move(PrWnd wnd, int x, int y) {
-	int err = XMoveWindow(dpy, _XWND, x, y);
+	XWindowAttributes attrs;
+	XGetWindowAttributes(dpy, wnd->xWnd, &attrs);
+	fixPos(&x, &y, attrs.width, attrs.height);
+
+	int err = XMoveWindow(dpy, wnd->xWnd, x, y);
 	if (err != BadValue && err != BadWindow && err != BadMatch) {
 		XEvent event;
 		while (handleXEvent(&event)) {
 			if (
-				((XAnyEvent *)&event)->window == _XWND &&
+				((XAnyEvent *)&event)->window == wnd->xWnd &&
 				((XAnyEvent *)&event)->type == ConfigureNotify &&
 				(
 					((XConfigureEvent *)&event)->x != 0 ||
@@ -187,15 +254,9 @@ void PrWnd_move(PrWnd wnd, int x, int y) {
 	}
 }
 
-void PrWnd_moveToScreenCenter(PrWnd wnd) {
-	int width, height;
-	PrWnd_size(wnd, &width, &height);
-	PrWnd_move(wnd, (DisplayWidth(dpy, 0) - width) / 2, (DisplayHeight(dpy, 0) - height) / 2);
-}
-
 void PrWnd_size(PrWnd wnd, int *width, int *height) {
 	XWindowAttributes attrs;
-	XGetWindowAttributes(dpy, _XWND, &attrs);
+	XGetWindowAttributes(dpy, wnd->xWnd, &attrs);
 	if (width) {
 		*width = attrs.width;
 	}
@@ -205,12 +266,12 @@ void PrWnd_size(PrWnd wnd, int *width, int *height) {
 }
 
 void PrWnd_resize(PrWnd wnd, int width, int height) {
-	int err = XResizeWindow(dpy, _XWND, width, height);
+	int err = XResizeWindow(dpy, wnd->xWnd, width, height);
 	if (err != BadValue && err != BadWindow) {
 		XEvent event;
 		while (handleXEvent(&event)) {
 			if (
-				((XAnyEvent *)&event)->window == _XWND &&
+				((XAnyEvent *)&event)->window == wnd->xWnd &&
 				((XAnyEvent *)&event)->type == ConfigureNotify &&
 				((XConfigureEvent *)&event)->width == width &&
 				((XConfigureEvent *)&event)->height == height
@@ -223,12 +284,12 @@ void PrWnd_resize(PrWnd wnd, int width, int height) {
 
 static void visible(PrWnd wnd) {
 	XWindowAttributes attrs;
-	XGetWindowAttributes(dpy, _XWND, &attrs);
+	XGetWindowAttributes(dpy, wnd->xWnd, &attrs);
 	XEvent event;
-	if (attrs.map_state != IsViewable && XMapWindow(dpy, _XWND) != BadWindow && attrs.map_state == IsUnmapped) {
+	if (attrs.map_state != IsViewable && XMapWindow(dpy, wnd->xWnd) != BadWindow && attrs.map_state == IsUnmapped) {
 		while (handleXEvent(&event)) {
 			if (
-				((XAnyEvent *)&event)->window == _XWND &&
+				((XAnyEvent *)&event)->window == wnd->xWnd &&
 				((XAnyEvent *)&event)->type == MapNotify
 			) {
 				break;
@@ -240,18 +301,18 @@ static void visible(PrWnd wnd) {
 void PrWnd_view(PrWnd wnd, PrView type) {
 	XEvent event;
 	switch (type) {
-		case PrView_visible:
+		case PrView_Visible:
 			visible(wnd);
 			break;
-		case PrView_minimize:
+		case PrView_Minimize:
 			visible(wnd);
-			XIconifyWindow(dpy, _XWND, 0);
+			XIconifyWindow(dpy, wnd->xWnd, 0);
 			break;
-		case PrView_maximize:
+		case PrView_Maximize:
 			visible(wnd);
 			memset(&event, 0, sizeof(event));
 			event.type = ClientMessage;
-			event.xclient.window = _XWND;
+			event.xclient.window = wnd->xWnd;
 			event.xclient.message_type = netWmState;
 			event.xclient.format = 32;
 			event.xclient.data.l[0] = netWmStateAdd;
@@ -259,11 +320,11 @@ void PrWnd_view(PrWnd wnd, PrView type) {
 			event.xclient.data.l[2] = netWmStateMaxHorz;
 			XSendEvent(dpy, root, False, StructureNotifyMask, &event);
 			break;
-		case PrView_fullscreen:
+		case PrView_Fullscreen:
 			visible(wnd);
 			memset(&event, 0, sizeof(event));
 			event.type = ClientMessage;
-			event.xclient.window = _XWND;
+			event.xclient.window = wnd->xWnd;
 			event.xclient.message_type = netWmState;
 			event.xclient.format = 32;
 			event.xclient.data.l[0] = netWmStateAdd;
@@ -276,17 +337,17 @@ void PrWnd_view(PrWnd wnd, PrView type) {
 void PrWnd_unview(PrWnd wnd, PrView type) {
 	XEvent event;
 	switch (type) {
-		case PrView_visible:
+		case PrView_Visible:
 			visible(wnd);
 			break;
-		case PrView_minimize:
+		case PrView_Minimize:
 			visible(wnd);
 			break;
-		case PrView_maximize:
+		case PrView_Maximize:
 			visible(wnd);
 			memset(&event, 0, sizeof(event));
 			event.type = ClientMessage;
-			event.xclient.window = _XWND;
+			event.xclient.window = wnd->xWnd;
 			event.xclient.message_type = netWmState;
 			event.xclient.format = 32;
 			event.xclient.data.l[0] = netWmStateRemove;
@@ -294,11 +355,11 @@ void PrWnd_unview(PrWnd wnd, PrView type) {
 			event.xclient.data.l[2] = netWmStateMaxHorz;
 			XSendEvent(dpy, root, False, StructureNotifyMask, &event);
 			break;
-		case PrView_fullscreen:
+		case PrView_Fullscreen:
 			visible(wnd);
 			memset(&event, 0, sizeof(event));
 			event.type = ClientMessage;
-			event.xclient.window = _XWND;
+			event.xclient.window = wnd->xWnd;
 			event.xclient.message_type = netWmState;
 			event.xclient.format = 32;
 			event.xclient.data.l[0] = netWmStateRemove;
@@ -307,5 +368,4 @@ void PrWnd_unview(PrWnd wnd, PrView type) {
 	}
 }
 
-#undef _XWND
-#endif // PWRE_BE_X11
+#endif // PWRE_X11

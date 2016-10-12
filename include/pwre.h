@@ -15,19 +15,21 @@ typedef struct {
 	int x, y;
 } PrPoint;
 
+#define PrPos_ScreenCenter -10101
+
 typedef struct PrWnd *PrWnd;
 
 typedef enum {
-	PrEvent_close = -1,
-	PrEvent_destroy = -2,
-	PrEvent_size = -10,
-	PrEvent_move = -20,
-	PrEvent_paint = -30,
-	PrEvent_mouseMove = 10,
-	PrEvent_mouseDown = 11,
-	PrEvent_mouseUp = 12,
-	PrEvent_keyDown = 20,
-	PrEvent_keyUp = 21
+	PrEvent_Close = -1,
+	PrEvent_Destroy = -2,
+	PrEvent_Size = -10,
+	PrEvent_Move = -20,
+	PrEvent_Paint = -30,
+	PrEvent_MouseMove = 10,
+	PrEvent_MouseDown = 11,
+	PrEvent_MouseUp = 12,
+	PrEvent_KeyDown = 20,
+	PrEvent_KeyUp = 21
 } PrEvent;
 typedef bool (*PrEventHandler)(PrWnd, PrEvent, void *data);
 
@@ -35,7 +37,7 @@ bool pwreInit(PrEventHandler);
 bool pwreStep(void);
 void pwreRun(void);
 
-PrWnd new_PrWnd(void);
+PrWnd new_PrWnd(int x, int y, int width, int height);
 void PrWnd_close(PrWnd);
 void PrWnd_destroy(PrWnd);
 
@@ -48,20 +50,23 @@ const char *PrWnd_getTitle(PrWnd);
 void PrWnd_setTitle(PrWnd, const char *);
 
 void PrWnd_move(PrWnd, int x, int y);
-void PrWnd_moveToScreenCenter(PrWnd);
 
 void PrWnd_size(PrWnd, int *width, int *height);
 void PrWnd_resize(PrWnd, int width, int height);
 
 typedef enum {
-	PrView_visible = 1,
-	PrView_minimize = 2,
-	PrView_maximize = 3,
-	PrView_fullscreen = 4
+	PrView_Visible = 1,
+	PrView_Minimize = 2,
+	PrView_Maximize = 3,
+	PrView_Fullscreen = 4
 } PrView;
 void PrWnd_view(PrWnd, PrView);
 void PrWnd_unview(PrWnd, PrView);
 bool PrWnd_viewed(PrWnd, PrView);
+
+PrWnd new_PrWnd_with_GL(int x, int y, int width, int height);
+bool PrWnd_GL_makeCurrent(PrWnd);
+void PrWnd_GL_swapBuffers(PrWnd);
 
 #ifdef __cplusplus
 }
