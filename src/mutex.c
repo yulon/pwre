@@ -1,11 +1,13 @@
+#include "mutex.h"
+#include <stdlib.h>
+
 #if defined(_WIN32)
 	#include <windows.h>
-#elif defined(__unix__)
+#elif defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 	#include <pthread.h>
-	#include <stdlib.h>
+#else
+	#pragma message("Mutex: not support this OS!")
 #endif
-
-#include "mutex.h"
 
 Mutex new_Mutex(void) {
 	#if defined(_WIN32)
