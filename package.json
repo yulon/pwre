@@ -1,7 +1,10 @@
 {
 	"name": "pwre",
-	"version": "0.0.1",
+	"version": "16.10.14",
 	"repo": "yulon/pwre",
+	"description": "A multi-platform window library, support OpenGL.",
+	"license": "MIT",
+	"keywords": ["window", "gl"],
 	"dependencies": {
 		"yulon/zk": "*"
 	},
