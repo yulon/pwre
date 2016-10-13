@@ -1,9 +1,9 @@
+#include "pwre.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <pwre.h>
 #include <windows.h>
-#include "mutex.h"
+#include <zk/mux.h>
 
 struct PrWnd {
 	HWND hWnd;
@@ -11,7 +11,7 @@ struct PrWnd {
 	int ncWidth, ncHeight;
 	char *titleBuf;
 	size_t titleBufLen;
-	Mutex dataMux;
+	ZKMux dataMux;
 	void (*onFree)(PrWnd);
 };
 

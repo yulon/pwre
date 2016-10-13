@@ -1,5 +1,6 @@
 -I./include
 -I./src
+-I./deps
 -DPWRE_WIN32
 -DPWRE_X11
 -DPWRE_COCOA

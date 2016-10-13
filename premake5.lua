@@ -65,11 +65,11 @@ workspace "Pwre"
 	platforms {"native", "x64", "x32"}
 
 	project "pwre"
-		kind "StaticLib"
 		language "C"
-		includedirs { "src", "include" }
-		files { "src/*.c", "src/*.h", "include/*.h" }
+		kind "StaticLib"
 		targetdir("lib")
+		files { "src/*.c", "src/*.h", "include/*.h" }
+		includedirs { "include", "deps" }
 
 		configuration {"windows", "gmake" }
 			targetprefix "lib"
@@ -88,12 +88,12 @@ workspace "Pwre"
 			optimize "Speed"
 
 	project "demo_blank"
-		kind "ConsoleApp"
 		language "C"
+		kind "ConsoleApp"
+		targetdir("bin")
+		files { "demo/blank.c" }
 		includedirs { "include" }
 		libdirs { "lib" }
-		files { "demo/blank.c" }
-		targetdir("bin")
 		links { "pwre" }
 
 		configuration "windows"
@@ -116,10 +116,10 @@ workspace "Pwre"
 
 	project "demo_gl"
 		language "C"
+		targetdir("bin")
+		files { "demo/gl.c" }
 		includedirs { "include" }
 		libdirs { "lib" }
-		files { "demo/gl.c" }
-		targetdir("bin")
 		links { "pwre" }
 
 		configuration "windows"

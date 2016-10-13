@@ -2,16 +2,20 @@
 
 #ifdef PWRE_X11
 
+#define ZK_SCOPE pwre
+#define ZK_IMPL
+
 #include "x11.h"
 #include "uni.h"
 #include "titlebuf.h"
 
-#include "modmap.h"
 #include <limits.h>
 #include <X11/Xutil.h>
 
-static ModMap wndMap;
-static Mutex wndMapMux;
+#include <zk/map.h>
+
+static ZKMap wndMap;
+static ZKMux wndMapMux;
 
 Display *_pwre_x11_dpy;
 Window _pwre_x11_root;
@@ -49,10 +53,10 @@ bool pwreInit(PrEventHandler evtHdr) {
 	netWmStateMaxHorz = XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
 	netWmStateFullscreen = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
 
-	wndCountMux = new_Mutex();
+	wndCountMux = new_ZKMux();
 	dftEvtHdr = evtHdr;
-	wndMap = new_ModMap(256);
-	wndMapMux = new_Mutex();
+	wndMap = new_ZKMap(256);
+	wndMapMux = new_ZKMux();
 	return true;
 }
 
@@ -60,21 +64,21 @@ static void _PrWnd_free(PrWnd wnd) {
 	if (wnd->onFree) {
 		wnd->onFree(wnd);
 	}
-	Mutex_lock(wnd->dataMux);
+	ZKMux_lock(wnd->dataMux);
 	if (wnd->titleBuf) {
 		free(wnd->titleBuf);
 	}
-	Mutex_unlock(wnd->dataMux);
-	Mutex_free(wnd->dataMux);
+	ZKMux_unlock(wnd->dataMux);
+	ZKMux_free(wnd->dataMux);
 	free(wnd);
 }
 
 static bool handleXEvent(XEvent *event) {
 	XNextEvent(dpy, event);
 
-	Mutex_lock(wndMapMux);
-	eventTarget((PrWnd)ModMap_get(wndMap, ((XAnyEvent *)event)->window))
-	Mutex_unlock(wndMapMux);
+	ZKMux_lock(wndMapMux);
+	eventTarget((PrWnd)ZKMap_get(wndMap, ((XAnyEvent *)event)->window))
+	ZKMux_unlock(wndMapMux);
 	if (wnd) {
 		switch (((XAnyEvent *)event)->type) {
 			case ConfigureNotify:
@@ -109,21 +113,21 @@ static bool handleXEvent(XEvent *event) {
 			case DestroyNotify:
 				eventPost(, PrEvent_Destroy, NULL)
 
-				Mutex_lock(wndMapMux);
-				ModMap_delete(wndMap, wnd->xWnd);
-				Mutex_unlock(wndMapMux);
+				ZKMux_lock(wndMapMux);
+				ZKMap_delete(wndMap, wnd->xWnd);
+				ZKMux_unlock(wndMapMux);
 
-				Mutex_lock(wndCountMux);
+				ZKMux_lock(wndCountMux);
 				wndCount--;
 				_PrWnd_free(wnd);
 				if (!wndCount) {
-					Mutex_unlock(wndCountMux);
-					Mutex_free(wndCountMux);
-					Mutex_free(wndMapMux);
+					ZKMux_unlock(wndCountMux);
+					ZKMux_free(wndCountMux);
+					ZKMux_free(wndMapMux);
 					XCloseDisplay(dpy);
 					return false;
 				}
-				Mutex_unlock(wndCountMux);
+				ZKMux_unlock(wndCountMux);
 		}
 	}
 	return true;
@@ -181,15 +185,15 @@ PrWnd _alloc_PrWnd(
 
 	XSetWMProtocols(dpy, xWnd, &wmDelWnd, 1);
 
-	Mutex_lock(wndCountMux); wndCount++; Mutex_unlock(wndCountMux);
+	ZKMux_lock(wndCountMux); wndCount++; ZKMux_unlock(wndCountMux);
 
 	PrWnd wnd = calloc(1, size);
 	wnd->xWnd = xWnd;
 	wnd->evtHdr = dftEvtHdr;
 
- 	Mutex_lock(wndMapMux);
-	ModMap_set(wndMap, xWnd, wnd);
-	Mutex_unlock(wndMapMux);
+ 	ZKMux_lock(wndMapMux);
+	ZKMap_set(wndMap, xWnd, wnd);
+	ZKMux_unlock(wndMapMux);
 	return wnd;
 }
 
@@ -214,7 +218,7 @@ void PrWnd_destroy(PrWnd wnd) {
 }
 
 const char *PrWnd_getTitle(PrWnd wnd) {
-	Mutex_lock(wnd->dataMux);
+	ZKMux_lock(wnd->dataMux);
 	Atom type;
 	int format;
 	unsigned long nitems, after;
@@ -225,7 +229,7 @@ const char *PrWnd_getTitle(PrWnd wnd) {
 	} else {
 		_PrWnd_clearTitleBuf(wnd, 0);
 	}
-	Mutex_unlock(wnd->dataMux);
+	ZKMux_unlock(wnd->dataMux);
 	return (const char *)wnd->titleBuf;
 }
 

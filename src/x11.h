@@ -1,16 +1,16 @@
+#include "pwre.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <pwre.h>
 #include <X11/Xlib.h>
-#include "mutex.h"
+#include <zk/mux.h>
 
 struct PrWnd {
 	Window xWnd;
 	PrEventHandler evtHdr;
 	char *titleBuf;
 	size_t titleBufLen;
-	Mutex dataMux;
+	ZKMux dataMux;
 	void (*onFree)(PrWnd);
 };
 

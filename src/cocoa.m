@@ -2,6 +2,9 @@
 
 #ifdef PWRE_COCOA
 
+#define ZK_SCOPE pwre
+#define ZK_IMPL
+
 #include "cocoa.h"
 #include "uni.h"
 

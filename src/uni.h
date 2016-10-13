@@ -10,9 +10,9 @@ void PrWnd_setEventHandler(PrWnd wnd, PrEventHandler evtHdr) {
 
 static int wndCount;
 
-#include "mutex.h"
+#include <zk/mux.h>
 
-static Mutex wndCountMux;
+static ZKMux wndCountMux;
 
 static PrEventHandler dftEvtHdr;
 

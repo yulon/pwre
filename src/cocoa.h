@@ -1,7 +1,7 @@
+#include "pwre.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <pwre.h>
 #import <Cocoa/Cocoa.h>
 
 struct PrWnd {

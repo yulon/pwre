@@ -2,13 +2,8 @@
 
 #ifdef PWRE_WIN32
 
-#ifndef PWRE_WIN32_WNDEXTRA
-#define PWRE_WIN32_WNDEXTRA 10
-#endif
-
-#ifndef PWRE_WIN32_WNDEXTRA_I
-#define PWRE_WIN32_WNDEXTRA_I 6
-#endif
+#define ZK_SCOPE pwre
+#define ZK_IMPL
 
 #include "win32.h"
 #include "uni.h"
@@ -18,14 +13,22 @@ static void _PrWnd_free(PrWnd wnd) {
 	if (wnd->onFree) {
 		wnd->onFree(wnd);
 	}
-	Mutex_lock(wnd->dataMux);
+	ZKMux_lock(wnd->dataMux);
 	if (wnd->titleBuf) {
 		free(wnd->titleBuf);
 	}
-	Mutex_unlock(wnd->dataMux);
-	Mutex_free(wnd->dataMux);
+	ZKMux_unlock(wnd->dataMux);
+	ZKMux_free(wnd->dataMux);
 	free(wnd);
 }
+
+#ifndef PWRE_WIN32_WNDEXTRA
+#define PWRE_WIN32_WNDEXTRA 10
+#endif
+
+#ifndef PWRE_WIN32_WNDEXTRA_I
+#define PWRE_WIN32_WNDEXTRA_I 6
+#endif
 
 static LRESULT CALLBACK wndMsgHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	eventTarget((PrWnd)GetWindowLongPtrW(hWnd, PWRE_WIN32_WNDEXTRA_I))
@@ -45,16 +48,16 @@ static LRESULT CALLBACK wndMsgHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 
 				eventPost(, PrEvent_Destroy, NULL)
 
-				Mutex_lock(wndCountMux);
+				ZKMux_lock(wndCountMux);
 				wndCount--;
 				_PrWnd_free(wnd);
 				if (!wndCount) {
-					Mutex_unlock(wndCountMux);
-					Mutex_free(wndCountMux);
+					ZKMux_unlock(wndCountMux);
+					ZKMux_free(wndCountMux);
 					PostQuitMessage(0);
 					return 0;
 				}
-				Mutex_unlock(wndCountMux);
+				ZKMux_unlock(wndCountMux);
 		}
 	}
 	return DefWindowProcW(hWnd, uMsg, wParam, lParam);
@@ -82,7 +85,7 @@ bool pwreInit(PrEventHandler evtHdr) {
 		return false;
 	}
 
-	wndCountMux = new_Mutex();
+	wndCountMux = new_ZKMux();
 	dftEvtHdr = evtHdr;
 	return true;
 }
@@ -140,10 +143,10 @@ PrWnd _alloc_PrWnd(size_t size, int x, int y, int width, int height) {
 		return 0;
 	}
 
-	Mutex_lock(wndCountMux); wndCount++; Mutex_unlock(wndCountMux);
+	ZKMux_lock(wndCountMux); wndCount++; ZKMux_unlock(wndCountMux);
 
 	PrWnd wnd = calloc(1, size);
-	wnd->dataMux = new_Mutex();
+	wnd->dataMux = new_ZKMux();
 
 	wnd->hWnd = hWnd;
 	wnd->evtHdr = dftEvtHdr;
@@ -172,7 +175,7 @@ void PrWnd_destroy(PrWnd wnd) {
 }
 
 const char *PrWnd_getTitle(PrWnd wnd) {
-	Mutex_lock(wnd->dataMux);
+	ZKMux_lock(wnd->dataMux);
 	int str16Len = GetWindowTextLengthW(wnd->hWnd);
 	if (str16Len) {
 		str16Len++;
@@ -188,7 +191,7 @@ const char *PrWnd_getTitle(PrWnd wnd) {
 	} else {
 		_PrWnd_clearTitleBuf(wnd, 0);
 	}
-	Mutex_unlock(wnd->dataMux);
+	ZKMux_unlock(wnd->dataMux);
 	return (const char *)wnd->titleBuf;
 }
 
