@@ -1,9 +1,9 @@
 {
 	"name": "pwre",
-	"version": "16.10.14",
+	"version": "0.0.1",
 	"repo": "yulon/pwre",
 	"dependencies": {
 		"yulon/zk": "*"
 	},
-	"install": "premake5 gmake && cd ./build && make && cd .. && premake5 install"
+	"install": "premake5 gmake && cd ./build && make config=release_native && cd .. && premake5 install"
 }
