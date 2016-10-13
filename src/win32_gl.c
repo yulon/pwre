@@ -64,8 +64,8 @@ PrWnd new_PrWnd_with_GL(int x, int y, int width, int height) {
 	return (PrWnd)glWnd;
 }
 
-bool PrWnd_GL_makeCurrent(PrWnd wnd) {
-	return wglMakeCurrent(((PrWnd_GL)wnd)->dc, ((PrWnd_GL)wnd)->rc);
+void PrWnd_GL_makeCurrent(PrWnd wnd) {
+	wglMakeCurrent(((PrWnd_GL)wnd)->dc, ((PrWnd_GL)wnd)->rc);
 }
 
 void PrWnd_GL_swapBuffers(PrWnd wnd) {

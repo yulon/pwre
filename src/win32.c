@@ -89,21 +89,21 @@ bool pwreInit(PrEventHandler evtHdr) {
 
 bool pwreStep(void) {
 	MSG msg;
-	if (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE) > 0) {
+	while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE) > 0) {
 		TranslateMessage(&msg);
 		DispatchMessageW(&msg);
-		return msg.message != WM_QUIT;
+		if (msg.message == WM_QUIT) {
+			return false;
+		}
 	}
 	return true;
 }
 
 void pwreRun(void) {
 	MSG msg = { .message = 0 };
-	while (msg.message != WM_QUIT) {
-		if (GetMessageW(&msg, NULL, 0, 0) > 0) {
-			TranslateMessage(&msg);
-			DispatchMessageW(&msg);
-		}
+	while (msg.message != WM_QUIT && (GetMessageW(&msg, NULL, 0, 0) > 0)) {
+		TranslateMessage(&msg);
+		DispatchMessageW(&msg);
 	}
 }
 

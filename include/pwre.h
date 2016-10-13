@@ -65,7 +65,7 @@ void PrWnd_unview(PrWnd, PrView);
 bool PrWnd_viewed(PrWnd, PrView);
 
 PrWnd new_PrWnd_with_GL(int x, int y, int width, int height);
-bool PrWnd_GL_makeCurrent(PrWnd);
+void PrWnd_GL_makeCurrent(PrWnd);
 void PrWnd_GL_swapBuffers(PrWnd);
 
 #ifdef __cplusplus

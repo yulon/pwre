@@ -100,11 +100,10 @@ workspace "Pwre"
 			links { "user32" }
 
 		configuration "macosx"
-			kind "WindowedApp"
 			linkoptions { "-framework Cocoa" }
 
 		configuration "linux"
-			links { "X11", "GL" }
+			links { "X11" }
 
 		configuration "Debug"
 			defines { "DEBUG" }

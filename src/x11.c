@@ -131,8 +131,10 @@ static bool handleXEvent(XEvent *event) {
 
 bool pwreStep(void) {
 	XEvent event;
-	if (XPending(dpy)) {
-		return handleXEvent(&event);
+	while (XPending(dpy)) {
+		if (!handleXEvent(&event)) {
+			return false;
+		}
 	}
 	return true;
 }

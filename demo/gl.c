@@ -2,7 +2,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <pwre.h>
-#include <GL/gl.h>
+
+#if defined(__APPLE__) && defined(__MACH__)
+	#include <OpenGL/gl.h>
+#else
+	#include <GL/gl.h>
+#endif
 
 int main(void) {
 	pwreInit(NULL);

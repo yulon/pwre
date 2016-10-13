@@ -40,8 +40,8 @@ PrWnd new_PrWnd_with_GL(int x, int y, int width, int height) {
 	return (PrWnd)glWnd;
 }
 
-bool PrWnd_GL_makeCurrent(PrWnd wnd) {
-	return glXMakeCurrent(dpy, wnd->xWnd, ((PrWnd_GL)wnd)->ctx);
+void PrWnd_GL_makeCurrent(PrWnd wnd) {
+	glXMakeCurrent(dpy, wnd->xWnd, ((PrWnd_GL)wnd)->ctx);
 }
 
 void PrWnd_GL_swapBuffers(PrWnd wnd) {
