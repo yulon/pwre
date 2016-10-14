@@ -116,6 +116,7 @@ workspace "Pwre"
 
 	project "demo_gl"
 		language "C"
+		kind "ConsoleApp"
 		targetdir("bin")
 		files { "demo/gl.c" }
 		includedirs { "include" }
@@ -123,16 +124,40 @@ workspace "Pwre"
 		links { "pwre" }
 
 		configuration "windows"
-			kind "WindowedApp"
 			links { "user32", "gdi32", "opengl32" }
 
 		configuration "macosx"
-			kind "WindowedApp"
 			linkoptions { "-framework Cocoa", "-framework OpenGL" }
 
 		configuration "linux"
-			kind "ConsoleApp"
-			links { "X11", "GL" }
+			links { "X11", "GL", "Xrender" }
+
+		configuration "Debug"
+			defines { "DEBUG" }
+			symbols "On"
+			warnings "Extra"
+
+		configuration "Release"
+			defines { "NDEBUG" }
+			optimize "Speed"
+
+	project "demo_gl_alpha"
+		language "C"
+		kind "ConsoleApp"
+		targetdir("bin")
+		files { "demo/gl_alpha.c" }
+		includedirs { "include" }
+		libdirs { "lib" }
+		links { "pwre" }
+
+		configuration "windows"
+			links { "user32", "gdi32", "opengl32" }
+
+		configuration "macosx"
+			linkoptions { "-framework Cocoa", "-framework OpenGL" }
+
+		configuration "linux"
+			links { "X11", "GL", "Xrender" }
 
 		configuration "Debug"
 			defines { "DEBUG" }

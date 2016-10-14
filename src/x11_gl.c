@@ -4,6 +4,7 @@
 
 #include "x11.h"
 #include <GL/glx.h>
+#include <X11/extensions/Xrender.h>
 
 typedef struct PrWnd_GL {
 	struct PrWnd wnd;
@@ -17,22 +18,59 @@ static void _PrWnd_GL_free(PrWnd wnd) {
 	glXDestroyContext(dpy, ((PrWnd_GL)wnd)->ctx);
 }
 
-PrWnd new_PrWnd_with_GL(int x, int y, int width, int height) {
-	GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
-	XVisualInfo *vi = glXChooseVisual(dpy, 0, (int *)&att);
+PrWnd new_PrWnd_with_GL(int x, int y, int width, int height, int flags) {
+	XVisualInfo *vi;
+	GLXFBConfig renderFBConfig;
+
+	if ((flags & PWRE_GL_ALPHA) == PWRE_GL_ALPHA) {
+		int doubleBufferAttributes[] = {
+			GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
+			GLX_RENDER_TYPE,   GLX_RGBA_BIT,
+			GLX_DOUBLEBUFFER,  True,
+			GLX_RED_SIZE,      1,
+			GLX_GREEN_SIZE,    1,
+			GLX_BLUE_SIZE,     1,
+			GLX_ALPHA_SIZE,    1,
+			GLX_DEPTH_SIZE,    1,
+			None
+		};
+		int iNumOfFBConfigs;
+		GLXFBConfig *pFBConfigs = glXChooseFBConfig (dpy, 0, doubleBufferAttributes, &iNumOfFBConfigs);
+		XRenderPictFormat *pPictFormat = NULL;
+		for (size_t i = 0; i < iNumOfFBConfigs; i++) {
+			vi = glXGetVisualFromFBConfig (dpy, pFBConfigs[i]);
+			if (!vi) continue;
+
+			pPictFormat = XRenderFindVisualFormat (dpy, vi->visual);
+			if (!pPictFormat) continue;
+
+			if (pPictFormat->direct.alphaMask > 0) {
+				vi = glXGetVisualFromFBConfig (dpy, pFBConfigs[i]);
+				renderFBConfig = pFBConfigs[i];
+				break;
+			}
+			XFree(vi);
+		}
+	} else {
+		GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
+		vi = glXChooseVisual(dpy, 0, (int *)&att);
+	}
 
 	XSetWindowAttributes swa;
+	swa.background_pixel = 0;
+	swa.border_pixel = 0;
 	swa.colormap = XCreateColormap(dpy, root, vi->visual, AllocNone);
 	swa.event_mask = ExposureMask | KeyPressMask | StructureNotifyMask;
 
 	PrWnd_GL glWnd = (PrWnd_GL)_alloc_PrWnd(
 		sizeof(struct PrWnd),
 		x, y, width, height,
-		vi->depth, vi->visual, CWEventMask | CWColormap, &swa
+		vi->depth, vi->visual, CWBackPixel | CWBorderPixel | CWEventMask | CWColormap, &swa
 	);
 	glWnd->wnd.onFree = _PrWnd_GL_free;
 
 	glWnd->ctx = glXCreateContext(dpy, vi, NULL, GL_TRUE);
+	XFree(vi);
 	if (!glWnd->ctx) {
 		puts("Pwre: X11.glXCreateContext error!");
 		return NULL;

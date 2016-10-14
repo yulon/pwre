@@ -13,22 +13,37 @@ static void _PrWnd_GL_free(PrWnd wnd) {
 	if ([NSOpenGLContext currentContext] == ((PrWnd_GL)wnd)->ctx) {
 		[NSOpenGLContext clearCurrentContext];
 	}
+	[((PrWnd_GL)wnd)->ctx release];
 }
 
-static NSOpenGLPixelFormatAttribute glAttributes[] = {
+static const NSOpenGLPixelFormatAttribute gl2[] = {
 	NSOpenGLPFADoubleBuffer,
-	//NSOpenGLPFAOpenGLProfile,
-	//NSOpenGLProfileVersion3_2Core,
 	0
 };
 
-PrWnd new_PrWnd_with_GL(int x, int y, int width, int height) {
+static const NSOpenGLPixelFormatAttribute gl3[] = {
+	NSOpenGLPFADoubleBuffer,
+	NSOpenGLPFAOpenGLProfile,
+	NSOpenGLProfileVersion3_2Core,
+	0
+};
+
+PrWnd new_PrWnd_with_GL(int x, int y, int width, int height, int flags) {
+	NSOpenGLPixelFormatAttribute glAttr;
+
+	if (flags & PWRE_GL_V3 == PWRE_GL_V3) {
+		glAttr = gl3;
+	} else {
+		glAttr = gl2;
+	}
+
 	PrWnd_GL glWnd = (PrWnd_GL)_alloc_PrWnd(sizeof(struct PrWnd_GL), x, y, width, height);
 	glWnd->wnd.onFree = _PrWnd_GL_free;
 
-	NSOpenGLPixelFormat *pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:glAttributes];
+	NSOpenGLPixelFormat *pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:glAttr];
 	glWnd->ctx = [[NSOpenGLContext alloc] initWithFormat:pixelFormat shareContext:nil];
 	[glWnd->ctx setView:[((PrWnd)glWnd)->nsWnd contentView]];
+	[pixelFormat release];
 
 	return (PrWnd)glWnd;
 }

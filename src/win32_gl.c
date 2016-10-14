@@ -7,6 +7,7 @@
 typedef struct PrWnd_GL {
 	struct PrWnd wnd;
 	HDC dc;
+	HDC mdc;
 	HGLRC rc;
 } *PrWnd_GL;
 
@@ -17,11 +18,17 @@ static void _PrWnd_GL_free(PrWnd wnd) {
 	wglDeleteContext(((PrWnd_GL)wnd)->rc);
 }
 
-PrWnd new_PrWnd_with_GL(int x, int y, int width, int height) {
+PrWnd new_PrWnd_with_GL(int x, int y, int width, int height, int flags) {
 	PrWnd_GL glWnd = (PrWnd_GL)_alloc_PrWnd(sizeof(struct PrWnd_GL), x, y, width, height);
 	glWnd->wnd.onFree = _PrWnd_GL_free;
 
-	PIXELFORMATDESCRIPTOR pfd = {
+	glWnd->dc = GetDC(glWnd->wnd.hWnd);
+	if (!glWnd->dc) {
+		puts("Pwre: Win32.GetDC error!");
+		return NULL;
+	}
+
+	PIXELFORMATDESCRIPTOR pfd = (PIXELFORMATDESCRIPTOR){
 		40,
 		1,
 		PFD_DRAW_TO_WINDOW |
@@ -38,10 +45,21 @@ PrWnd new_PrWnd_with_GL(int x, int y, int width, int height) {
 		0, 0, 0,
 	};
 
-	glWnd->dc = GetDC(glWnd->wnd.hWnd);
-	if (!glWnd->dc) {
-		puts("Pwre: Win32.GetDC error!");
-		return NULL;
+	if ((flags & PWRE_GL_ALPHA) == PWRE_GL_ALPHA) {
+		/*DWM_BLURBEHIND bb = {0};
+		HRGN hRgn = CreateRectRgn(0, 0, -1, -1);
+		bb.dwFlags = DWM_BB_ENABLE | DWM_BB_BLURREGION;
+		bb.hRgnBlur = hRgn;
+		bb.fEnable = TRUE;
+		bb.fTransitionOnMaximized = 1;
+		DwmEnableBlurBehindWindow(glWnd->wnd.hWnd, &bb);
+
+		pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER | PFD_TYPE_RGBA | PFD_SUPPORT_COMPOSITION;
+		*/
+		
+
+	} else {
+		pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
 	}
 
 	int PixelFormat = ChoosePixelFormat(glWnd->dc, &pfd);
@@ -70,6 +88,9 @@ void PrWnd_GL_makeCurrent(PrWnd wnd) {
 
 void PrWnd_GL_swapBuffers(PrWnd wnd) {
 	SwapBuffers(((PrWnd_GL)wnd)->dc);
+	//int w, h;
+	//PrWnd_size(wnd, &w, &h);
+	//BitBlt(((PrWnd_GL)wnd)->dc, 0, 0, w, h, ((PrWnd_GL)wnd)->mdc, 0, 0, SRCCOPY);
 }
 
 #endif // PWRE_WIN32

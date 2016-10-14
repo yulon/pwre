@@ -87,14 +87,14 @@ static bool handleXEvent(XEvent *event) {
 					size.width = ((XConfigureEvent *)event)->width;
 					size.height = ((XConfigureEvent *)event)->height;
 					,
-					PrEvent_Size, (void *)&size)
+					PWRE_EVENT_SIZE, (void *)&size)
 				break;
 			case Expose:
-				eventPost(, PrEvent_Paint, NULL)
+				eventPost(, PWRE_EVENT_PAINT, NULL)
 				break;
 			case ClientMessage:
 				if (((XClientMessageEvent *)event)->message_type == wmProtocols && (Atom)((XClientMessageEvent *)event)->data.l[0] == wmDelWnd) {
-					eventSend(, PrEvent_Close, NULL,
+					eventSend(, PWRE_EVENT_CLOSE, NULL,
 						return true;
 					)
 
@@ -111,7 +111,7 @@ static bool handleXEvent(XEvent *event) {
 				}
 				break;
 			case DestroyNotify:
-				eventPost(, PrEvent_Destroy, NULL)
+				eventPost(, PWRE_EVENT_DESTROY, NULL)
 
 				ZKMux_lock(wndMapMux);
 				ZKMap_delete(wndMap, wnd->xWnd);
@@ -149,10 +149,10 @@ void pwreRun(void) {
 }
 
 static void fixPos(int *x, int *y, int width, int height) {
-	if (*x == PrPos_ScreenCenter) {
+	if (*x == PWRE_POS_AUTO) {
 		*x = (DisplayWidth(dpy, 0) - width) / 2;
 	}
-	if (*y == PrPos_ScreenCenter) {
+	if (*y == PWRE_POS_AUTO) {
 		*y = (DisplayHeight(dpy, 0) - height) / 2;
 	}
 }
@@ -208,7 +208,7 @@ PrWnd new_PrWnd(int x, int y, int width, int height) {
 }
 
 void PrWnd_close(PrWnd wnd) {
-	if (wnd->evtHdr && !wnd->evtHdr(wnd, PrEvent_Close, NULL)) {
+	if (wnd->evtHdr && !wnd->evtHdr(wnd, PWRE_EVENT_CLOSE, NULL)) {
 		XDestroyWindow(dpy, wnd->xWnd);
 	}
 }
@@ -304,17 +304,17 @@ static void visible(PrWnd wnd) {
 	}
 }
 
-void PrWnd_view(PrWnd wnd, PrView type) {
+void PrWnd_view(PrWnd wnd, PWRE_VIEW type) {
 	XEvent event;
 	switch (type) {
-		case PrView_Visible:
+		case PWRE_VIEW_VISIBLE:
 			visible(wnd);
 			break;
-		case PrView_Minimize:
+		case PWRE_VIEW_MINIMIZE:
 			visible(wnd);
 			XIconifyWindow(dpy, wnd->xWnd, 0);
 			break;
-		case PrView_Maximize:
+		case PWRE_VIEW_MAXIMIZE:
 			visible(wnd);
 			memset(&event, 0, sizeof(event));
 			event.type = ClientMessage;
@@ -326,7 +326,7 @@ void PrWnd_view(PrWnd wnd, PrView type) {
 			event.xclient.data.l[2] = netWmStateMaxHorz;
 			XSendEvent(dpy, root, False, StructureNotifyMask, &event);
 			break;
-		case PrView_Fullscreen:
+		case PWRE_VIEW_FULLSCREEN:
 			visible(wnd);
 			memset(&event, 0, sizeof(event));
 			event.type = ClientMessage;
@@ -340,16 +340,16 @@ void PrWnd_view(PrWnd wnd, PrView type) {
 	return;
 }
 
-void PrWnd_unview(PrWnd wnd, PrView type) {
+void PrWnd_unview(PrWnd wnd, PWRE_VIEW type) {
 	XEvent event;
 	switch (type) {
-		case PrView_Visible:
+		case PWRE_VIEW_VISIBLE:
 			visible(wnd);
 			break;
-		case PrView_Minimize:
+		case PWRE_VIEW_MINIMIZE:
 			visible(wnd);
 			break;
-		case PrView_Maximize:
+		case PWRE_VIEW_MAXIMIZE:
 			visible(wnd);
 			memset(&event, 0, sizeof(event));
 			event.type = ClientMessage;
@@ -361,7 +361,7 @@ void PrWnd_unview(PrWnd wnd, PrView type) {
 			event.xclient.data.l[2] = netWmStateMaxHorz;
 			XSendEvent(dpy, root, False, StructureNotifyMask, &event);
 			break;
-		case PrView_Fullscreen:
+		case PWRE_VIEW_FULLSCREEN:
 			visible(wnd);
 			memset(&event, 0, sizeof(event));
 			event.type = ClientMessage;

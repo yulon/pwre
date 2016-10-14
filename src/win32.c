@@ -35,18 +35,18 @@ static LRESULT CALLBACK wndMsgHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 	if (wnd) {
 		switch (uMsg) {
 			case WM_PAINT:
-				eventPost(, PrEvent_Paint, NULL)
+				eventPost(, PWRE_EVENT_PAINT, NULL)
 				ValidateRect(hWnd, NULL);
 				return 0;
 			case WM_CLOSE:
-				eventSend(, PrEvent_Close, NULL,
+				eventSend(, PWRE_EVENT_CLOSE, NULL,
 					return 0;
 				)
 				break;
 			case WM_DESTROY:
 				SetWindowLongPtrW(hWnd, PWRE_WIN32_WNDEXTRA_I, 0);
 
-				eventPost(, PrEvent_Destroy, NULL)
+				eventPost(, PWRE_EVENT_DESTROY, NULL)
 
 				ZKMux_lock(wndCountMux);
 				wndCount--;
@@ -111,10 +111,10 @@ void pwreRun(void) {
 }
 
 static void fixPos(int *x, int *y, int width, int height) {
-	if (*x == PrPos_ScreenCenter) {
+	if (*x == PWRE_POS_AUTO) {
 		*x = (GetSystemMetrics(SM_CXSCREEN) - width) / 2;
 	}
-	if (*y == PrPos_ScreenCenter) {
+	if (*y == PWRE_POS_AUTO) {
 		*y = (GetSystemMetrics(SM_CYSCREEN) - height) / 2;
 	}
 }
@@ -235,41 +235,41 @@ void PrWnd_resize(PrWnd wnd, int width, int height) {
 
 #define _STYLE_HAS(_style) GetWindowLongW(wnd->hWnd, GWL_STYLE) & _style
 
-void PrWnd_view(PrWnd wnd, PrView type) {
+void PrWnd_view(PrWnd wnd, PWRE_VIEW type) {
 	switch (type) {
-		case PrView_Visible:
+		case PWRE_VIEW_VISIBLE:
 			ShowWindow(wnd->hWnd, SW_SHOW);
 			break;
-		case PrView_Minimize:
+		case PWRE_VIEW_MINIMIZE:
 			ShowWindow(wnd->hWnd, SW_MINIMIZE);
 			break;
-		case PrView_Maximize:
+		case PWRE_VIEW_MAXIMIZE:
 			ShowWindow(wnd->hWnd, SW_MAXIMIZE);
 	}
 }
 
-void PrWnd_unview(PrWnd wnd, PrView type) {
+void PrWnd_unview(PrWnd wnd, PWRE_VIEW type) {
 	switch (type) {
-		case PrView_Visible:
+		case PWRE_VIEW_VISIBLE:
 			ShowWindow(wnd->hWnd, SW_HIDE);
 			break;
-		case PrView_Minimize:
+		case PWRE_VIEW_MINIMIZE:
 			if (_STYLE_HAS(WS_MINIMIZE)) {
 				ShowWindow(wnd->hWnd, SW_RESTORE);
 			}
 			break;
-		case PrView_Maximize:
+		case PWRE_VIEW_MAXIMIZE:
 			ShowWindow(wnd->hWnd, SW_SHOWNORMAL);
 	}
 }
 
-bool PrWnd_viewed(PrWnd wnd, PrView type) {
+bool PrWnd_viewed(PrWnd wnd, PWRE_VIEW type) {
 	switch (type) {
-		case PrView_Visible:
+		case PWRE_VIEW_VISIBLE:
 			return _STYLE_HAS(WS_VISIBLE);
-		case PrView_Minimize:
+		case PWRE_VIEW_MINIMIZE:
 			return _STYLE_HAS(WS_MINIMIZE);
-		case PrView_Maximize:
+		case PWRE_VIEW_MAXIMIZE:
 			return _STYLE_HAS(WS_MAXIMIZE);
 	}
 	return 0;

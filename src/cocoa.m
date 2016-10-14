@@ -39,10 +39,10 @@ void pwreRun(void) {
 
 static void fixPos(int *x, int *y, int width, int height) {
 	NSSize scrSize = [[NSScreen mainScreen] frame].size;
-	if (*x == PrPos_ScreenCenter) {
+	if (*x == PWRE_POS_AUTO) {
 		*x = (scrSize.width - width) / 2;
 	}
-	if (*y == PrPos_ScreenCenter) {
+	if (*y == PWRE_POS_AUTO) {
 		*y = (scrSize.height - height) / 2;
 	}
 }
@@ -100,16 +100,16 @@ static void visible(PrWnd wnd) {
 	}
 }
 
-void PrWnd_view(PrWnd wnd, PrView type) {
+void PrWnd_view(PrWnd wnd, PWRE_VIEW type) {
 	switch (type) {
-		case PrView_Visible:
+		case PWRE_VIEW_VISIBLE:
 			visible(wnd);
 			break;
-		case PrView_Minimize:
+		case PWRE_VIEW_MINIMIZE:
 			visible(wnd);
 			[wnd->nsWnd miniaturize:wnd->nsWnd];
 			break;
-		case PrView_Maximize:
+		case PWRE_VIEW_MAXIMIZE:
 			visible(wnd);
 			if (!wnd->nsWnd.zoomed) {
 				[wnd->nsWnd zoom:wnd->nsWnd];
@@ -117,7 +117,7 @@ void PrWnd_view(PrWnd wnd, PrView type) {
 				[wnd->nsWnd deminiaturize:wnd->nsWnd];
 			}
 			break;
-		case PrView_Fullscreen:
+		case PWRE_VIEW_FULLSCREEN:
 			visible(wnd);
 			if (!(wnd->nsWnd.styleMask & NSWindowStyleMaskFullScreen)) {
 				[wnd->nsWnd toggleFullScreen:wnd->nsWnd];
@@ -127,16 +127,16 @@ void PrWnd_view(PrWnd wnd, PrView type) {
 	}
 }
 
-void PrWnd_unview(PrWnd wnd, PrView type) {
+void PrWnd_unview(PrWnd wnd, PWRE_VIEW type) {
 	switch (type) {
-		case PrView_Visible:
+		case PWRE_VIEW_VISIBLE:
 			[NSApp hide:wnd->nsWnd];
 			break;
-		case PrView_Minimize:
+		case PWRE_VIEW_MINIMIZE:
 			visible(wnd);
 			[wnd->nsWnd deminiaturize:wnd->nsWnd];
 			break;
-		case PrView_Maximize:
+		case PWRE_VIEW_MAXIMIZE:
 			visible(wnd);
 			if (wnd->nsWnd.zoomed) {
 				[wnd->nsWnd zoom:wnd->nsWnd];
@@ -144,7 +144,7 @@ void PrWnd_unview(PrWnd wnd, PrView type) {
 				[wnd->nsWnd deminiaturize:wnd->nsWnd];
 			}
 			break;
-		case PrView_Fullscreen:
+		case PWRE_VIEW_FULLSCREEN:
 			visible(wnd);
 			if (wnd->nsWnd.styleMask & NSWindowStyleMaskFullScreen) {
 				[wnd->nsWnd toggleFullScreen:wnd->nsWnd];
@@ -154,15 +154,15 @@ void PrWnd_unview(PrWnd wnd, PrView type) {
 	}
 }
 
-bool PrWnd_viewed(PrWnd wnd, PrView type) {
+bool PrWnd_viewed(PrWnd wnd, PWRE_VIEW type) {
 	switch (type) {
-		case PrView_Visible:
+		case PWRE_VIEW_VISIBLE:
 			return wnd->nsWnd.visible;
-		case PrView_Minimize:
+		case PWRE_VIEW_MINIMIZE:
 			return wnd->nsWnd.miniaturized;
-		case PrView_Maximize:
+		case PWRE_VIEW_MAXIMIZE:
 			return wnd->nsWnd.zoomed;
-		case PrView_Fullscreen:
+		case PWRE_VIEW_FULLSCREEN:
 			return wnd->nsWnd.styleMask & NSWindowStyleMaskFullScreen;
 	}
 	return false;
