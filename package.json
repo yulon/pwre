@@ -5,7 +5,6 @@
 	"description": "A multi-platform window library, support OpenGL.",
 	"license": "MIT",
 	"keywords": ["window", "gl"],
-	"src": ["include/pwre.h"],
 	"dependencies": {
 		"yulon/zk": "*"
 	},
