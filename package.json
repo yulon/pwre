@@ -8,5 +8,5 @@
 	"dependencies": {
 		"yulon/zk": "*"
 	},
-	"install": "premake5 gmake && cd ./build && make config=release_native && cd .. && premake5 install"
+	"install": "premake5 gmake && cd ./build && make pwre config=release_native && cd .. && premake5 install"
 }
