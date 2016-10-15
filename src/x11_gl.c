@@ -18,42 +18,44 @@ static void _PrWnd_GL_free(PrWnd wnd) {
 	glXDestroyContext(dpy, ((PrWnd_GL)wnd)->ctx);
 }
 
+const GLint glAttr[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
+
+const int glAlphaAttr[] = {
+	GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
+	GLX_RENDER_TYPE, GLX_RGBA_BIT,
+	GLX_DOUBLEBUFFER, True,
+	GLX_RED_SIZE, 1,
+	GLX_GREEN_SIZE, 1,
+	GLX_BLUE_SIZE, 1,
+	GLX_ALPHA_SIZE, 1,
+	GLX_DEPTH_SIZE, 1,
+	None
+};
+
 PrWnd new_PrWnd_with_GL(int x, int y, int width, int height, int flags) {
 	XVisualInfo *vi;
-	GLXFBConfig renderFBConfig;
 
 	if ((flags & PWRE_GL_ALPHA) == PWRE_GL_ALPHA) {
-		int doubleBufferAttributes[] = {
-			GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
-			GLX_RENDER_TYPE,   GLX_RGBA_BIT,
-			GLX_DOUBLEBUFFER,  True,
-			GLX_RED_SIZE,      1,
-			GLX_GREEN_SIZE,    1,
-			GLX_BLUE_SIZE,     1,
-			GLX_ALPHA_SIZE,    1,
-			GLX_DEPTH_SIZE,    1,
-			None
-		};
 		int iNumOfFBConfigs;
-		GLXFBConfig *pFBConfigs = glXChooseFBConfig (dpy, 0, doubleBufferAttributes, &iNumOfFBConfigs);
+		GLXFBConfig *pFBConfigs = glXChooseFBConfig(dpy, 0, glAlphaAttr, &iNumOfFBConfigs);
 		XRenderPictFormat *pPictFormat = NULL;
-		for (size_t i = 0; i < iNumOfFBConfigs; i++) {
+		for (int i = 0; i < iNumOfFBConfigs; i++) {
 			vi = glXGetVisualFromFBConfig (dpy, pFBConfigs[i]);
-			if (!vi) continue;
-
+			if (!vi) {
+				continue;
+			}
 			pPictFormat = XRenderFindVisualFormat (dpy, vi->visual);
-			if (!pPictFormat) continue;
-
+			if (!pPictFormat) {
+				continue;
+			}
 			if (pPictFormat->direct.alphaMask > 0) {
 				vi = glXGetVisualFromFBConfig (dpy, pFBConfigs[i]);
-				renderFBConfig = pFBConfigs[i];
 				break;
 			}
 			XFree(vi);
 		}
 	} else {
-		GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
-		vi = glXChooseVisual(dpy, 0, (int *)&att);
+		vi = glXChooseVisual(dpy, 0, (int *)&glAttr);
 	}
 
 	XSetWindowAttributes swa;
