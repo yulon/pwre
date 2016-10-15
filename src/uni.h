@@ -1,10 +1,10 @@
 // need {plat}.h
 
-PrEventHandler PrWnd_getEventHandler(PrWnd wnd) {
+PrEventHandler PrWnd_GetEventHandler(PrWnd wnd) {
 	return wnd->evtHdr;
 }
 
-void PrWnd_setEventHandler(PrWnd wnd, PrEventHandler evtHdr) {
+void PrWnd_SetEventHandler(PrWnd wnd, PrEventHandler evtHdr) {
 	wnd->evtHdr = evtHdr;
 }
 

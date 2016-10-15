@@ -12,7 +12,7 @@ static NSAutoreleasePool *pool;
 static NSUInteger uiStyle;
 static NSBackingStoreType backingStoreStyle;
 
-bool pwreInit(PrEventHandler evtHdr) {
+bool pwre_init(PrEventHandler evtHdr) {
 	pool = [[NSAutoreleasePool alloc] init];
 	uiStyle = NSWindowStyleMaskTitled | NSWindowStyleMaskMiniaturizable| NSWindowStyleMaskResizable | NSWindowStyleMaskClosable;
 	backingStoreStyle = NSBackingStoreBuffered;
@@ -21,7 +21,7 @@ bool pwreInit(PrEventHandler evtHdr) {
 	return true;
 }
 
-bool pwreStep(void) {
+bool pwre_step(void) {
 	for (;;) {
 		NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:0 inMode:NSDefaultRunLoopMode dequeue:YES];
 		if (!event) {
@@ -32,7 +32,7 @@ bool pwreStep(void) {
 	return true;
 }
 
-void pwreRun(void) {
+void pwre_run(void) {
 	[NSApp run];
 	[pool drain];
 }
@@ -47,40 +47,38 @@ static void fixPos(int *x, int *y, int width, int height) {
 	}
 }
 
-PrWnd _alloc_PrWnd(size_t size, int x, int y, int width, int height) {
-	fixPos(&x, &y, width, height);
-
+PrWnd _alloc_PrWnd(size_t memSize, uint64_t mask) {
 	NSWindow *nsWnd = [[NSWindow alloc] initWithContentRect:NSMakeRect(x, y, width, height) styleMask:uiStyle backing:backingStoreStyle defer:NO];
 	[nsWnd makeKeyAndOrderFront:nsWnd];
 	[NSApp hide:nsWnd];
 	nsWnd.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
 
 	wndCount++;
-	PrWnd wnd = calloc(1, size);
+	PrWnd wnd = calloc(1, memSize);
 	wnd->nsWnd = nsWnd;
 	wnd->evtHdr = dftEvtHdr;
 
 	return wnd;
 }
 
-PrWnd new_PrWnd(int x, int y, int width, int height) {
-	return _alloc_PrWnd(sizeof(struct PrWnd), x, y, width, height);
+PrWnd new_PrWnd(uint64_t mask) {
+	return _alloc_PrWnd(sizeof(struct PrWnd), mask);
 }
 
-const char *PrWnd_getTitle(PrWnd wnd) {
+const char *PrWnd_GetTitle(PrWnd wnd) {
 	return wnd->nsWnd.title.UTF8String;
 }
 
-void PrWnd_setTitle(PrWnd wnd, const char *title) {
+void PrWnd_SetTitle(PrWnd wnd, const char *title) {
 	wnd->nsWnd.title = [NSString stringWithUTF8String:title];
 }
 
-void PrWnd_move(PrWnd wnd, int x, int y) {
+void PrWnd_Move(PrWnd wnd, int x, int y) {
 	fixPos(&x, &y, wnd->nsWnd.frame.size.width, wnd->nsWnd.frame.size.height);
 	[wnd->nsWnd setFrameOrigin:NSMakePoint(x, y)];
 }
 
-void PrWnd_size(PrWnd wnd, int *width, int *height) {
+void PrWnd_Size(PrWnd wnd, int *width, int *height) {
 	NSSize size = [wnd->nsWnd contentLayoutRect].size;
 	if (width) {
 		*width = size.width;
@@ -90,7 +88,7 @@ void PrWnd_size(PrWnd wnd, int *width, int *height) {
 	}
 }
 
-void PrWnd_resize(PrWnd wnd, int width, int height) {
+void PrWnd_ReSize(PrWnd wnd, int width, int height) {
 	[wnd->nsWnd setContentSize:NSMakeSize(width, height)];
 }
 
@@ -100,7 +98,7 @@ static void visible(PrWnd wnd) {
 	}
 }
 
-void PrWnd_view(PrWnd wnd, PWRE_VIEW type) {
+void PrWnd_View(PrWnd wnd, PWRE_VIEW type) {
 	switch (type) {
 		case PWRE_VIEW_VISIBLE:
 			visible(wnd);
@@ -127,7 +125,7 @@ void PrWnd_view(PrWnd wnd, PWRE_VIEW type) {
 	}
 }
 
-void PrWnd_unview(PrWnd wnd, PWRE_VIEW type) {
+void PrWnd_UnView(PrWnd wnd, PWRE_VIEW type) {
 	switch (type) {
 		case PWRE_VIEW_VISIBLE:
 			[NSApp hide:wnd->nsWnd];
@@ -154,7 +152,7 @@ void PrWnd_unview(PrWnd wnd, PWRE_VIEW type) {
 	}
 }
 
-bool PrWnd_viewed(PrWnd wnd, PWRE_VIEW type) {
+bool PrWnd_Viewed(PrWnd wnd, PWRE_VIEW type) {
 	switch (type) {
 		case PWRE_VIEW_VISIBLE:
 			return wnd->nsWnd.visible;

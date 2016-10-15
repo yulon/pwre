@@ -34,6 +34,15 @@ static LRESULT CALLBACK wndMsgHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 	eventTarget((PrWnd)GetWindowLongPtrW(hWnd, PWRE_WIN32_WNDEXTRA_I))
 	if (wnd) {
 		switch (uMsg) {
+			case WM_NCCALCSIZE:
+				if (wnd->less) {
+					if (wParam) {
+						memcpy(&((LPNCCALCSIZE_PARAMS)lParam)->rgrc[2], &((LPNCCALCSIZE_PARAMS)lParam)->rgrc[1], sizeof(RECT));
+						memcpy(&((LPNCCALCSIZE_PARAMS)lParam)->rgrc[1], &((LPNCCALCSIZE_PARAMS)lParam)->rgrc[0], sizeof(RECT));
+					}
+					return 0;
+				}
+				break;
 			case WM_PAINT:
 				eventPost(, PWRE_EVENT_PAINT, NULL)
 				ValidateRect(hWnd, NULL);
@@ -63,10 +72,21 @@ static LRESULT CALLBACK wndMsgHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 	return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 }
 
+static HMODULE dwmapi;
+typedef HRESULT (WINAPI *DwmEnableBlurBehindWindow_t)(HWND hWnd, const DWM_BLURBEHIND *pBlurBehind);
+
+static HMODULE gdi32;
+typedef HRGN (WINAPI *CreateRectRgn_t)(int x1, int y1, int x2, int y2);
+
+#define dyW32Api(m, f) ((f##_t)GetProcAddress(m, #f))
+
 static HMODULE mainModule;
 static WNDCLASSEXW wndClass;
 
-bool pwreInit(PrEventHandler evtHdr) {
+bool pwre_init(PrEventHandler evtHdr) {
+	dwmapi = LoadLibraryW(L"dwmapi");
+	gdi32 = LoadLibraryW(L"gdi32");
+
 	mainModule = GetModuleHandleW(NULL);
 
 	wndClass.style = CS_OWNDC | CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
@@ -90,7 +110,7 @@ bool pwreInit(PrEventHandler evtHdr) {
 	return true;
 }
 
-bool pwreStep(void) {
+bool pwre_step(void) {
 	MSG msg;
 	while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE) > 0) {
 		TranslateMessage(&msg);
@@ -102,7 +122,7 @@ bool pwreStep(void) {
 	return true;
 }
 
-void pwreRun(void) {
+void pwre_run(void) {
 	MSG msg = { .message = 0 };
 	while (msg.message != WM_QUIT && (GetMessageW(&msg, NULL, 0, 0) > 0)) {
 		TranslateMessage(&msg);
@@ -119,22 +139,8 @@ static void fixPos(int *x, int *y, int width, int height) {
 	}
 }
 
-PrWnd _alloc_PrWnd(size_t size, int x, int y, int width, int height) {
-	fixPos(&x, &y, width, height);
-
-	HWND hWnd = CreateWindowExW(
-		0,
-		wndClass.lpszClassName,
-		NULL,
-		WS_OVERLAPPEDWINDOW,
-		x, y, width, height, NULL, NULL,
-		mainModule,
-		NULL
-	);
-	if (!hWnd) {
-		puts("Pwre: Win32.CreateWindowExW error!");
-		return NULL;
-	}
+PrWnd _alloc_PrWnd(size_t memSize, uint64_t mask) {
+	PrWnd wnd = calloc(1, memSize);
 
 	RECT rect = { 500, 500, 1000, 1000 };
 	BOOL ok = AdjustWindowRectEx(&rect, WS_OVERLAPPEDWINDOW, FALSE, 0);
@@ -142,39 +148,59 @@ PrWnd _alloc_PrWnd(size_t size, int x, int y, int width, int height) {
 		puts("Pwre: Win32.AdjustWindowRectEx error!");
 		return 0;
 	}
-
-	ZKMux_lock(wndCountMux); wndCount++; ZKMux_unlock(wndCountMux);
-
-	PrWnd wnd = calloc(1, size);
-	wnd->dataMux = new_ZKMux();
-
-	wnd->hWnd = hWnd;
-	wnd->evtHdr = dftEvtHdr;
-
 	wnd->ncWidth = (500 - rect.left) + (rect.right - 1000);
 	wnd->ncHeight = (500 - rect.top) + (rect.bottom - 1000);
 
-	SetWindowLongPtrW(hWnd, PWRE_WIN32_WNDEXTRA_I, (LONG_PTR)wnd);
+	wnd->hWnd = CreateWindowExW(
+		0,
+		wndClass.lpszClassName,
+		NULL,
+		WS_OVERLAPPEDWINDOW,
+		0, 0, 150 + wnd->ncWidth, 150 + wnd->ncHeight, NULL, NULL,
+		mainModule,
+		wnd
+	);
+	if (!wnd->hWnd) {
+		puts("Pwre: Win32.CreateWindowExW error!");
+		return NULL;
+	}
+
+	ZKMux_lock(wndCountMux); wndCount++; ZKMux_unlock(wndCountMux);
+
+	wnd->dataMux = new_ZKMux();
+	wnd->evtHdr = dftEvtHdr;
+
+	SetWindowLongPtrW(wnd->hWnd, PWRE_WIN32_WNDEXTRA_I, (LONG_PTR)(wnd));
+
+	if (((mask & PWRE_MASK_ALPHA) == PWRE_MASK_ALPHA) && dwmapi && gdi32) {
+		DWM_BLURBEHIND bb;
+		bb.dwFlags = DWM_BB_ENABLE | DWM_BB_BLURREGION;
+		bb.hRgnBlur = dyW32Api(gdi32, CreateRectRgn)(0, 0, -1, -1);;
+		bb.fEnable = TRUE;
+		bb.fTransitionOnMaximized = 1;
+		dyW32Api(dwmapi, DwmEnableBlurBehindWindow)(wnd->hWnd, &bb);
+	}
+
 	return wnd;
 }
 
-PrWnd new_PrWnd(int x, int y, int width, int height) {
-	return _alloc_PrWnd(sizeof(struct PrWnd), x, y, width, height);
+PrWnd new_PrWnd(uint64_t mask) {
+	return _alloc_PrWnd(sizeof(struct PrWnd), mask);
 }
 
-void *PrWnd_nativePointer(PrWnd wnd) {
+void *PrWnd_NativePointer(PrWnd wnd) {
 	return (void *)wnd->hWnd;
 }
 
-void PrWnd_close(PrWnd wnd) {
+void PrWnd_Close(PrWnd wnd) {
 	CloseWindow(wnd->hWnd);
 }
 
-void PrWnd_destroy(PrWnd wnd) {
+void PrWnd_Destroy(PrWnd wnd) {
 	DestroyWindow(wnd->hWnd);
 }
 
-const char *PrWnd_getTitle(PrWnd wnd) {
+const char *PrWnd_GetTitle(PrWnd wnd) {
 	ZKMux_lock(wnd->dataMux);
 	int str16Len = GetWindowTextLengthW(wnd->hWnd);
 	if (str16Len) {
@@ -195,7 +221,7 @@ const char *PrWnd_getTitle(PrWnd wnd) {
 	return (const char *)wnd->titleBuf;
 }
 
-void PrWnd_setTitle(PrWnd wnd, const char *str8) {
+void PrWnd_SetTitle(PrWnd wnd, const char *str8) {
 	if (!str8) {
 		return;
 	}
@@ -211,9 +237,29 @@ void PrWnd_setTitle(PrWnd wnd, const char *str8) {
 	free(str16);
 }
 
-void PrWnd_size(PrWnd wnd, int *width, int *height) {
+void PrWnd_Move(PrWnd wnd, int x, int y) {
 	RECT rect;
-	GetClientRect(wnd->hWnd, &rect);
+	GetWindowRect(wnd->hWnd, &rect);
+	int width = rect.right - rect.left;
+	int height = rect.bottom - rect.top;
+	fixPos(&x, &y, width, height);
+	MoveWindow(
+		wnd->hWnd, x, y,
+		width,
+		height,
+		FALSE
+	);
+}
+
+void PrWnd_Size(PrWnd wnd, int *width, int *height) {
+	RECT rect;
+	if (wnd->less) {
+		GetWindowRect(wnd->hWnd, &rect);
+		rect.right -= rect.left;
+		rect.bottom -= rect.top;
+	} else {
+		GetClientRect(wnd->hWnd, &rect);
+	}
 	if (width) {
 		*width = rect.right;
 	}
@@ -222,20 +268,24 @@ void PrWnd_size(PrWnd wnd, int *width, int *height) {
 	}
 }
 
-void PrWnd_resize(PrWnd wnd, int width, int height) {
+void PrWnd_ReSize(PrWnd wnd, int width, int height) {
 	RECT rect;
 	GetWindowRect(wnd->hWnd, &rect);
+	if (!wnd->less) {
+		width += wnd->ncWidth;
+		height += wnd->ncHeight;
+	}
 	MoveWindow(
 		wnd->hWnd, rect.left, rect.top,
-		width + wnd->ncWidth,
-		height + wnd->ncHeight,
+		width,
+		height,
 		TRUE
 	);
 }
 
 #define _STYLE_HAS(_style) GetWindowLongW(wnd->hWnd, GWL_STYLE) & _style
 
-void PrWnd_view(PrWnd wnd, PWRE_VIEW type) {
+void PrWnd_View(PrWnd wnd, PWRE_VIEW type) {
 	switch (type) {
 		case PWRE_VIEW_VISIBLE:
 			ShowWindow(wnd->hWnd, SW_SHOW);
@@ -248,7 +298,7 @@ void PrWnd_view(PrWnd wnd, PWRE_VIEW type) {
 	}
 }
 
-void PrWnd_unview(PrWnd wnd, PWRE_VIEW type) {
+void PrWnd_UnView(PrWnd wnd, PWRE_VIEW type) {
 	switch (type) {
 		case PWRE_VIEW_VISIBLE:
 			ShowWindow(wnd->hWnd, SW_HIDE);
@@ -263,7 +313,7 @@ void PrWnd_unview(PrWnd wnd, PWRE_VIEW type) {
 	}
 }
 
-bool PrWnd_viewed(PrWnd wnd, PWRE_VIEW type) {
+bool PrWnd_Viewed(PrWnd wnd, PWRE_VIEW type) {
 	switch (type) {
 		case PWRE_VIEW_VISIBLE:
 			return _STYLE_HAS(WS_VISIBLE);
@@ -276,5 +326,12 @@ bool PrWnd_viewed(PrWnd wnd, PWRE_VIEW type) {
 }
 
 #undef _STYLE_HAS
+
+void PrWnd_Less(PrWnd wnd, bool less) {
+	RECT rect;
+	GetClientRect(wnd->hWnd, &rect);
+	wnd->less = less;
+	PrWnd_ReSize(wnd, rect.right, rect.bottom);
+}
 
 #endif // PWRE_WIN32

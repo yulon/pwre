@@ -2,6 +2,7 @@
 #define _PWRE_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,26 +35,32 @@ typedef enum {
 
 typedef bool (*PrEventHandler)(PrWnd, PWRE_EVENT, void *data);
 
-bool pwreInit(PrEventHandler);
-bool pwreStep(void);
-void pwreRun(void);
+bool pwre_init(PrEventHandler);
+bool pwre_step(void);
+void pwre_run(void);
 
-PrWnd new_PrWnd(int x, int y, int width, int height);
-void PrWnd_close(PrWnd);
-void PrWnd_destroy(PrWnd);
+typedef struct {
+	int left, top, right, bottom;
+} PrBounds;
 
-void *PrWnd_nativePointer(PrWnd);
+#define PWRE_MASK_ALPHA 0x00000001
 
-PrEventHandler PrWnd_getEventHandler(PrWnd);
-void PrWnd_setEventHandler(PrWnd, PrEventHandler);
+PrWnd new_PrWnd(uint64_t mask);
+void PrWnd_Close(PrWnd);
+void PrWnd_Destroy(PrWnd);
 
-const char *PrWnd_getTitle(PrWnd);
-void PrWnd_setTitle(PrWnd, const char *);
+void *PrWnd_NativePointer(PrWnd);
 
-void PrWnd_move(PrWnd, int x, int y);
+PrEventHandler PrWnd_GetEventHandler(PrWnd);
+void PrWnd_SetEventHandler(PrWnd, PrEventHandler);
 
-void PrWnd_size(PrWnd, int *width, int *height);
-void PrWnd_resize(PrWnd, int width, int height);
+const char *PrWnd_GetTitle(PrWnd);
+void PrWnd_SetTitle(PrWnd, const char *);
+
+void PrWnd_Move(PrWnd, int x, int y);
+
+void PrWnd_Size(PrWnd, int *width, int *height);
+void PrWnd_ReSize(PrWnd, int width, int height);
 
 typedef enum {
 	PWRE_VIEW_VISIBLE = 1,
@@ -62,16 +69,25 @@ typedef enum {
 	PWRE_VIEW_FULLSCREEN = 4
 } PWRE_VIEW;
 
-void PrWnd_view(PrWnd, PWRE_VIEW);
-void PrWnd_unview(PrWnd, PWRE_VIEW);
-bool PrWnd_viewed(PrWnd, PWRE_VIEW);
+void PrWnd_View(PrWnd, PWRE_VIEW);
+void PrWnd_UnView(PrWnd, PWRE_VIEW);
+bool PrWnd_Viewed(PrWnd, PWRE_VIEW);
 
-#define PWRE_GL_V3 0x0003
-#define PWRE_GL_ALPHA 0x0010
+void PrWnd_Less(PrWnd, bool);
 
-PrWnd new_PrWnd_with_GL(int x, int y, int width, int height, int flags);
-void PrWnd_GL_makeCurrent(PrWnd);
-void PrWnd_GL_swapBuffers(PrWnd);
+typedef struct {
+	PrBounds outer;
+	PrBounds border;
+	PrBounds padding;
+} PrArea;
+
+bool PrWnd_CustomArea(PrWnd, PrArea *);
+
+#define PWRE_MASK_GL_V3 0x3000000000
+
+PrWnd new_PrWnd_with_GL(uint64_t mask);
+void PrWnd_GL_MakeCurrent(PrWnd);
+void PrWnd_GL_SwapBuffers(PrWnd);
 
 #ifdef __cplusplus
 }

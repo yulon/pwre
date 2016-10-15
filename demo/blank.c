@@ -8,14 +8,16 @@ bool eventHandler(PrWnd wnd, PWRE_EVENT event, void *data) {
 }
 
 int main(void) {
-	pwreInit(eventHandler);
+	pwre_init(eventHandler);
 
-	PrWnd wnd = new_PrWnd(PWRE_POS_AUTO, PWRE_POS_AUTO, 500, 500);
-	PrWnd_setTitle(wnd, "我只是一个空白窗口_(:з」∠)_");
-	PrWnd_view(wnd, PWRE_VIEW_VISIBLE);
+	PrWnd wnd = new_PrWnd(0);
+	PrWnd_SetTitle(wnd, "我只是一个空白窗口_(:з」∠)_");
+	PrWnd_ReSize(wnd, 500, 500);
+	PrWnd_View(wnd, PWRE_VIEW_VISIBLE);
+	PrWnd_Move(wnd, PWRE_POS_AUTO, PWRE_POS_AUTO);
 
-	printf("title: %s\n", PrWnd_getTitle(wnd));
+	printf("title: %s\n", PrWnd_GetTitle(wnd));
 
-	pwreRun();
+	pwre_run();
 	return 0;
 }

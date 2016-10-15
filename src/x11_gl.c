@@ -32,10 +32,10 @@ const int glAlphaAttr[] = {
 	None
 };
 
-PrWnd new_PrWnd_with_GL(int x, int y, int width, int height, int flags) {
+PrWnd new_PrWnd_with_GL(uint64_t mask) {
 	XVisualInfo *vi;
 
-	if ((flags & PWRE_GL_ALPHA) == PWRE_GL_ALPHA) {
+	if ((mask & PWRE_MASK_ALPHA) == PWRE_MASK_ALPHA) {
 		int iNumOfFBConfigs;
 		GLXFBConfig *pFBConfigs = glXChooseFBConfig(dpy, 0, glAlphaAttr, &iNumOfFBConfigs);
 		XRenderPictFormat *pPictFormat = NULL;
@@ -66,7 +66,7 @@ PrWnd new_PrWnd_with_GL(int x, int y, int width, int height, int flags) {
 
 	PrWnd_GL glWnd = (PrWnd_GL)_alloc_PrWnd(
 		sizeof(struct PrWnd),
-		x, y, width, height,
+		mask,
 		vi->depth, vi->visual, CWBackPixel | CWBorderPixel | CWEventMask | CWColormap, &swa
 	);
 	glWnd->wnd.onFree = _PrWnd_GL_free;
@@ -80,11 +80,11 @@ PrWnd new_PrWnd_with_GL(int x, int y, int width, int height, int flags) {
 	return (PrWnd)glWnd;
 }
 
-void PrWnd_GL_makeCurrent(PrWnd wnd) {
+void PrWnd_GL_MakeCurrent(PrWnd wnd) {
 	glXMakeCurrent(dpy, wnd->xWnd, ((PrWnd_GL)wnd)->ctx);
 }
 
-void PrWnd_GL_swapBuffers(PrWnd wnd) {
+void PrWnd_GL_SwapBuffers(PrWnd wnd) {
 	glXSwapBuffers(dpy, wnd->xWnd);
 }
 

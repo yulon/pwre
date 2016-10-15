@@ -33,8 +33,9 @@ Atom netWmStateHide;
 Atom netWmStateMaxVert;
 Atom netWmStateMaxHorz;
 Atom netWmStateFullscreen;
+Atom motifWmHints;
 
-bool pwreInit(PrEventHandler evtHdr) {
+bool pwre_init(PrEventHandler evtHdr) {
 	XInitThreads();
 	dpy = XOpenDisplay(NULL);
 	if (!dpy) {
@@ -52,6 +53,8 @@ bool pwreInit(PrEventHandler evtHdr) {
 	netWmStateMaxVert = XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_VERT", False);
 	netWmStateMaxHorz = XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
 	netWmStateFullscreen = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
+
+	motifWmHints = XInternAtom(dpy, "_MOTIF_WM_HINTS", True);
 
 	wndCountMux = new_ZKMux();
 	dftEvtHdr = evtHdr;
@@ -133,7 +136,7 @@ static bool handleXEvent(XEvent *event) {
 	return true;
 }
 
-bool pwreStep(void) {
+bool pwre_step(void) {
 	XEvent event;
 	while (XPending(dpy)) {
 		if (!handleXEvent(&event)) {
@@ -143,7 +146,7 @@ bool pwreStep(void) {
 	return true;
 }
 
-void pwreRun(void) {
+void pwre_run(void) {
 	XEvent event;
 	while (handleXEvent(&event));
 }
@@ -158,19 +161,17 @@ static void fixPos(int *x, int *y, int width, int height) {
 }
 
 PrWnd _alloc_PrWnd(
-	size_t size,
-	int x, int y, int width, int height,
+	size_t memSize,
+	uint64_t mask,
 	int depth, Visual *visual, unsigned long valuemask, XSetWindowAttributes *swa
 ) {
-	fixPos(&x, &y, width, height);
-
 	Window xWnd = XCreateWindow(
 		dpy,
 		root,
-		x,
-		y,
-		width,
-		height,
+		0,
+		0,
+		150,
+		150,
 		0,
 		depth,
 		InputOutput,
@@ -187,7 +188,7 @@ PrWnd _alloc_PrWnd(
 
 	ZKMux_lock(wndCountMux); wndCount++; ZKMux_unlock(wndCountMux);
 
-	PrWnd wnd = calloc(1, size);
+	PrWnd wnd = calloc(1, memSize);
 	wnd->xWnd = xWnd;
 	wnd->evtHdr = dftEvtHdr;
 
@@ -197,27 +198,27 @@ PrWnd _alloc_PrWnd(
 	return wnd;
 }
 
-PrWnd new_PrWnd(int x, int y, int width, int height) {
+PrWnd new_PrWnd(uint64_t mask) {
 	XSetWindowAttributes swa;
 	swa.event_mask = ExposureMask | KeyPressMask | StructureNotifyMask;
 	return _alloc_PrWnd(
 		sizeof(struct PrWnd),
-		x, y, width, height,
+		mask,
 		XDefaultDepth(dpy, 0), XDefaultVisual(dpy, 0), CWEventMask, &swa
 	);
 }
 
-void PrWnd_close(PrWnd wnd) {
+void PrWnd_Close(PrWnd wnd) {
 	if (wnd->evtHdr && !wnd->evtHdr(wnd, PWRE_EVENT_CLOSE, NULL)) {
 		XDestroyWindow(dpy, wnd->xWnd);
 	}
 }
 
-void PrWnd_destroy(PrWnd wnd) {
+void PrWnd_Destroy(PrWnd wnd) {
 	XDestroyWindow(dpy, wnd->xWnd);
 }
 
-const char *PrWnd_getTitle(PrWnd wnd) {
+const char *PrWnd_GetTitle(PrWnd wnd) {
 	ZKMux_lock(wnd->dataMux);
 	Atom type;
 	int format;
@@ -233,11 +234,11 @@ const char *PrWnd_getTitle(PrWnd wnd) {
 	return (const char *)wnd->titleBuf;
 }
 
-void PrWnd_setTitle(PrWnd wnd, const char *title) {
+void PrWnd_SetTitle(PrWnd wnd, const char *title) {
 	XChangeProperty(dpy, wnd->xWnd, netWmName, utf8str, 8, PropModeReplace, (const unsigned char *)title, strlen(title));
 }
 
-void PrWnd_move(PrWnd wnd, int x, int y) {
+void PrWnd_Move(PrWnd wnd, int x, int y) {
 	XWindowAttributes attrs;
 	XGetWindowAttributes(dpy, wnd->xWnd, &attrs);
 	fixPos(&x, &y, attrs.width, attrs.height);
@@ -260,7 +261,7 @@ void PrWnd_move(PrWnd wnd, int x, int y) {
 	}
 }
 
-void PrWnd_size(PrWnd wnd, int *width, int *height) {
+void PrWnd_Size(PrWnd wnd, int *width, int *height) {
 	XWindowAttributes attrs;
 	XGetWindowAttributes(dpy, wnd->xWnd, &attrs);
 	if (width) {
@@ -271,7 +272,7 @@ void PrWnd_size(PrWnd wnd, int *width, int *height) {
 	}
 }
 
-void PrWnd_resize(PrWnd wnd, int width, int height) {
+void PrWnd_ReSize(PrWnd wnd, int width, int height) {
 	int err = XResizeWindow(dpy, wnd->xWnd, width, height);
 	if (err != BadValue && err != BadWindow) {
 		XEvent event;
@@ -304,7 +305,7 @@ static void visible(PrWnd wnd) {
 	}
 }
 
-void PrWnd_view(PrWnd wnd, PWRE_VIEW type) {
+void PrWnd_View(PrWnd wnd, PWRE_VIEW type) {
 	XEvent event;
 	switch (type) {
 		case PWRE_VIEW_VISIBLE:
@@ -340,7 +341,7 @@ void PrWnd_view(PrWnd wnd, PWRE_VIEW type) {
 	return;
 }
 
-void PrWnd_unview(PrWnd wnd, PWRE_VIEW type) {
+void PrWnd_UnView(PrWnd wnd, PWRE_VIEW type) {
 	XEvent event;
 	switch (type) {
 		case PWRE_VIEW_VISIBLE:
@@ -372,6 +373,24 @@ void PrWnd_unview(PrWnd wnd, PWRE_VIEW type) {
 			event.xclient.data.l[1] = netWmStateFullscreen;
 			XSendEvent(dpy, root, False, StructureNotifyMask, &event);
 	}
+}
+
+static const unsigned MWM_HINTS_DECORATIONS = (1 << 1);
+static const int PROP_MOTIF_WM_HINTS_ELEMENTS = 5;
+
+typedef struct {
+	unsigned long flags;
+	unsigned long functions;
+	unsigned long decorations;
+	long inputMode;
+	unsigned long status;
+} PropMotifWmHints;
+
+void PrWnd_Less(PrWnd wnd, bool less) {
+	PropMotifWmHints motif_hints;
+	motif_hints.flags = MWM_HINTS_DECORATIONS;
+	motif_hints.decorations = 0;
+	XChangeProperty(dpy, wnd->xWnd, motifWmHints, motifWmHints, 32, PropModeReplace, (unsigned char *) &motif_hints, PROP_MOTIF_WM_HINTS_ELEMENTS);
 }
 
 #endif // PWRE_X11
