@@ -75,6 +75,7 @@ PrWnd new_PrWnd_with_GL(uint64_t mask) {
 	XFree(vi);
 	if (!glWnd->ctx) {
 		puts("Pwre: X11.glXCreateContext error!");
+		PrWnd_Destroy((PrWnd)glWnd);
 		return NULL;
 	}
 	return (PrWnd)glWnd;

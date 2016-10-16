@@ -25,6 +25,7 @@ PrWnd new_PrWnd_with_GL(uint64_t mask) {
 	glWnd->dc = GetDC(glWnd->wnd.hWnd);
 	if (!glWnd->dc) {
 		puts("Pwre: Win32.GetDC error!");
+		PrWnd_Destroy((PrWnd)glWnd);
 		return NULL;
 	}
 
@@ -46,17 +47,20 @@ PrWnd new_PrWnd_with_GL(uint64_t mask) {
 	int PixelFormat = ChoosePixelFormat(glWnd->dc, &pfd);
 	if (!PixelFormat) {
 		puts("Pwre: Win32.ChoosePixelFormat error!");
+		PrWnd_Destroy((PrWnd)glWnd);
 		return NULL;
 	}
 
 	if (!SetPixelFormat(glWnd->dc, PixelFormat, &pfd)) {
 		puts("Pwre: Win32.SetPixelFormat error!");
+		PrWnd_Destroy((PrWnd)glWnd);
 		return NULL;
 	}
 
 	glWnd->rc = wglCreateContext(glWnd->dc);
 	if (!glWnd->rc) {
 		puts("Pwre: Win32.wglCreateContext error!");
+		PrWnd_Destroy((PrWnd)glWnd);
 		return NULL;
 	}
 
