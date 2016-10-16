@@ -7,7 +7,6 @@
 
 struct PrWnd {
 	Window xWnd;
-	PrEventHandler evtHdr;
 	char *titleBuf;
 	size_t titleBufLen;
 	ZKMux dataMux;

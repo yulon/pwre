@@ -6,7 +6,6 @@
 
 struct PrWnd {
 	NSWindow *nsWnd;
-	PrEventHandler evtHdr;
 	void (*onFree)(PrWnd);
 };
 

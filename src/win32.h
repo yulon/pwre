@@ -8,7 +8,6 @@
 
 struct PrWnd {
 	HWND hWnd;
-	PrEventHandler evtHdr;
 	int ncWidth, ncHeight;
 	char *titleBuf;
 	size_t titleBufLen;

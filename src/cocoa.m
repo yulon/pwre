@@ -17,7 +17,7 @@ bool pwre_init(PrEventHandler evtHdr) {
 	uiStyle = NSWindowStyleMaskTitled | NSWindowStyleMaskMiniaturizable| NSWindowStyleMaskResizable | NSWindowStyleMaskClosable;
 	backingStoreStyle = NSBackingStoreBuffered;
 
-	dftEvtHdr = evtHdr;
+	eventHandler = evtHdr;
 	return true;
 }
 
@@ -56,7 +56,7 @@ PrWnd _alloc_PrWnd(size_t memSize, uint64_t mask) {
 	wndCount++;
 	PrWnd wnd = calloc(1, memSize);
 	wnd->nsWnd = nsWnd;
-	wnd->evtHdr = dftEvtHdr;
+	wnd->evtHdr = eventHandler;
 
 	return wnd;
 }

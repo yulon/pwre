@@ -57,7 +57,7 @@ bool pwre_init(PrEventHandler evtHdr) {
 	motifWmHints = XInternAtom(dpy, "_MOTIF_WM_HINTS", True);
 
 	wndCountMux = new_ZKMux();
-	dftEvtHdr = evtHdr;
+	eventHandler = evtHdr;
 	wndMap = new_ZKMap(256);
 	wndMapAndEvtMux = new_ZKMux();
 	return true;
@@ -207,7 +207,6 @@ PrWnd _alloc_PrWnd(
 
 	PrWnd wnd = calloc(1, memSize);
 	wnd->xWnd = xWnd;
-	wnd->evtHdr = dftEvtHdr;
 
  	ZKMux_Lock(wndMapAndEvtMux);
 	ZKMap_Set(wndMap, xWnd, wnd);

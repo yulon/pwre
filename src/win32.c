@@ -41,7 +41,7 @@ static void _PrWnd_free(PrWnd wnd) {
 #endif
 
 static LRESULT CALLBACK wndMsgHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-	eventTarget((PrWnd)GetWindowLongPtrW(hWnd, PWRE_WIN32_WNDEXTRA_I))
+	PrWnd wnd = (PrWnd)GetWindowLongPtrW(hWnd, PWRE_WIN32_WNDEXTRA_I);
 	if (wnd) {
 		switch (uMsg) {
 			case WM_NCCALCSIZE:
@@ -115,7 +115,7 @@ bool pwre_init(PrEventHandler evtHdr) {
 	}
 
 	wndCountMux = new_ZKMux();
-	dftEvtHdr = evtHdr;
+	eventHandler = evtHdr;
 	return true;
 }
 
@@ -149,14 +149,15 @@ static void fixPos(int *x, int *y, int width, int height) {
 }
 
 PrWnd _alloc_PrWnd(size_t memSize, uint64_t mask) {
-	PrWnd wnd = calloc(1, memSize);
-
 	RECT rect = { 500, 500, 1000, 1000 };
 	BOOL ok = AdjustWindowRectEx(&rect, WS_OVERLAPPEDWINDOW, FALSE, 0);
 	if (!ok) {
 		puts("Pwre: Win32.AdjustWindowRectEx error!");
-		return 0;
+		return NULL;
 	}
+
+	PrWnd wnd = calloc(1, memSize);
+
 	wnd->ncWidth = (500 - rect.left) + (rect.right - 1000);
 	wnd->ncHeight = (500 - rect.top) + (rect.bottom - 1000);
 
@@ -171,13 +172,13 @@ PrWnd _alloc_PrWnd(size_t memSize, uint64_t mask) {
 	);
 	if (!wnd->hWnd) {
 		puts("Pwre: Win32.CreateWindowExW error!");
+		free(wnd);
 		return NULL;
 	}
 
 	ZKMux_Lock(wndCountMux); wndCount++; ZKMux_UnLock(wndCountMux);
 
 	wnd->dataMux = new_ZKMux();
-	wnd->evtHdr = dftEvtHdr;
 
 	SetWindowLongPtrW(wnd->hWnd, PWRE_WIN32_WNDEXTRA_I, (LONG_PTR)(wnd));
 

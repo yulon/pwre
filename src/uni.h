@@ -1,38 +1,28 @@
 // need {plat}.h
 
-PrEventHandler PrWnd_GetEventHandler(PrWnd wnd) {
-	return wnd->evtHdr;
-}
-
-void PrWnd_SetEventHandler(PrWnd wnd, PrEventHandler evtHdr) {
-	wnd->evtHdr = evtHdr;
-}
-
 static int wndCount;
 
 #include <zk/mux.h>
 
 static ZKMux wndCountMux;
 
-static PrEventHandler dftEvtHdr;
-
-#define eventTarget(_wnd) \
-	PrWnd wnd = _wnd; \
-	bool evtHdrRst; \
+static PrEventHandler eventHandler;
 
 #define eventPost(_hdr_existent_code, _event, _data) \
-	if (wnd->evtHdr) { \
+	if (eventHandler) { \
 		_hdr_existent_code \
-		wnd->evtHdr(wnd, _event, _data); \
+		eventHandler(wnd, _event, _data); \
 	}
 
-#define eventSend(_hdr_existent_code, _event, _data, _hdr_return_false_code) \
-	if (wnd->evtHdr) { \
+#define eventSend(_hdr_existent_code, _event, _data, _hdr_return_false_code) { \
+	bool evtHdrRst; \
+	if (eventHandler) { \
 		_hdr_existent_code \
-		evtHdrRst = wnd->evtHdr(wnd, _event, _data); \
+		evtHdrRst = eventHandler(wnd, _event, _data); \
 	} else { \
 		evtHdrRst = true; \
 	} \
 	if (!evtHdrRst) { \
 		_hdr_return_false_code \
-	}
+	} \
+}
