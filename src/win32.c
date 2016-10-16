@@ -9,6 +9,16 @@
 #include "uni.h"
 #include "titlebuf.h"
 
+static HMODULE dwmapi;
+typedef HRESULT (WINAPI *DwmEnableBlurBehindWindow_t)(HWND hWnd, const DWM_BLURBEHIND *pBlurBehind);
+static DwmEnableBlurBehindWindow_t DwmEnableBlurBehindWindow_fp;
+
+static HMODULE gdi32;
+typedef HRGN (WINAPI *CreateRectRgn_t)(int x1, int y1, int x2, int y2);
+static CreateRectRgn_t CreateRectRgn_fp;
+
+#define loadW32Api(m, f) f##_fp = ((f##_t)GetProcAddress(m, #f))
+
 static void _PrWnd_free(PrWnd wnd) {
 	if (wnd->onFree) {
 		wnd->onFree(wnd);
@@ -72,20 +82,19 @@ static LRESULT CALLBACK wndMsgHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 	return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 }
 
-static HMODULE dwmapi;
-typedef HRESULT (WINAPI *DwmEnableBlurBehindWindow_t)(HWND hWnd, const DWM_BLURBEHIND *pBlurBehind);
-
-static HMODULE gdi32;
-typedef HRGN (WINAPI *CreateRectRgn_t)(int x1, int y1, int x2, int y2);
-
-#define dyW32Api(m, f) ((f##_t)GetProcAddress(m, #f))
-
 static HMODULE mainModule;
 static WNDCLASSEXW wndClass;
 
 bool pwre_init(PrEventHandler evtHdr) {
 	dwmapi = LoadLibraryW(L"dwmapi");
-	gdi32 = LoadLibraryW(L"gdi32");
+	if (dwmapi) {
+		loadW32Api(dwmapi, DwmEnableBlurBehindWindow);
+
+		gdi32 = LoadLibraryW(L"gdi32");
+		if (gdi32) {
+			loadW32Api(gdi32, CreateRectRgn);
+		}
+	}
 
 	mainModule = GetModuleHandleW(NULL);
 
@@ -172,13 +181,13 @@ PrWnd _alloc_PrWnd(size_t memSize, uint64_t mask) {
 
 	SetWindowLongPtrW(wnd->hWnd, PWRE_WIN32_WNDEXTRA_I, (LONG_PTR)(wnd));
 
-	if (((mask & PWRE_MASK_ALPHA) == PWRE_MASK_ALPHA) && dwmapi && gdi32) {
+	if (((mask & PWRE_MASK_ALPHA) == PWRE_MASK_ALPHA) && DwmEnableBlurBehindWindow_fp && CreateRectRgn_fp) {
 		DWM_BLURBEHIND bb;
 		bb.dwFlags = DWM_BB_ENABLE | DWM_BB_BLURREGION;
-		bb.hRgnBlur = dyW32Api(gdi32, CreateRectRgn)(0, 0, -1, -1);;
+		bb.hRgnBlur = CreateRectRgn_fp(0, 0, -1, -1);
 		bb.fEnable = TRUE;
 		bb.fTransitionOnMaximized = 1;
-		dyW32Api(dwmapi, DwmEnableBlurBehindWindow)(wnd->hWnd, &bb);
+		DwmEnableBlurBehindWindow_fp(wnd->hWnd, &bb);
 	}
 
 	return wnd;
@@ -283,7 +292,7 @@ void PrWnd_ReSize(PrWnd wnd, int width, int height) {
 	);
 }
 
-#define _STYLE_HAS(_style) GetWindowLongW(wnd->hWnd, GWL_STYLE) & _style
+#define styleHas(_style) (GetWindowLongW(wnd->hWnd, GWL_STYLE) & _style) == _style
 
 void PrWnd_View(PrWnd wnd, PWRE_VIEW type) {
 	switch (type) {
@@ -304,7 +313,7 @@ void PrWnd_UnView(PrWnd wnd, PWRE_VIEW type) {
 			ShowWindow(wnd->hWnd, SW_HIDE);
 			break;
 		case PWRE_VIEW_MINIMIZE:
-			if (_STYLE_HAS(WS_MINIMIZE)) {
+			if (styleHas(WS_MINIMIZE)) {
 				ShowWindow(wnd->hWnd, SW_RESTORE);
 			}
 			break;
@@ -316,16 +325,16 @@ void PrWnd_UnView(PrWnd wnd, PWRE_VIEW type) {
 bool PrWnd_Viewed(PrWnd wnd, PWRE_VIEW type) {
 	switch (type) {
 		case PWRE_VIEW_VISIBLE:
-			return _STYLE_HAS(WS_VISIBLE);
+			return styleHas(WS_VISIBLE);
 		case PWRE_VIEW_MINIMIZE:
-			return _STYLE_HAS(WS_MINIMIZE);
+			return styleHas(WS_MINIMIZE);
 		case PWRE_VIEW_MAXIMIZE:
-			return _STYLE_HAS(WS_MAXIMIZE);
+			return styleHas(WS_MAXIMIZE);
 	}
 	return 0;
 }
 
-#undef _STYLE_HAS
+#undef styleHas
 
 void PrWnd_Less(PrWnd wnd, bool less) {
 	RECT rect;
