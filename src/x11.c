@@ -15,7 +15,7 @@
 #include <zk/map.h>
 
 static ZKMap wndMap;
-static ZKMux wndMapMux;
+static ZKMux wndMapAndEvtMux;
 
 Display *_pwre_x11_dpy;
 Window _pwre_x11_root;
@@ -59,7 +59,7 @@ bool pwre_init(PrEventHandler evtHdr) {
 	wndCountMux = new_ZKMux();
 	dftEvtHdr = evtHdr;
 	wndMap = new_ZKMap(256);
-	wndMapMux = new_ZKMux();
+	wndMapAndEvtMux = new_ZKMux();
 	return true;
 }
 
@@ -76,12 +76,33 @@ static void _PrWnd_free(PrWnd wnd) {
 	free(wnd);
 }
 
-static bool handleXEvent(XEvent *event) {
-	XNextEvent(dpy, event);
+#define xSync(_wnd, _event, _conds) { \
+	XEvent event; \
+	while (handleXEvent(&event, false)) { \
+		if ( \
+			((XAnyEvent *)&event)->window == _wnd && \
+			((XAnyEvent *)&event)->type == _event \
+			_conds \
+		) { \
+			break; \
+		} \
+	} \
+}
 
-	ZKMux_Lock(wndMapMux);
-	eventTarget((PrWnd)ZKMap_Get(wndMap, ((XAnyEvent *)event)->window))
-	ZKMux_UnLock(wndMapMux);
+static bool handleXEvent(XEvent *event, bool lock) {
+	PrWnd wnd;
+	bool evtHdrRst;
+
+	if (lock) {
+		ZKMux_Lock(wndMapAndEvtMux);
+		XNextEvent(dpy, event);
+		wnd = (PrWnd)ZKMap_Get(wndMap, ((XAnyEvent *)event)->window);
+		ZKMux_UnLock(wndMapAndEvtMux);
+	} else {
+		XNextEvent(dpy, event);
+		wnd = (PrWnd)ZKMap_Get(wndMap, ((XAnyEvent *)event)->window);
+	}
+
 	if (wnd) {
 		switch (((XAnyEvent *)event)->type) {
 			case ConfigureNotify:
@@ -101,24 +122,20 @@ static bool handleXEvent(XEvent *event) {
 						return true;
 					)
 
+					ZKMux_Lock(wndMapAndEvtMux);
 					XDestroyWindow(dpy, ((XAnyEvent *)event)->window);
-					while (handleXEvent(event)) {
-						if (
-							((XAnyEvent *)event)->window == wnd->xWnd &&
-							((XAnyEvent *)event)->type == DestroyNotify
-						) {
-							return true;
-						}
-					}
+					xSync(wnd->xWnd, DestroyNotify,)
+					ZKMux_UnLock(wndMapAndEvtMux);
+
 					return false;
 				}
 				break;
 			case DestroyNotify:
 				eventPost(, PWRE_EVENT_DESTROY, NULL)
 
-				ZKMux_Lock(wndMapMux);
+				ZKMux_Lock(wndMapAndEvtMux);
 				ZKMap_Delete(wndMap, wnd->xWnd);
-				ZKMux_UnLock(wndMapMux);
+				ZKMux_UnLock(wndMapAndEvtMux);
 
 				ZKMux_Lock(wndCountMux);
 				wndCount--;
@@ -126,7 +143,7 @@ static bool handleXEvent(XEvent *event) {
 				if (!wndCount) {
 					ZKMux_UnLock(wndCountMux);
 					ZKMux_Free(wndCountMux);
-					ZKMux_Free(wndMapMux);
+					ZKMux_Free(wndMapAndEvtMux);
 					XCloseDisplay(dpy);
 					return false;
 				}
@@ -139,7 +156,7 @@ static bool handleXEvent(XEvent *event) {
 bool pwre_step(void) {
 	XEvent event;
 	while (XPending(dpy)) {
-		if (!handleXEvent(&event)) {
+		if (!handleXEvent(&event, true)) {
 			return false;
 		}
 	}
@@ -148,7 +165,7 @@ bool pwre_step(void) {
 
 void pwre_run(void) {
 	XEvent event;
-	while (handleXEvent(&event));
+	while (handleXEvent(&event, true));
 }
 
 static void fixPos(int *x, int *y, int width, int height) {
@@ -192,9 +209,9 @@ PrWnd _alloc_PrWnd(
 	wnd->xWnd = xWnd;
 	wnd->evtHdr = dftEvtHdr;
 
- 	ZKMux_Lock(wndMapMux);
+ 	ZKMux_Lock(wndMapAndEvtMux);
 	ZKMap_Set(wndMap, xWnd, wnd);
-	ZKMux_UnLock(wndMapMux);
+	ZKMux_UnLock(wndMapAndEvtMux);
 	return wnd;
 }
 
@@ -243,22 +260,19 @@ void PrWnd_Move(PrWnd wnd, int x, int y) {
 	XGetWindowAttributes(dpy, wnd->xWnd, &attrs);
 	fixPos(&x, &y, attrs.width, attrs.height);
 
+	ZKMux_Lock(wndMapAndEvtMux);
 	int err = XMoveWindow(dpy, wnd->xWnd, x, y);
 	if (err != BadValue && err != BadWindow && err != BadMatch) {
-		XEvent event;
-		while (handleXEvent(&event)) {
-			if (
-				((XAnyEvent *)&event)->window == wnd->xWnd &&
-				((XAnyEvent *)&event)->type == ConfigureNotify &&
-				(
-					((XConfigureEvent *)&event)->x != 0 ||
-					((XConfigureEvent *)&event)->y != 0
-				)
-			) {
-				return;
-			}
-		}
+		xSync(
+			wnd->xWnd,
+			ConfigureNotify,
+			&& (
+				((XConfigureEvent *)&event)->x != 0 ||
+				((XConfigureEvent *)&event)->y != 0
+			)
+		)
 	}
+	ZKMux_UnLock(wndMapAndEvtMux);
 }
 
 void PrWnd_Size(PrWnd wnd, int *width, int *height) {
@@ -273,36 +287,30 @@ void PrWnd_Size(PrWnd wnd, int *width, int *height) {
 }
 
 void PrWnd_ReSize(PrWnd wnd, int width, int height) {
+	ZKMux_Lock(wndMapAndEvtMux);
 	int err = XResizeWindow(dpy, wnd->xWnd, width, height);
 	if (err != BadValue && err != BadWindow) {
-		XEvent event;
-		while (handleXEvent(&event)) {
-			if (
-				((XAnyEvent *)&event)->window == wnd->xWnd &&
-				((XAnyEvent *)&event)->type == ConfigureNotify &&
-				((XConfigureEvent *)&event)->width == width &&
-				((XConfigureEvent *)&event)->height == height
-			) {
-				return;
-			}
-		}
+		xSync(
+			wnd->xWnd,
+			ConfigureNotify,
+			&& ((XConfigureEvent *)&event)->width == width
+			&& ((XConfigureEvent *)&event)->height == height
+		)
 	}
+	ZKMux_UnLock(wndMapAndEvtMux);
 }
 
 static void visible(PrWnd wnd) {
 	XWindowAttributes attrs;
 	XGetWindowAttributes(dpy, wnd->xWnd, &attrs);
-	XEvent event;
+	ZKMux_Lock(wndMapAndEvtMux);
 	if (attrs.map_state != IsViewable && XMapWindow(dpy, wnd->xWnd) != BadWindow && attrs.map_state == IsUnmapped) {
-		while (handleXEvent(&event)) {
-			if (
-				((XAnyEvent *)&event)->window == wnd->xWnd &&
-				((XAnyEvent *)&event)->type == MapNotify
-			) {
-				break;
-			}
-		}
+		xSync(
+			wnd->xWnd,
+			MapNotify,
+		)
 	}
+	ZKMux_UnLock(wndMapAndEvtMux);
 }
 
 void PrWnd_View(PrWnd wnd, PWRE_VIEW type) {
