@@ -24,20 +24,20 @@ typedef struct ZKMap *ZKMap;
 ZKMap _ZK_NAME(new_ZKMap)(size_t);
 #define new_ZKMap(size_t) _ZK_NAME(new_ZKMap)(size_t)
 
-bool _ZK_NAME(ZKMap_resize)(ZKMap, size_t);
-#define ZKMap_resize(ZKMap, size_t) _ZK_NAME(ZKMap_resize)(ZKMap, size_t)
+bool _ZK_NAME(ZKMap_ReSize)(ZKMap, size_t);
+#define ZKMap_ReSize(ZKMap, size_t) _ZK_NAME(ZKMap_ReSize)(ZKMap, size_t)
 
-bool _ZK_NAME(ZKMap_set)(ZKMap, void *key, void *value);
-#define ZKMap_set(ZKMap_map, any_key, any_value) _ZK_NAME(ZKMap_set)(ZKMap_map, (void *)any_key, (void *)any_value)
+bool _ZK_NAME(ZKMap_Set)(ZKMap, void *key, void *value);
+#define ZKMap_Set(ZKMap_map, any_key, any_value) _ZK_NAME(ZKMap_Set)(ZKMap_map, (void *)any_key, (void *)any_value)
 
-void *_ZK_NAME(ZKMap_get)(ZKMap, void *key);
-#define ZKMap_get(ZKMap_map, any_key) _ZK_NAME(ZKMap_get)(ZKMap_map, (void *)any_key)
+void *_ZK_NAME(ZKMap_Get)(ZKMap, void *key);
+#define ZKMap_Get(ZKMap_map, any_key) _ZK_NAME(ZKMap_Get)(ZKMap_map, (void *)any_key)
 
-void _ZK_NAME(ZKMap_delete)(ZKMap, void *key);
-#define ZKMap_delete(ZKMap_map, any_key) _ZK_NAME(ZKMap_delete)(ZKMap_map, (void *)any_key)
+void _ZK_NAME(ZKMap_Delete)(ZKMap, void *key);
+#define ZKMap_Delete(ZKMap_map, any_key) _ZK_NAME(ZKMap_Delete)(ZKMap_map, (void *)any_key)
 
-void _ZK_NAME(ZKMap_free)(ZKMap);
-#define ZKMap_free(ZKMap) _ZK_NAME(ZKMap_free)(ZKMap)
+void _ZK_NAME(ZKMap_Free)(ZKMap);
+#define ZKMap_Free(ZKMap) _ZK_NAME(ZKMap_Free)(ZKMap)
 
 #ifdef __cplusplus
 }
@@ -69,7 +69,7 @@ ZKMap _ZK_NAME(new_ZKMap)(size_t baseSize) {
 	return map;
 }
 
-bool _ZK_NAME(ZKMap_resize)(ZKMap map, size_t size) {
+bool _ZK_NAME(ZKMap_ReSize)(ZKMap map, size_t size) {
 	if (size <= map->base) {
 		return false;
 	}
@@ -82,7 +82,7 @@ bool _ZK_NAME(ZKMap_resize)(ZKMap map, size_t size) {
 	return true;
 }
 
-bool _ZK_NAME(ZKMap_set)(ZKMap map, void *key, void *value) {
+bool _ZK_NAME(ZKMap_Set)(ZKMap map, void *key, void *value) {
 	for (size_t dvdnd = map->base; dvdnd <= map->size; dvdnd += map->base) {
 		size_t ix = (size_t)key % dvdnd;
 		if (!map->list[ix].key) {
@@ -98,11 +98,11 @@ bool _ZK_NAME(ZKMap_set)(ZKMap map, void *key, void *value) {
 				if (!map->list[ix].key) {
 					map->list[ix].key = key;
 					map->list[ix].value = value;
-					ZKMap_resize(map, size);
+					ZKMap_ReSize(map, size);
 					return true;
 				}
 			} else {
-				ZKMap_resize(map, size);
+				ZKMap_ReSize(map, size);
 				map->list[ix].key = key;
 				map->list[ix].value = value;
 				return true;
@@ -112,7 +112,7 @@ bool _ZK_NAME(ZKMap_set)(ZKMap map, void *key, void *value) {
 	return false;
 }
 
-void *_ZK_NAME(ZKMap_get)(ZKMap map, void *key) {
+void *_ZK_NAME(ZKMap_Get)(ZKMap map, void *key) {
 	for (size_t dvdnd = map->base; dvdnd <= map->size; dvdnd += map->base) {
 		size_t ix = (size_t)key % dvdnd;
 		if (map->list[ix].key == key) {
@@ -122,7 +122,7 @@ void *_ZK_NAME(ZKMap_get)(ZKMap map, void *key) {
 	return NULL;
 }
 
-void _ZK_NAME(ZKMap_delete)(ZKMap map, void *key) {
+void _ZK_NAME(ZKMap_Delete)(ZKMap map, void *key) {
 	for (size_t dvdnd = map->base; dvdnd <= map->size; dvdnd += map->base) {
 		size_t ix = (size_t)key % dvdnd;
 		if (map->list[ix].key == key) {
@@ -132,7 +132,7 @@ void _ZK_NAME(ZKMap_delete)(ZKMap map, void *key) {
 	}
 }
 
-void _ZK_NAME(ZKMap_free)(ZKMap map) {
+void _ZK_NAME(ZKMap_Free)(ZKMap map) {
 	free(map->list);
 	free(map);
 }

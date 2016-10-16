@@ -23,12 +23,12 @@ static void _PrWnd_free(PrWnd wnd) {
 	if (wnd->onFree) {
 		wnd->onFree(wnd);
 	}
-	ZKMux_lock(wnd->dataMux);
+	ZKMux_Lock(wnd->dataMux);
 	if (wnd->titleBuf) {
 		free(wnd->titleBuf);
 	}
-	ZKMux_unlock(wnd->dataMux);
-	ZKMux_free(wnd->dataMux);
+	ZKMux_UnLock(wnd->dataMux);
+	ZKMux_Free(wnd->dataMux);
 	free(wnd);
 }
 
@@ -67,16 +67,16 @@ static LRESULT CALLBACK wndMsgHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 
 				eventPost(, PWRE_EVENT_DESTROY, NULL)
 
-				ZKMux_lock(wndCountMux);
+				ZKMux_Lock(wndCountMux);
 				wndCount--;
 				_PrWnd_free(wnd);
 				if (!wndCount) {
-					ZKMux_unlock(wndCountMux);
-					ZKMux_free(wndCountMux);
+					ZKMux_UnLock(wndCountMux);
+					ZKMux_Free(wndCountMux);
 					PostQuitMessage(0);
 					return 0;
 				}
-				ZKMux_unlock(wndCountMux);
+				ZKMux_UnLock(wndCountMux);
 		}
 	}
 	return DefWindowProcW(hWnd, uMsg, wParam, lParam);
@@ -174,7 +174,7 @@ PrWnd _alloc_PrWnd(size_t memSize, uint64_t mask) {
 		return NULL;
 	}
 
-	ZKMux_lock(wndCountMux); wndCount++; ZKMux_unlock(wndCountMux);
+	ZKMux_Lock(wndCountMux); wndCount++; ZKMux_UnLock(wndCountMux);
 
 	wnd->dataMux = new_ZKMux();
 	wnd->evtHdr = dftEvtHdr;
@@ -210,7 +210,7 @@ void PrWnd_Destroy(PrWnd wnd) {
 }
 
 const char *PrWnd_GetTitle(PrWnd wnd) {
-	ZKMux_lock(wnd->dataMux);
+	ZKMux_Lock(wnd->dataMux);
 	int str16Len = GetWindowTextLengthW(wnd->hWnd);
 	if (str16Len) {
 		str16Len++;
@@ -226,7 +226,7 @@ const char *PrWnd_GetTitle(PrWnd wnd) {
 	} else {
 		_PrWnd_clearTitleBuf(wnd, 0);
 	}
-	ZKMux_unlock(wnd->dataMux);
+	ZKMux_UnLock(wnd->dataMux);
 	return (const char *)wnd->titleBuf;
 }
 

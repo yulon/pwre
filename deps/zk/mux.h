@@ -21,14 +21,14 @@ typedef struct ZKMux *ZKMux;
 ZKMux _ZK_NAME(new_ZKMux)(void);
 #define new_ZKMux() _ZK_NAME(new_ZKMux)()
 
-void _ZK_NAME(ZKMux_lock)(ZKMux);
-#define ZKMux_lock(ZKMux) _ZK_NAME(ZKMux_lock)(ZKMux)
+void _ZK_NAME(ZKMux_Lock)(ZKMux);
+#define ZKMux_Lock(ZKMux) _ZK_NAME(ZKMux_Lock)(ZKMux)
 
-void _ZK_NAME(ZKMux_unlock)(ZKMux);
-#define  ZKMux_unlock(ZKMux) _ZK_NAME(ZKMux_unlock)(ZKMux)
+void _ZK_NAME(ZKMux_UnLock)(ZKMux);
+#define  ZKMux_UnLock(ZKMux) _ZK_NAME(ZKMux_UnLock)(ZKMux)
 
-void _ZK_NAME(ZKMux_free)(ZKMux);
-#define  ZKMux_free(ZKMux) _ZK_NAME(ZKMux_free)(ZKMux)
+void _ZK_NAME(ZKMux_Free)(ZKMux);
+#define  ZKMux_Free(ZKMux) _ZK_NAME(ZKMux_Free)(ZKMux)
 
 #ifdef __cplusplus
 }
@@ -60,7 +60,7 @@ ZKMux _ZK_NAME(new_ZKMux)(void) {
 	#endif
 }
 
-void _ZK_NAME(ZKMux_lock)(ZKMux mux) {
+void _ZK_NAME(ZKMux_Lock)(ZKMux mux) {
 	if (mux) {
 		#if defined(_WIN32)
 			WaitForSingleObject((HANDLE)mux, INFINITE);
@@ -70,7 +70,7 @@ void _ZK_NAME(ZKMux_lock)(ZKMux mux) {
 	}
 }
 
-void _ZK_NAME(ZKMux_unlock)(ZKMux mux) {
+void _ZK_NAME(ZKMux_UnLock)(ZKMux mux) {
 	if (mux) {
 		#if defined(_WIN32)
 			ReleaseMutex((HANDLE)mux);
@@ -80,7 +80,7 @@ void _ZK_NAME(ZKMux_unlock)(ZKMux mux) {
 	}
 }
 
-void _ZK_NAME(ZKMux_free)(ZKMux mux) {
+void _ZK_NAME(ZKMux_Free)(ZKMux mux) {
 	if (mux) {
 		#if defined(_WIN32)
 			CloseHandle((HANDLE)mux);

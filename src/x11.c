@@ -67,21 +67,21 @@ static void _PrWnd_free(PrWnd wnd) {
 	if (wnd->onFree) {
 		wnd->onFree(wnd);
 	}
-	ZKMux_lock(wnd->dataMux);
+	ZKMux_Lock(wnd->dataMux);
 	if (wnd->titleBuf) {
 		free(wnd->titleBuf);
 	}
-	ZKMux_unlock(wnd->dataMux);
-	ZKMux_free(wnd->dataMux);
+	ZKMux_UnLock(wnd->dataMux);
+	ZKMux_Free(wnd->dataMux);
 	free(wnd);
 }
 
 static bool handleXEvent(XEvent *event) {
 	XNextEvent(dpy, event);
 
-	ZKMux_lock(wndMapMux);
-	eventTarget((PrWnd)ZKMap_get(wndMap, ((XAnyEvent *)event)->window))
-	ZKMux_unlock(wndMapMux);
+	ZKMux_Lock(wndMapMux);
+	eventTarget((PrWnd)ZKMap_Get(wndMap, ((XAnyEvent *)event)->window))
+	ZKMux_UnLock(wndMapMux);
 	if (wnd) {
 		switch (((XAnyEvent *)event)->type) {
 			case ConfigureNotify:
@@ -116,21 +116,21 @@ static bool handleXEvent(XEvent *event) {
 			case DestroyNotify:
 				eventPost(, PWRE_EVENT_DESTROY, NULL)
 
-				ZKMux_lock(wndMapMux);
-				ZKMap_delete(wndMap, wnd->xWnd);
-				ZKMux_unlock(wndMapMux);
+				ZKMux_Lock(wndMapMux);
+				ZKMap_Delete(wndMap, wnd->xWnd);
+				ZKMux_UnLock(wndMapMux);
 
-				ZKMux_lock(wndCountMux);
+				ZKMux_Lock(wndCountMux);
 				wndCount--;
 				_PrWnd_free(wnd);
 				if (!wndCount) {
-					ZKMux_unlock(wndCountMux);
-					ZKMux_free(wndCountMux);
-					ZKMux_free(wndMapMux);
+					ZKMux_UnLock(wndCountMux);
+					ZKMux_Free(wndCountMux);
+					ZKMux_Free(wndMapMux);
 					XCloseDisplay(dpy);
 					return false;
 				}
-				ZKMux_unlock(wndCountMux);
+				ZKMux_UnLock(wndCountMux);
 		}
 	}
 	return true;
@@ -186,15 +186,15 @@ PrWnd _alloc_PrWnd(
 
 	XSetWMProtocols(dpy, xWnd, &wmDelWnd, 1);
 
-	ZKMux_lock(wndCountMux); wndCount++; ZKMux_unlock(wndCountMux);
+	ZKMux_Lock(wndCountMux); wndCount++; ZKMux_UnLock(wndCountMux);
 
 	PrWnd wnd = calloc(1, memSize);
 	wnd->xWnd = xWnd;
 	wnd->evtHdr = dftEvtHdr;
 
- 	ZKMux_lock(wndMapMux);
-	ZKMap_set(wndMap, xWnd, wnd);
-	ZKMux_unlock(wndMapMux);
+ 	ZKMux_Lock(wndMapMux);
+	ZKMap_Set(wndMap, xWnd, wnd);
+	ZKMux_UnLock(wndMapMux);
 	return wnd;
 }
 
@@ -219,7 +219,7 @@ void PrWnd_Destroy(PrWnd wnd) {
 }
 
 const char *PrWnd_GetTitle(PrWnd wnd) {
-	ZKMux_lock(wnd->dataMux);
+	ZKMux_Lock(wnd->dataMux);
 	Atom type;
 	int format;
 	unsigned long nitems, after;
@@ -230,7 +230,7 @@ const char *PrWnd_GetTitle(PrWnd wnd) {
 	} else {
 		_PrWnd_clearTitleBuf(wnd, 0);
 	}
-	ZKMux_unlock(wnd->dataMux);
+	ZKMux_UnLock(wnd->dataMux);
 	return (const char *)wnd->titleBuf;
 }
 
