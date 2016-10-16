@@ -16,8 +16,6 @@ typedef struct {
 	int x, y;
 } PrPoint;
 
-#define PWRE_POS_AUTO -10101
-
 typedef struct PrWnd *PrWnd;
 
 typedef enum {
@@ -39,11 +37,9 @@ bool pwre_init(PrEventHandler);
 bool pwre_step(void);
 void pwre_run(void);
 
-typedef struct {
-	int left, top, right, bottom;
-} PrBounds;
-
-#define PWRE_MASK_ALPHA 0x00000001
+#define PWRE_MASK_ALPHA 0x00000001 // support for Windows Vista+ (suggest less), X11 (only GL), macOS.
+#define PWRE_MASK_BLUR 0x00000010 // support for Windows Vista/7 (only Aero Glass), Windows 10 (unpublished API, not perfect, suggest less), macOS.
+#define PWRE_MASK_FULLWMBG 0x00000002 // support for Windows Vista+ (Aero Glass will automatically blur), macOS.
 
 PrWnd new_PrWnd(uint64_t mask);
 void PrWnd_Close(PrWnd);
@@ -56,6 +52,8 @@ void PrWnd_SetEventHandler(PrWnd, PrEventHandler);
 
 const char *PrWnd_GetTitle(PrWnd);
 void PrWnd_SetTitle(PrWnd, const char *);
+
+#define PWRE_POS_AUTO -10101
 
 void PrWnd_Move(PrWnd, int x, int y);
 
@@ -76,7 +74,10 @@ bool PrWnd_Viewed(PrWnd, PWRE_VIEW);
 void PrWnd_Less(PrWnd, bool);
 
 typedef struct {
-	PrBounds outer;
+	int left, top, right, bottom;
+} PrBounds;
+
+typedef struct {
 	PrBounds border;
 	PrBounds padding;
 } PrArea;
