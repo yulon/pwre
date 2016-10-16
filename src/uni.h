@@ -14,15 +14,10 @@ static PrEventHandler eventHandler;
 		eventHandler(wnd, _event, _data); \
 	}
 
-#define eventSend(_hdr_existent_code, _event, _data, _hdr_return_false_code) { \
-	bool evtHdrRst; \
+#define eventSend(_hdr_existent_code, _event, _data, _hdr_return_false_code) \
 	if (eventHandler) { \
 		_hdr_existent_code \
-		evtHdrRst = eventHandler(wnd, _event, _data); \
-	} else { \
-		evtHdrRst = true; \
-	} \
-	if (!evtHdrRst) { \
-		_hdr_return_false_code \
-	} \
-}
+		if (!eventHandler(wnd, _event, _data)) { \
+			_hdr_return_false_code \
+		} \
+	}

@@ -91,7 +91,6 @@ static void _PrWnd_free(PrWnd wnd) {
 
 static bool handleXEvent(XEvent *event, bool lock) {
 	PrWnd wnd;
-	bool evtHdrRst;
 
 	if (lock) {
 		ZKMux_Lock(wndMapAndEvtMux);
@@ -225,7 +224,7 @@ PrWnd new_PrWnd(uint64_t mask) {
 }
 
 void PrWnd_Close(PrWnd wnd) {
-	if (wnd->evtHdr && !wnd->evtHdr(wnd, PWRE_EVENT_CLOSE, NULL)) {
+	if (eventHandler && eventHandler(wnd, PWRE_EVENT_CLOSE, NULL)) {
 		XDestroyWindow(dpy, wnd->xWnd);
 	}
 }
