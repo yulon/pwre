@@ -28,16 +28,16 @@ static const NSOpenGLPixelFormatAttribute gl3[] = {
 	0
 };
 
-PrWnd new_PrWnd_with_GL(uint64_t mask) {
+PrWnd new_PrWnd_with_GL(uint64_t hints) {
 	NSOpenGLPixelFormatAttribute glAttr;
 
-	if (mask & PWRE_GL_V3 == PWRE_GL_V3) {
+	if (hints & PWRE_HINT_GL_V3 == PWRE_HINT_GL_V3) {
 		glAttr = gl3;
 	} else {
 		glAttr = gl2;
 	}
 
-	PrWnd_GL glWnd = (PrWnd_GL)_alloc_PrWnd(sizeof(struct PrWnd_GL), mask);
+	PrWnd_GL glWnd = (PrWnd_GL)_alloc_PrWnd(sizeof(struct PrWnd_GL), hints);
 	glWnd->wnd.onFree = _PrWnd_GL_free;
 
 	NSOpenGLPixelFormat *pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:glAttr];

@@ -32,10 +32,10 @@ const int glAlphaAttr[] = {
 	None
 };
 
-PrWnd new_PrWnd_with_GL(uint64_t mask) {
+PrWnd new_PrWnd_with_GL(uint64_t hints) {
 	XVisualInfo *vi;
 
-	if ((mask & PWRE_MASK_ALPHA) == PWRE_MASK_ALPHA) {
+	if ((hints & PWRE_HINT_ALPHA) == PWRE_HINT_ALPHA) {
 		int iNumOfFBConfigs;
 		GLXFBConfig *pFBConfigs = glXChooseFBConfig(dpy, 0, glAlphaAttr, &iNumOfFBConfigs);
 		XRenderPictFormat *pPictFormat = NULL;
@@ -66,7 +66,7 @@ PrWnd new_PrWnd_with_GL(uint64_t mask) {
 
 	PrWnd_GL glWnd = (PrWnd_GL)_alloc_PrWnd(
 		sizeof(struct PrWnd),
-		mask,
+		hints,
 		vi->depth, vi->visual, CWBackPixel | CWBorderPixel | CWEventMask | CWColormap, &swa
 	);
 	glWnd->wnd.onFree = _PrWnd_GL_free;

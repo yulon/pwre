@@ -178,7 +178,7 @@ static void fixPos(int *x, int *y, int width, int height) {
 
 PrWnd _alloc_PrWnd(
 	size_t memSize,
-	uint64_t mask,
+	uint64_t hints,
 	int depth, Visual *visual, unsigned long valuemask, XSetWindowAttributes *swa
 ) {
 	Window xWnd = XCreateWindow(
@@ -213,12 +213,12 @@ PrWnd _alloc_PrWnd(
 	return wnd;
 }
 
-PrWnd new_PrWnd(uint64_t mask) {
+PrWnd new_PrWnd(uint64_t hints) {
 	XSetWindowAttributes swa;
 	swa.event_mask = ExposureMask | KeyPressMask | StructureNotifyMask;
 	return _alloc_PrWnd(
 		sizeof(struct PrWnd),
-		mask,
+		hints,
 		XDefaultDepth(dpy, 0), XDefaultVisual(dpy, 0), CWEventMask, &swa
 	);
 }

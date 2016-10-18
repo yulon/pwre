@@ -32,7 +32,7 @@ bool eventHandler(PrWnd wnd, PWRE_EVENT event, void *data) {
 int main(void) {
 	pwre_init(eventHandler);
 
-	PrWnd wnd = new_PrWnd_with_GL(PWRE_MASK_ALPHA);
+	PrWnd wnd = new_PrWnd_with_GL(PWRE_HINT_ALPHA);
 	PrWnd_Less(wnd, true);
 	PrWnd_ReSize(wnd, 600, 500);
 	PrWnd_GL_MakeCurrent(wnd);

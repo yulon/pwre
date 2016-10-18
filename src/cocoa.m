@@ -47,7 +47,7 @@ static void fixPos(int *x, int *y, int width, int height) {
 	}
 }
 
-PrWnd _alloc_PrWnd(size_t memSize, uint64_t mask) {
+PrWnd _alloc_PrWnd(size_t memSize, uint64_t hints) {
 	NSWindow *nsWnd = [[NSWindow alloc] initWithContentRect:NSMakeRect(x, y, width, height) styleMask:uiStyle backing:backingStoreStyle defer:NO];
 	[nsWnd makeKeyAndOrderFront:nsWnd];
 	[NSApp hide:nsWnd];
@@ -61,8 +61,8 @@ PrWnd _alloc_PrWnd(size_t memSize, uint64_t mask) {
 	return wnd;
 }
 
-PrWnd new_PrWnd(uint64_t mask) {
-	return _alloc_PrWnd(sizeof(struct PrWnd), mask);
+PrWnd new_PrWnd(uint64_t hints) {
+	return _alloc_PrWnd(sizeof(struct PrWnd), hints);
 }
 
 const char *PrWnd_GetTitle(PrWnd wnd) {

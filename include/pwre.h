@@ -37,11 +37,11 @@ bool pwre_init(PrEventHandler);
 bool pwre_step(void);
 void pwre_run(void);
 
-#define PWRE_MASK_ALPHA 0x00000001 // support for Windows Vista+ (suggest less), X11 (only GL), macOS.
-#define PWRE_MASK_BLUR 0x00000010 // support for Windows Vista/7 (only Aero Glass), Windows 10 (unpublished API, not perfect, suggest less), macOS.
-#define PWRE_MASK_FULLWMBG 0x00000002 // support for Windows Vista+ (Aero Glass will automatically blur), macOS.
+#define PWRE_HINT_ALPHA 0x00000001 // support for Windows Vista+ (suggest less), X11 (only GL), macOS.
+#define PWRE_HINT_BLUR 0x00000010 // support for Windows Vista/7 (only Aero Glass), Windows 10 (unpublished API, not perfect, suggest less), macOS.
+#define PWRE_HINT_WMBACKGROUND 0x00000002 // support for Windows Vista+ (Aero Glass will automatically blur, but when less only shadow), macOS.
 
-PrWnd new_PrWnd(uint64_t mask);
+PrWnd new_PrWnd(uint64_t hints);
 void PrWnd_Close(PrWnd);
 void PrWnd_Destroy(PrWnd);
 
@@ -81,9 +81,9 @@ typedef struct {
 
 bool PrWnd_CustomArea(PrWnd, PrArea *);
 
-#define PWRE_MASK_GL_V3 0x3000000000
+#define PWRE_HINT_GL_V3 0x3000000000
 
-PrWnd new_PrWnd_with_GL(uint64_t mask);
+PrWnd new_PrWnd_with_GL(uint64_t hints);
 void PrWnd_GL_MakeCurrent(PrWnd);
 void PrWnd_GL_SwapBuffers(PrWnd);
 

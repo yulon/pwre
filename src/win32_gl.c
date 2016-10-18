@@ -18,8 +18,8 @@ static void _PrWnd_GL_free(PrWnd wnd) {
 	wglDeleteContext(((PrWnd_GL)wnd)->rc);
 }
 
-PrWnd new_PrWnd_with_GL(uint64_t mask) {
-	PrWnd_GL glWnd = (PrWnd_GL)_alloc_PrWnd(sizeof(struct PrWnd_GL), mask);
+PrWnd new_PrWnd_with_GL(uint64_t hints) {
+	PrWnd_GL glWnd = (PrWnd_GL)_alloc_PrWnd(sizeof(struct PrWnd_GL), hints);
 	glWnd->wnd.onFree = _PrWnd_GL_free;
 
 	glWnd->dc = GetDC(glWnd->wnd.hWnd);

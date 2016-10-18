@@ -9,4 +9,4 @@ struct PrWnd {
 	void (*onFree)(PrWnd);
 };
 
-PrWnd _alloc_PrWnd(size_t memSize, uint64_t mask);
+PrWnd _alloc_PrWnd(size_t memSize, uint64_t hints);

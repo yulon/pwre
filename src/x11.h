@@ -15,7 +15,7 @@ struct PrWnd {
 
 PrWnd _alloc_PrWnd(
 	size_t memSize,
-	uint64_t mask,
+	uint64_t hints,
 	int depth, Visual *visual, unsigned long valuemask, XSetWindowAttributes *swa
 );
 

@@ -12,6 +12,8 @@
 static HMODULE dwmapi;
 typedef HRESULT (WINAPI *DwmEnableBlurBehindWindow_t)(HWND hWnd, const DWM_BLURBEHIND *pBlurBehind);
 static DwmEnableBlurBehindWindow_t DwmEnableBlurBehindWindow_fp;
+typedef HRESULT (WINAPI *DwmExtendFrameIntoClientArea_t)(HWND hWnd, const MARGINS *pMarInset);
+static DwmExtendFrameIntoClientArea_t DwmExtendFrameIntoClientArea_fp;
 
 static HMODULE gdi32;
 typedef HRGN (WINAPI *CreateRectRgn_t)(int x1, int y1, int x2, int y2);
@@ -89,6 +91,7 @@ bool pwre_init(PrEventHandler evtHdr) {
 	dwmapi = LoadLibraryW(L"dwmapi");
 	if (dwmapi) {
 		loadW32Api(dwmapi, DwmEnableBlurBehindWindow);
+		loadW32Api(dwmapi, DwmExtendFrameIntoClientArea);
 
 		gdi32 = LoadLibraryW(L"gdi32");
 		if (gdi32) {
@@ -148,7 +151,7 @@ static void fixPos(int *x, int *y, int width, int height) {
 	}
 }
 
-PrWnd _alloc_PrWnd(size_t memSize, uint64_t mask) {
+PrWnd _alloc_PrWnd(size_t memSize, uint64_t hints) {
 	RECT rect = { 500, 500, 1000, 1000 };
 	BOOL ok = AdjustWindowRectEx(&rect, WS_OVERLAPPEDWINDOW, FALSE, 0);
 	if (!ok) {
@@ -182,20 +185,24 @@ PrWnd _alloc_PrWnd(size_t memSize, uint64_t mask) {
 
 	SetWindowLongPtrW(wnd->hWnd, PWRE_WIN32_WNDEXTRA_I, (LONG_PTR)(wnd));
 
-	if (((mask & PWRE_MASK_ALPHA) == PWRE_MASK_ALPHA) && DwmEnableBlurBehindWindow_fp && CreateRectRgn_fp) {
+	if (((hints & PWRE_HINT_ALPHA) == PWRE_HINT_ALPHA) && DwmEnableBlurBehindWindow_fp && CreateRectRgn_fp) {
 		DWM_BLURBEHIND bb;
 		bb.dwFlags = DWM_BB_ENABLE | DWM_BB_BLURREGION;
 		bb.hRgnBlur = CreateRectRgn_fp(0, 0, -1, -1);
 		bb.fEnable = TRUE;
 		bb.fTransitionOnMaximized = 1;
 		DwmEnableBlurBehindWindow_fp(wnd->hWnd, &bb);
+	} else
+	if (((hints & PWRE_HINT_WMBACKGROUND) == PWRE_HINT_WMBACKGROUND) && DwmExtendFrameIntoClientArea_fp) {
+		MARGINS marInset = { -1 };
+		DwmExtendFrameIntoClientArea_fp(wnd->hWnd, &marInset);
 	}
 
 	return wnd;
 }
 
-PrWnd new_PrWnd(uint64_t mask) {
-	return _alloc_PrWnd(sizeof(struct PrWnd), mask);
+PrWnd new_PrWnd(uint64_t hints) {
+	return _alloc_PrWnd(sizeof(struct PrWnd), hints);
 }
 
 void *PrWnd_NativePointer(PrWnd wnd) {
