@@ -1,42 +1,7 @@
 #ifndef _ZK_MUX_H
 #define _ZK_MUX_H
 
-#ifndef _ZK_LINK
-#define _ZK_LINK(p, n) ___##p##___##n
-#define _ZK_LINK_M(p, n) _ZK_LINK(p, n)
-#endif
-
-#ifdef ZK_SCOPE
-#define _ZK_NAME(n) _ZK_LINK_M(ZK_SCOPE, n)
-#else
-#define _ZK_NAME(n) _ZK_LINK(zk, n)
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct ZKMux *ZKMux;
-
-ZKMux _ZK_NAME(new_ZKMux)(void);
-#define new_ZKMux() _ZK_NAME(new_ZKMux)()
-
-void _ZK_NAME(ZKMux_Lock)(ZKMux);
-#define ZKMux_Lock(ZKMux) _ZK_NAME(ZKMux_Lock)(ZKMux)
-
-void _ZK_NAME(ZKMux_UnLock)(ZKMux);
-#define  ZKMux_UnLock(ZKMux) _ZK_NAME(ZKMux_UnLock)(ZKMux)
-
-void _ZK_NAME(ZKMux_Free)(ZKMux);
-#define  ZKMux_Free(ZKMux) _ZK_NAME(ZKMux_Free)(ZKMux)
-
-#ifdef __cplusplus
-}
-#endif
-
-#ifdef ZK_IMPL
-#ifndef _ZK_MUX_BODY
-#define _ZK_MUX_BODY
 
 #include <stdlib.h>
 
@@ -48,50 +13,47 @@ void _ZK_NAME(ZKMux_Free)(ZKMux);
 	#pragma message("ZKMux: not support this OS!")
 #endif
 
-ZKMux _ZK_NAME(new_ZKMux)(void) {
+static inline ZKMux new_ZKMux(void) {
 	#if defined(_WIN32)
-		return (ZKMux)CreateMutexW(NULL, FALSE, NULL);
-	#elif defined(__unix__)
-		pthread_mutex_t *ptMux = calloc(1, sizeof(pthread_mutex_t));
-		pthread_mutex_init(ptMux, NULL);
-		return (ZKMux)ptMux;
-	#else
-		return NULL;
+		HANDLE ntvMux = CreateMutexW(NULL, FALSE, NULL);
+		if (!ntvMux) {
+			puts("ZK: Win32.CreateMutexW error!");
+			exit(1);
+		}
+	#elif defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+		pthread_mutex_t *ntvMux = calloc(1, sizeof(pthread_mutex_t));
+		pthread_mutex_init(ntvMux, NULL);
+		if (!ntvMux) {
+			puts("ZK: pthread_mutex_init error!");
+			exit(1);
+		}
+	#endif
+	return (ZKMux)ntvMux;
+}
+
+static inline void ZKMux_Lock(ZKMux mux) {
+	#if defined(_WIN32)
+		WaitForSingleObject((HANDLE)mux, INFINITE);
+	#elif defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+		pthread_mutex_lock((pthread_mutex_t *)mux);
 	#endif
 }
 
-void _ZK_NAME(ZKMux_Lock)(ZKMux mux) {
-	if (mux) {
-		#if defined(_WIN32)
-			WaitForSingleObject((HANDLE)mux, INFINITE);
-		#elif defined(__unix__)
-			pthread_mutex_lock((pthread_mutex_t *)mux);
-		#endif
-	}
+static inline void ZKMux_UnLock(ZKMux mux) {
+	#if defined(_WIN32)
+		ReleaseMutex((HANDLE)mux);
+	#elif defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+		pthread_mutex_unlock((pthread_mutex_t *)mux);
+	#endif
 }
 
-void _ZK_NAME(ZKMux_UnLock)(ZKMux mux) {
-	if (mux) {
-		#if defined(_WIN32)
-			ReleaseMutex((HANDLE)mux);
-		#elif defined(__unix__)
-			pthread_mutex_unlock((pthread_mutex_t *)mux);
-		#endif
-	}
+static inline void ZKMux_Free(ZKMux mux) {
+	#if defined(_WIN32)
+		CloseHandle((HANDLE)mux);
+	#elif defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+		pthread_mutex_destroy((pthread_mutex_t *)mux);
+		free(mux);
+	#endif
 }
-
-void _ZK_NAME(ZKMux_Free)(ZKMux mux) {
-	if (mux) {
-		#if defined(_WIN32)
-			CloseHandle((HANDLE)mux);
-		#elif defined(__unix__)
-			pthread_mutex_destroy((pthread_mutex_t *)mux);
-			free(mux);
-		#endif
-	}
-}
-
-#endif // !_ZK_MUX_BODY
-#endif // !ZK_IMPL
 
 #endif // !_ZK_MUX_H

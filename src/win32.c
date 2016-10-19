@@ -2,9 +2,6 @@
 
 #ifdef PWRE_WIN32
 
-#define ZK_SCOPE pwre
-#define ZK_IMPL
-
 #include "win32.h"
 #include "uni.h"
 #include "titlebuf.h"

@@ -2,9 +2,6 @@
 
 #ifdef PWRE_X11
 
-#define ZK_SCOPE pwre
-#define ZK_IMPL
-
 #include "x11.h"
 #include "uni.h"
 #include "titlebuf.h"
@@ -143,6 +140,7 @@ static bool handleXEvent(XEvent *event, bool lock) {
 					ZKMux_UnLock(wndCountMux);
 					ZKMux_Free(wndCountMux);
 					ZKMux_Free(wndMapAndEvtMux);
+					ZKMap_Free(wndMapAndEvtMux);
 					XCloseDisplay(dpy);
 					return false;
 				}
