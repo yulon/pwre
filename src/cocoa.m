@@ -34,16 +34,6 @@ void pwre_run(void) {
 	[pool drain];
 }
 
-static void fixPos(int *x, int *y, int width, int height) {
-	NSSize scrSize = [[NSScreen mainScreen] frame].size;
-	if (*x == PWRE_POS_AUTO) {
-		*x = (scrSize.width - width) / 2;
-	}
-	if (*y == PWRE_POS_AUTO) {
-		*y = (scrSize.height - height) / 2;
-	}
-}
-
 PrWnd _alloc_PrWnd(size_t memSize, uint64_t hints) {
 	NSWindow *nsWnd = [[NSWindow alloc] initWithContentRect:NSMakeRect(x, y, width, height) styleMask:uiStyle backing:backingStoreStyle defer:NO];
 	[nsWnd makeKeyAndOrderFront:nsWnd];

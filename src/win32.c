@@ -139,15 +139,6 @@ void pwre_run(void) {
 	}
 }
 
-static void fixPos(int *x, int *y, int width, int height) {
-	if (*x == PWRE_POS_AUTO) {
-		*x = (GetSystemMetrics(SM_CXSCREEN) - width) / 2;
-	}
-	if (*y == PWRE_POS_AUTO) {
-		*y = (GetSystemMetrics(SM_CYSCREEN) - height) / 2;
-	}
-}
-
 PrWnd _alloc_PrWnd(size_t memSize, uint64_t hints) {
 	RECT rect = { 500, 500, 1000, 1000 };
 	BOOL ok = AdjustWindowRectEx(&rect, WS_OVERLAPPEDWINDOW, FALSE, 0);

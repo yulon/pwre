@@ -10,3 +10,6 @@ struct PrWnd {
 };
 
 PrWnd _alloc_PrWnd(size_t memSize, uint64_t hints);
+
+#define screenWidth [[NSScreen mainScreen] frame].size.width
+#define screenHeight [[NSScreen mainScreen] frame].size.height

@@ -165,15 +165,6 @@ void pwre_run(void) {
 	while (handleXEvent(&event, true));
 }
 
-static void fixPos(int *x, int *y, int width, int height) {
-	if (*x == PWRE_POS_AUTO) {
-		*x = (DisplayWidth(dpy, 0) - width) / 2;
-	}
-	if (*y == PWRE_POS_AUTO) {
-		*y = (DisplayHeight(dpy, 0) - height) / 2;
-	}
-}
-
 PrWnd _alloc_PrWnd(
 	size_t memSize,
 	uint64_t hints,

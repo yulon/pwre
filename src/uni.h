@@ -21,3 +21,12 @@ static PrEventHandler eventHandler;
 			_hdr_return_false_code \
 		} \
 	}
+
+static inline void fixPos(int *x, int *y, int width, int height) {
+	if (*x == PWRE_POS_AUTO) {
+		*x = (screenWidth - width) / 2;
+	}
+	if (*y == PWRE_POS_AUTO) {
+		*y = (screenHeight - height) / 2;
+	}
+}

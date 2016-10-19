@@ -17,3 +17,6 @@ struct PrWnd {
 };
 
 PrWnd _alloc_PrWnd(size_t memSize, uint64_t hints);
+
+#define screenWidth GetSystemMetrics(SM_CXSCREEN)
+#define screenHeight GetSystemMetrics(SM_CYSCREEN)

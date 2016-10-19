@@ -24,3 +24,6 @@ extern Display *_pwre_x11_dpy;
 
 extern Window _pwre_x11_root;
 #define root _pwre_x11_root
+
+#define screenWidth DisplayWidth(dpy, 0)
+#define screenHeight DisplayHeight(dpy, 0)
