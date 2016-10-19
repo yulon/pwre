@@ -46,8 +46,8 @@ static LRESULT CALLBACK wndMsgHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 			case WM_NCCALCSIZE:
 				if (wnd->less) {
 					if (wParam) {
-						memcpy(&((LPNCCALCSIZE_PARAMS)lParam)->rgrc[2], &((LPNCCALCSIZE_PARAMS)lParam)->rgrc[1], sizeof(RECT));
-						memcpy(&((LPNCCALCSIZE_PARAMS)lParam)->rgrc[1], &((LPNCCALCSIZE_PARAMS)lParam)->rgrc[0], sizeof(RECT));
+						((LPNCCALCSIZE_PARAMS)lParam)->rgrc[2] = ((LPNCCALCSIZE_PARAMS)lParam)->rgrc[1];
+						((LPNCCALCSIZE_PARAMS)lParam)->rgrc[1] = ((LPNCCALCSIZE_PARAMS)lParam)->rgrc[0];
 					}
 					return 0;
 				}
