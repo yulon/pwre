@@ -1,35 +1,35 @@
 // need {plat}.h
 
-static void _PrWnd_clearTitleBuf(PrWnd wnd, size_t length) {
+static void wnd_title_buf_clear(pwre_wnd_t wnd, size_t length) {
 	if (length) {
 		length++;
-		if (wnd->titleBuf) {
-			if (wnd->titleBufLen < length) {
-				free(wnd->titleBuf);
-				wnd->titleBufLen = length;
-				wnd->titleBuf = malloc(wnd->titleBufLen);
+		if (wnd->title_buf) {
+			if (wnd->title_buf_len < length) {
+				free(wnd->title_buf);
+				wnd->title_buf_len = length;
+				wnd->title_buf = malloc(wnd->title_buf_len);
 			}
 		} else {
-			wnd->titleBufLen = length;
-			wnd->titleBuf = malloc(wnd->titleBufLen);
+			wnd->title_buf_len = length;
+			wnd->title_buf = malloc(wnd->title_buf_len);
 		}
-	} else if (!wnd->titleBuf) {
-		wnd->titleBufLen = 128;
-		wnd->titleBuf = malloc(wnd->titleBufLen);
+	} else if (!wnd->title_buf) {
+		wnd->title_buf_len = 128;
+		wnd->title_buf = malloc(wnd->title_buf_len);
 	}
-	memset(wnd->titleBuf, 0, wnd->titleBufLen);
+	memset(wnd->title_buf, 0, wnd->title_buf_len);
 }
 
-static void _PrWnd_flushTitleBuf(PrWnd wnd, const char *newTitle) {
-	if (!newTitle) {
-		_PrWnd_clearTitleBuf(wnd, 0);
+static void wnd_title_buf_flush(pwre_wnd_t wnd, const char *new_title) {
+	if (!new_title) {
+		wnd_title_buf_clear(wnd, 0);
 		return;
 	}
-	size_t newTitleLen = strlen(newTitle);
-	if (!newTitleLen) {
-		_PrWnd_clearTitleBuf(wnd, 0);
+	size_t new_title_len = strlen(new_title);
+	if (!new_title_len) {
+		wnd_title_buf_clear(wnd, 0);
 		return;
 	}
-	_PrWnd_clearTitleBuf(wnd, newTitleLen);
-	strcpy(wnd->titleBuf, newTitle);
+	wnd_title_buf_clear(wnd, new_title_len);
+	strcpy(wnd->title_buf, new_title);
 }

@@ -1,20 +1,16 @@
 #include "plat.h"
 
-#ifdef PWRE_COCOA
+#ifdef PWRE_PLAT_COCOA
 
 #include "cocoa.h"
 #include "uni.h"
 
 static NSAutoreleasePool *pool;
-static NSUInteger uiStyle;
-static NSBackingStoreType backingStoreStyle;
 
-bool pwre_init(PrEventHandler evtHdr) {
+bool pwre_init(pwre_event_handler_t evt_hdr) {
 	pool = [[NSAutoreleasePool alloc] init];
-	uiStyle = NSWindowStyleMaskTitled | NSWindowStyleMaskMiniaturizable| NSWindowStyleMaskResizable | NSWindowStyleMaskClosable;
-	backingStoreStyle = NSBackingStoreBuffered;
 
-	eventHandler = evtHdr;
+	event_handler = evt_hdr;
 	return true;
 }
 
@@ -34,39 +30,43 @@ void pwre_run(void) {
 	[pool drain];
 }
 
-PrWnd _alloc_PrWnd(size_t memSize, uint64_t hints) {
-	NSWindow *nsWnd = [[NSWindow alloc] initWithContentRect:NSMakeRect(x, y, width, height) styleMask:uiStyle backing:backingStoreStyle defer:NO];
-	[nsWnd makeKeyAndOrderFront:nsWnd];
-	[NSApp hide:nsWnd];
-	nsWnd.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
+pwre_wnd_t alloc_wnd(size_t struct_size, uint64_t hints) {
+	NSWindow *NSWnd = [[NSWindow alloc]
+		initWithContentRect:NSMakeRect(x, y, width, height)
+		styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskMiniaturizable| NSWindowStyleMaskResizable | NSWindowStyleMaskClosable)
+		backing:NSBackingStoreBuffered
+		defer:NO
+	];
+	[NSWnd makeKeyAndOrderFront:NSWnd];
+	[NSApp hide:NSWnd];
+	NSWnd.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
 
-	wndCount++;
-	PrWnd wnd = calloc(1, memSize);
-	wnd->nsWnd = nsWnd;
-	wnd->evtHdr = eventHandler;
+	wnd_count++;
+	pwre_wnd_t wnd = calloc(1, struct_size);
+	wnd->NSWnd = NSWnd;
 
 	return wnd;
 }
 
-PrWnd new_PrWnd(uint64_t hints) {
-	return _alloc_PrWnd(sizeof(struct PrWnd), hints);
+pwre_wnd_t pwre_new_wnd(uint64_t hints) {
+	return alloc_wnd(sizeof(struct pwre_wnd), hints);
 }
 
-const char *PrWnd_GetTitle(PrWnd wnd) {
-	return wnd->nsWnd.title.UTF8String;
+const char *pwre_wnd_title(pwre_wnd_t wnd) {
+	return wnd->NSWnd.title.UTF8String;
 }
 
-void PrWnd_SetTitle(PrWnd wnd, const char *title) {
-	wnd->nsWnd.title = [NSString stringWithUTF8String:title];
+void pwre_wnd_retitle(pwre_wnd_t wnd, const char *title) {
+	wnd->NSWnd.title = [NSString stringWithUTF8String:title];
 }
 
-void PrWnd_Move(PrWnd wnd, int x, int y) {
-	fixPos(&x, &y, wnd->nsWnd.frame.size.width, wnd->nsWnd.frame.size.height);
-	[wnd->nsWnd setFrameOrigin:NSMakePoint(x, y)];
+void pwre_wnd_move(pwre_wnd_t wnd, int x, int y) {
+	fix_pos(&x, &y, wnd->NSWnd.frame.size.width, wnd->NSWnd.frame.size.height);
+	[wnd->NSWnd setFrameOrigin:NSMakePoint(x, y)];
 }
 
-void PrWnd_Size(PrWnd wnd, int *width, int *height) {
-	NSSize size = [wnd->nsWnd contentLayoutRect].size;
+void pwre_wnd_size(pwre_wnd_t wnd, int *width, int *height) {
+	NSSize size = [wnd->NSWnd contentLayoutRect].size;
 	if (width) {
 		*width = size.width;
 	}
@@ -75,82 +75,82 @@ void PrWnd_Size(PrWnd wnd, int *width, int *height) {
 	}
 }
 
-void PrWnd_ReSize(PrWnd wnd, int width, int height) {
-	[wnd->nsWnd setContentSize:NSMakeSize(width, height)];
+void pwre_wnd_resize(pwre_wnd_t wnd, int width, int height) {
+	[wnd->NSWnd setContentSize:NSMakeSize(width, height)];
 }
 
-static void visible(PrWnd wnd) {
-	if (!wnd->nsWnd.visible) {
-		[NSApp unhide:wnd->nsWnd];
+static void visible(pwre_wnd_t wnd) {
+	if (!wnd->NSWnd.visible) {
+		[NSApp unhide:wnd->NSWnd];
 	}
 }
 
-void PrWnd_View(PrWnd wnd, PWRE_VIEW type) {
+void pwre_wnd_state_add(pwre_wnd_t wnd, PWRE_STATE type) {
 	switch (type) {
-		case PWRE_VIEW_VISIBLE:
+		case PWRE_STATE_VISIBLE:
 			visible(wnd);
 			break;
-		case PWRE_VIEW_MINIMIZE:
+		case PWRE_STATE_MINIMIZE:
 			visible(wnd);
-			[wnd->nsWnd miniaturize:wnd->nsWnd];
+			[wnd->NSWnd miniaturize:wnd->NSWnd];
 			break;
-		case PWRE_VIEW_MAXIMIZE:
+		case PWRE_STATE_MAXIMIZE:
 			visible(wnd);
-			if (!wnd->nsWnd.zoomed) {
-				[wnd->nsWnd zoom:wnd->nsWnd];
-			} else if (wnd->nsWnd.miniaturized) {
-				[wnd->nsWnd deminiaturize:wnd->nsWnd];
+			if (!wnd->NSWnd.zoomed) {
+				[wnd->NSWnd zoom:wnd->NSWnd];
+			} else if (wnd->NSWnd.miniaturized) {
+				[wnd->NSWnd deminiaturize:wnd->NSWnd];
 			}
 			break;
-		case PWRE_VIEW_FULLSCREEN:
+		case PWRE_STATE_FULLSCREEN:
 			visible(wnd);
-			if (!(wnd->nsWnd.styleMask & NSWindowStyleMaskFullScreen)) {
-				[wnd->nsWnd toggleFullScreen:wnd->nsWnd];
-			} else if (wnd->nsWnd.miniaturized) {
-				[wnd->nsWnd deminiaturize:wnd->nsWnd];
-			}
-	}
-}
-
-void PrWnd_UnView(PrWnd wnd, PWRE_VIEW type) {
-	switch (type) {
-		case PWRE_VIEW_VISIBLE:
-			[NSApp hide:wnd->nsWnd];
-			break;
-		case PWRE_VIEW_MINIMIZE:
-			visible(wnd);
-			[wnd->nsWnd deminiaturize:wnd->nsWnd];
-			break;
-		case PWRE_VIEW_MAXIMIZE:
-			visible(wnd);
-			if (wnd->nsWnd.zoomed) {
-				[wnd->nsWnd zoom:wnd->nsWnd];
-			} else if (wnd->nsWnd.miniaturized) {
-				[wnd->nsWnd deminiaturize:wnd->nsWnd];
-			}
-			break;
-		case PWRE_VIEW_FULLSCREEN:
-			visible(wnd);
-			if (wnd->nsWnd.styleMask & NSWindowStyleMaskFullScreen) {
-				[wnd->nsWnd toggleFullScreen:wnd->nsWnd];
-			} else if (wnd->nsWnd.miniaturized) {
-				[wnd->nsWnd deminiaturize:wnd->nsWnd];
+			if (!(wnd->NSWnd.styleMask & NSWindowStyleMaskFullScreen)) {
+				[wnd->NSWnd toggleFullScreen:wnd->NSWnd];
+			} else if (wnd->NSWnd.miniaturized) {
+				[wnd->NSWnd deminiaturize:wnd->NSWnd];
 			}
 	}
 }
 
-bool PrWnd_Viewed(PrWnd wnd, PWRE_VIEW type) {
+void pwre_wnd_state_rm(pwre_wnd_t wnd, PWRE_STATE type) {
 	switch (type) {
-		case PWRE_VIEW_VISIBLE:
-			return wnd->nsWnd.visible;
-		case PWRE_VIEW_MINIMIZE:
-			return wnd->nsWnd.miniaturized;
-		case PWRE_VIEW_MAXIMIZE:
-			return wnd->nsWnd.zoomed;
-		case PWRE_VIEW_FULLSCREEN:
-			return wnd->nsWnd.styleMask & NSWindowStyleMaskFullScreen;
+		case PWRE_STATE_VISIBLE:
+			[NSApp hide:wnd->NSWnd];
+			break;
+		case PWRE_STATE_MINIMIZE:
+			visible(wnd);
+			[wnd->NSWnd deminiaturize:wnd->NSWnd];
+			break;
+		case PWRE_STATE_MAXIMIZE:
+			visible(wnd);
+			if (wnd->NSWnd.zoomed) {
+				[wnd->NSWnd zoom:wnd->NSWnd];
+			} else if (wnd->NSWnd.miniaturized) {
+				[wnd->NSWnd deminiaturize:wnd->NSWnd];
+			}
+			break;
+		case PWRE_STATE_FULLSCREEN:
+			visible(wnd);
+			if (wnd->NSWnd.styleMask & NSWindowStyleMaskFullScreen) {
+				[wnd->NSWnd toggleFullScreen:wnd->NSWnd];
+			} else if (wnd->NSWnd.miniaturized) {
+				[wnd->NSWnd deminiaturize:wnd->NSWnd];
+			}
+	}
+}
+
+bool pwre_wnd_state_has(pwre_wnd_t wnd, PWRE_STATE type) {
+	switch (type) {
+		case PWRE_STATE_VISIBLE:
+			return wnd->NSWnd.visible;
+		case PWRE_STATE_MINIMIZE:
+			return wnd->NSWnd.miniaturized;
+		case PWRE_STATE_MAXIMIZE:
+			return wnd->NSWnd.zoomed;
+		case PWRE_STATE_FULLSCREEN:
+			return wnd->NSWnd.styleMask & NSWindowStyleMaskFullScreen;
 	}
 	return false;
 }
 
-#endif // PWRE_COCOA
+#endif // PWRE_PLAT_COCOA

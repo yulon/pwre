@@ -12,13 +12,13 @@
 int main(void) {
 	pwre_init(NULL);
 
-	PrWnd wnd = new_PrWnd_with_GL(0);
-	PrWnd_ReSize(wnd, 600, 500);
-	PrWnd_GL_MakeCurrent(wnd);
-	PrWnd_SetTitle(wnd, (const char *)glGetString(GL_VERSION));
+	pwre_wnd_t wnd = pwre_new_wnd_with_gl(0);
+	pwre_wnd_resize(wnd, 600, 500);
+	pwre_gl_make_current(wnd);
+	pwre_wnd_retitle(wnd, (const char *)glGetString(GL_VERSION));
 	glClearColor(1, 1, 1, 1);
-	PrWnd_View(wnd, PWRE_VIEW_VISIBLE);
-	PrWnd_Move(wnd, PWRE_POS_AUTO, PWRE_POS_AUTO);
+	pwre_wnd_state_add(wnd, PWRE_STATE_VISIBLE);
+	pwre_wnd_move(wnd, PWRE_MOVE_AUTO, PWRE_MOVE_AUTO);
 
 	while (pwre_step()) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -34,7 +34,7 @@ int main(void) {
 		glVertex3f(1.0, -1.0, 0.0);
 
 		glEnd();
-		PrWnd_GL_SwapBuffers(wnd);
+		pwre_gl_swap_buffers(wnd);
 	}
 	return 0;
 }

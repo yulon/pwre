@@ -1,31 +1,31 @@
 #include "plat.h"
 
-#ifdef PWRE_WIN32
+#ifdef PWRE_PLAT_WIN32
 
 #include "win32.h"
 #include <GL/gl.h>
 
-typedef struct PrWnd_GL {
-	struct PrWnd wnd;
+typedef struct gl_wnd {
+	struct pwre_wnd wnd;
 	HDC dc;
 	HGLRC rc;
-} *PrWnd_GL;
+} *gl_wnd_t;
 
-static void _PrWnd_GL_free(PrWnd wnd) {
-	if (wglGetCurrentDC() == ((PrWnd_GL)wnd)->dc) {
+static void gl_free(pwre_wnd_t wnd) {
+	if (wglGetCurrentDC() == ((gl_wnd_t)wnd)->dc) {
 		wglMakeCurrent(NULL, NULL);
 	}
-	wglDeleteContext(((PrWnd_GL)wnd)->rc);
+	wglDeleteContext(((gl_wnd_t)wnd)->rc);
 }
 
-PrWnd new_PrWnd_with_GL(uint64_t hints) {
-	PrWnd_GL glWnd = (PrWnd_GL)_alloc_PrWnd(sizeof(struct PrWnd_GL), hints);
-	glWnd->wnd.onFree = _PrWnd_GL_free;
+pwre_wnd_t pwre_new_wnd_with_gl(uint64_t hints) {
+	gl_wnd_t glwnd = (gl_wnd_t)alloc_wnd(sizeof(struct gl_wnd), hints);
+	glwnd->wnd.on_free = gl_free;
 
-	glWnd->dc = GetDC(glWnd->wnd.hWnd);
-	if (!glWnd->dc) {
+	glwnd->dc = GetDC(glwnd->wnd.hWnd);
+	if (!glwnd->dc) {
 		puts("Pwre: Win32.GetDC error!");
-		PrWnd_Destroy((PrWnd)glWnd);
+		pwre_wnd_destroy((pwre_wnd_t)glwnd);
 		return NULL;
 	}
 
@@ -44,35 +44,35 @@ PrWnd new_PrWnd_with_GL(uint64_t hints) {
 		0, 0, 0,
 	};
 
-	int PixelFormat = ChoosePixelFormat(glWnd->dc, &pfd);
+	int PixelFormat = ChoosePixelFormat(glwnd->dc, &pfd);
 	if (!PixelFormat) {
 		puts("Pwre: Win32.ChoosePixelFormat error!");
-		PrWnd_Destroy((PrWnd)glWnd);
+		pwre_wnd_destroy((pwre_wnd_t)glwnd);
 		return NULL;
 	}
 
-	if (!SetPixelFormat(glWnd->dc, PixelFormat, &pfd)) {
+	if (!SetPixelFormat(glwnd->dc, PixelFormat, &pfd)) {
 		puts("Pwre: Win32.SetPixelFormat error!");
-		PrWnd_Destroy((PrWnd)glWnd);
+		pwre_wnd_destroy((pwre_wnd_t)glwnd);
 		return NULL;
 	}
 
-	glWnd->rc = wglCreateContext(glWnd->dc);
-	if (!glWnd->rc) {
+	glwnd->rc = wglCreateContext(glwnd->dc);
+	if (!glwnd->rc) {
 		puts("Pwre: Win32.wglCreateContext error!");
-		PrWnd_Destroy((PrWnd)glWnd);
+		pwre_wnd_destroy((pwre_wnd_t)glwnd);
 		return NULL;
 	}
 
-	return (PrWnd)glWnd;
+	return (pwre_wnd_t)glwnd;
 }
 
-void PrWnd_GL_MakeCurrent(PrWnd wnd) {
-	wglMakeCurrent(((PrWnd_GL)wnd)->dc, ((PrWnd_GL)wnd)->rc);
+void pwre_gl_make_current(pwre_wnd_t wnd) {
+	wglMakeCurrent(((gl_wnd_t)wnd)->dc, ((gl_wnd_t)wnd)->rc);
 }
 
-void PrWnd_GL_SwapBuffers(PrWnd wnd) {
-	SwapBuffers(((PrWnd_GL)wnd)->dc);
+void pwre_gl_swap_buffers(pwre_wnd_t wnd) {
+	SwapBuffers(((gl_wnd_t)wnd)->dc);
 }
 
-#endif // PWRE_WIN32
+#endif // PWRE_PLAT_WIN32

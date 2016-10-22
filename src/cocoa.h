@@ -4,12 +4,12 @@
 #include <string.h>
 #import <Cocoa/Cocoa.h>
 
-struct PrWnd {
-	NSWindow *nsWnd;
-	void (*onFree)(PrWnd);
+struct pwre_wnd {
+	NSWindow *NSWnd;
+	void (*on_free)(pwre_wnd_t);
 };
 
-PrWnd _alloc_PrWnd(size_t memSize, uint64_t hints);
+pwre_wnd_t alloc_wnd(size_t struct_size, uint64_t hints);
 
-#define screenWidth [[NSScreen mainScreen] frame].size.width
-#define screenHeight [[NSScreen mainScreen] frame].size.height
+#define _SCREEN_W [[NSScreen mainScreen] frame].size.width
+#define _SCREEN_H [[NSScreen mainScreen] frame].size.height

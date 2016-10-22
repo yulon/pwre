@@ -6,17 +6,17 @@
 #include <dwmapi.h>
 #include <zk/mux.h>
 
-struct PrWnd {
+struct pwre_wnd {
 	HWND hWnd;
-	int ncWidth, ncHeight;
-	char *titleBuf;
-	size_t titleBufLen;
-	ZKMux dataMux;
+	int nc_width, nc_height;
+	char *title_buf;
+	size_t title_buf_len;
+	ZKMux data_mux;
 	bool less;
-	void (*onFree)(PrWnd);
+	void (*on_free)(pwre_wnd_t);
 };
 
-PrWnd _alloc_PrWnd(size_t memSize, uint64_t hints);
+pwre_wnd_t alloc_wnd(size_t struct_size, uint64_t hints);
 
-#define screenWidth GetSystemMetrics(SM_CXSCREEN)
-#define screenHeight GetSystemMetrics(SM_CYSCREEN)
+#define _SCREEN_W GetSystemMetrics(SM_CXSCREEN)
+#define _SCREEN_H GetSystemMetrics(SM_CYSCREEN)

@@ -5,16 +5,16 @@
 #include <X11/Xlib.h>
 #include <zk/mux.h>
 
-struct PrWnd {
-	Window xWnd;
-	char *titleBuf;
-	size_t titleBufLen;
-	ZKMux dataMux;
-	void (*onFree)(PrWnd);
+struct pwre_wnd {
+	Window XWnd;
+	char *title_buf;
+	size_t title_buf_len;
+	ZKMux data_mux;
+	void (*on_free)(pwre_wnd_t);
 };
 
-PrWnd _alloc_PrWnd(
-	size_t memSize,
+pwre_wnd_t alloc_wnd(
+	size_t struct_size,
 	uint64_t hints,
 	int depth, Visual *visual, unsigned long valuemask, XSetWindowAttributes *swa
 );
@@ -25,5 +25,5 @@ extern Display *_pwre_x11_dpy;
 extern Window _pwre_x11_root;
 #define root _pwre_x11_root
 
-#define screenWidth DisplayWidth(dpy, 0)
-#define screenHeight DisplayHeight(dpy, 0)
+#define _SCREEN_W DisplayWidth(dpy, 0)
+#define _SCREEN_H DisplayHeight(dpy, 0)

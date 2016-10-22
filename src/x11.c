@@ -1,6 +1,6 @@
 #include "plat.h"
 
-#ifdef PWRE_X11
+#ifdef PWRE_PLAT_X11
 
 #include "x11.h"
 #include "uni.h"
@@ -11,28 +11,28 @@
 
 #include <zk/map.h>
 
-static ZKMap wndMap;
-static ZKMux wndMapAndEvtMux;
+static ZKMap wnd_map;
+static ZKMux wnd_map_and_evt_mux;
 
 Display *_pwre_x11_dpy;
 Window _pwre_x11_root;
 
-Atom netWmName;
-Atom utf8str;
-Atom wmDelWnd;
-Atom wmProtocols;
+static Atom net_wm_name;
+static Atom utf8_str;
+static Atom wm_del_wnd;
+static Atom wm_protocols;
 
-Atom netWmState;
-#define netWmStateRemove 0
-#define netWmStateAdd 1
-#define netWmStateToggle 2
-Atom netWmStateHide;
-Atom netWmStateMaxVert;
-Atom netWmStateMaxHorz;
-Atom netWmStateFullscreen;
-Atom motifWmHints;
+static Atom net_wm_state;
+#define net_wm_state_remove 0
+#define net_wm_state_add 1
+#define net_wm_state_toggle 2
+static Atom net_wm_state_hide;
+static Atom net_wm_state_maxvert;
+static Atom net_wm_state_maxhorz;
+static Atom net_wm_state_fullscr;
+static Atom motif_wm_hints;
 
-bool pwre_init(PrEventHandler evtHdr) {
+bool pwre_init(pwre_event_handler_t evt_hdr) {
 	XInitThreads();
 	dpy = XOpenDisplay(NULL);
 	if (!dpy) {
@@ -40,36 +40,36 @@ bool pwre_init(PrEventHandler evtHdr) {
 		return false;
 	}
 	root = XRootWindow(dpy, 0);
-	netWmName = XInternAtom(dpy, "_NET_WM_NAME", False);
-	utf8str = XInternAtom(dpy, "UTF8_STRING", False);
-	wmDelWnd = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
-	wmProtocols = XInternAtom(dpy, "WM_PROTOCOLS", False);
+	net_wm_name = XInternAtom(dpy, "_NET_WM_NAME", False);
+	utf8_str = XInternAtom(dpy, "UTF8_STRING", False);
+	wm_del_wnd = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
+	wm_protocols = XInternAtom(dpy, "WM_PROTOCOLS", False);
 
-	netWmState =  XInternAtom(dpy, "_NET_WM_STATE", False);
-	netWmStateHide =  XInternAtom(dpy, "_NET_WM_STATE_HIDDEN", False);
-	netWmStateMaxVert = XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_VERT", False);
-	netWmStateMaxHorz = XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
-	netWmStateFullscreen = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
+	net_wm_state =  XInternAtom(dpy, "_NET_WM_STATE", False);
+	net_wm_state_hide =  XInternAtom(dpy, "_NET_WM_STATE_HIDDEN", False);
+	net_wm_state_maxvert = XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_VERT", False);
+	net_wm_state_maxhorz = XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
+	net_wm_state_fullscr = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
 
-	motifWmHints = XInternAtom(dpy, "_MOTIF_WM_HINTS", True);
+	motif_wm_hints = XInternAtom(dpy, "_MOTIF_WM_HINTS", True);
 
-	wndCountMux = new_ZKMux();
-	eventHandler = evtHdr;
-	wndMap = new_ZKMap(256);
-	wndMapAndEvtMux = new_ZKMux();
+	wnd_count_mux = new_ZKMux();
+	event_handler = evt_hdr;
+	wnd_map = new_ZKMap(256);
+	wnd_map_and_evt_mux = new_ZKMux();
 	return true;
 }
 
-static void _PrWnd_free(PrWnd wnd) {
-	if (wnd->onFree) {
-		wnd->onFree(wnd);
+static void pwre_free(pwre_wnd_t wnd) {
+	if (wnd->on_free) {
+		wnd->on_free(wnd);
 	}
-	ZKMux_Lock(wnd->dataMux);
-	if (wnd->titleBuf) {
-		free(wnd->titleBuf);
+	ZKMux_Lock(wnd->data_mux);
+	if (wnd->title_buf) {
+		free(wnd->title_buf);
 	}
-	ZKMux_UnLock(wnd->dataMux);
-	ZKMux_Free(wnd->dataMux);
+	ZKMux_UnLock(wnd->data_mux);
+	ZKMux_Free(wnd->data_mux);
 	free(wnd);
 }
 
@@ -87,64 +87,64 @@ static void _PrWnd_free(PrWnd wnd) {
 }
 
 static bool handleXEvent(XEvent *event, bool lock) {
-	PrWnd wnd;
+	pwre_wnd_t wnd;
 
 	if (lock) {
-		ZKMux_Lock(wndMapAndEvtMux);
+		ZKMux_Lock(wnd_map_and_evt_mux);
 		XNextEvent(dpy, event);
-		wnd = (PrWnd)ZKMap_Get(wndMap, ((XAnyEvent *)event)->window);
-		ZKMux_UnLock(wndMapAndEvtMux);
+		wnd = (pwre_wnd_t)ZKMap_Get(wnd_map, ((XAnyEvent *)event)->window);
+		ZKMux_UnLock(wnd_map_and_evt_mux);
 	} else {
 		XNextEvent(dpy, event);
-		wnd = (PrWnd)ZKMap_Get(wndMap, ((XAnyEvent *)event)->window);
+		wnd = (pwre_wnd_t)ZKMap_Get(wnd_map, ((XAnyEvent *)event)->window);
 	}
 
 	if (wnd) {
 		switch (((XAnyEvent *)event)->type) {
 			case ConfigureNotify:
-				eventPost(
-					PrSize size;
+				_EVENT_POST(
+					pwre_size_t size;
 					size.width = ((XConfigureEvent *)event)->width;
 					size.height = ((XConfigureEvent *)event)->height;
 					,
 					PWRE_EVENT_SIZE, (void *)&size)
 				break;
 			case Expose:
-				eventPost(, PWRE_EVENT_PAINT, NULL)
+				_EVENT_POST(, PWRE_EVENT_PAINT, NULL)
 				break;
 			case ClientMessage:
-				if (((XClientMessageEvent *)event)->message_type == wmProtocols && (Atom)((XClientMessageEvent *)event)->data.l[0] == wmDelWnd) {
-					eventSend(, PWRE_EVENT_CLOSE, NULL,
+				if (((XClientMessageEvent *)event)->message_type == wm_protocols && (Atom)((XClientMessageEvent *)event)->data.l[0] == wm_del_wnd) {
+					_EVENT_SEND(, PWRE_EVENT_CLOSE, NULL,
 						return true;
 					)
 
-					ZKMux_Lock(wndMapAndEvtMux);
+					ZKMux_Lock(wnd_map_and_evt_mux);
 					XDestroyWindow(dpy, ((XAnyEvent *)event)->window);
-					xSync(wnd->xWnd, DestroyNotify,)
-					ZKMux_UnLock(wndMapAndEvtMux);
+					xSync(wnd->XWnd, DestroyNotify,)
+					ZKMux_UnLock(wnd_map_and_evt_mux);
 
 					return false;
 				}
 				break;
 			case DestroyNotify:
-				eventPost(, PWRE_EVENT_DESTROY, NULL)
+				_EVENT_POST(, PWRE_EVENT_DESTROY, NULL)
 
-				ZKMux_Lock(wndMapAndEvtMux);
-				ZKMap_Delete(wndMap, wnd->xWnd);
-				ZKMux_UnLock(wndMapAndEvtMux);
+				ZKMux_Lock(wnd_map_and_evt_mux);
+				ZKMap_Delete(wnd_map, wnd->XWnd);
+				ZKMux_UnLock(wnd_map_and_evt_mux);
 
-				ZKMux_Lock(wndCountMux);
-				wndCount--;
-				_PrWnd_free(wnd);
-				if (!wndCount) {
-					ZKMux_UnLock(wndCountMux);
-					ZKMux_Free(wndCountMux);
-					ZKMux_Free(wndMapAndEvtMux);
-					ZKMap_Free(wndMapAndEvtMux);
+				ZKMux_Lock(wnd_count_mux);
+				wnd_count--;
+				pwre_free(wnd);
+				if (!wnd_count) {
+					ZKMux_UnLock(wnd_count_mux);
+					ZKMux_Free(wnd_count_mux);
+					ZKMux_Free(wnd_map_and_evt_mux);
+					ZKMap_Free(wnd_map);
 					XCloseDisplay(dpy);
 					return false;
 				}
-				ZKMux_UnLock(wndCountMux);
+				ZKMux_UnLock(wnd_count_mux);
 		}
 	}
 	return true;
@@ -165,12 +165,12 @@ void pwre_run(void) {
 	while (handleXEvent(&event, true));
 }
 
-PrWnd _alloc_PrWnd(
-	size_t memSize,
+pwre_wnd_t alloc_wnd(
+	size_t struct_size,
 	uint64_t hints,
 	int depth, Visual *visual, unsigned long valuemask, XSetWindowAttributes *swa
 ) {
-	Window xWnd = XCreateWindow(
+	Window XWnd = XCreateWindow(
 		dpy,
 		root,
 		0,
@@ -184,74 +184,74 @@ PrWnd _alloc_PrWnd(
 		valuemask,
 		swa
 	);
-	if (!xWnd) {
+	if (!XWnd) {
 		puts("Pwre: X11.XCreateSimpleWindow error!");
 		return NULL;
 	}
 
-	XSetWMProtocols(dpy, xWnd, &wmDelWnd, 1);
+	XSetWMProtocols(dpy, XWnd, &wm_del_wnd, 1);
 
-	ZKMux_Lock(wndCountMux); wndCount++; ZKMux_UnLock(wndCountMux);
+	ZKMux_Lock(wnd_count_mux); wnd_count++; ZKMux_UnLock(wnd_count_mux);
 
-	PrWnd wnd = calloc(1, memSize);
-	wnd->xWnd = xWnd;
+	pwre_wnd_t wnd = calloc(1, struct_size);
+	wnd->XWnd = XWnd;
 
- 	ZKMux_Lock(wndMapAndEvtMux);
-	ZKMap_Set(wndMap, xWnd, wnd);
-	ZKMux_UnLock(wndMapAndEvtMux);
+ 	ZKMux_Lock(wnd_map_and_evt_mux);
+	ZKMap_Set(wnd_map, XWnd, wnd);
+	ZKMux_UnLock(wnd_map_and_evt_mux);
 	return wnd;
 }
 
-PrWnd new_PrWnd(uint64_t hints) {
+pwre_wnd_t pwre_new_wnd(uint64_t hints) {
 	XSetWindowAttributes swa;
 	swa.event_mask = ExposureMask | KeyPressMask | StructureNotifyMask;
-	return _alloc_PrWnd(
-		sizeof(struct PrWnd),
+	return alloc_wnd(
+		sizeof(struct pwre_wnd),
 		hints,
 		XDefaultDepth(dpy, 0), XDefaultVisual(dpy, 0), CWEventMask, &swa
 	);
 }
 
-void PrWnd_Close(PrWnd wnd) {
-	if (eventHandler && eventHandler(wnd, PWRE_EVENT_CLOSE, NULL)) {
-		XDestroyWindow(dpy, wnd->xWnd);
+void pwre_wnd_close(pwre_wnd_t wnd) {
+	if (event_handler && event_handler(wnd, PWRE_EVENT_CLOSE, NULL)) {
+		XDestroyWindow(dpy, wnd->XWnd);
 	}
 }
 
-void PrWnd_Destroy(PrWnd wnd) {
-	XDestroyWindow(dpy, wnd->xWnd);
+void pwre_wnd_destroy(pwre_wnd_t wnd) {
+	XDestroyWindow(dpy, wnd->XWnd);
 }
 
-const char *PrWnd_GetTitle(PrWnd wnd) {
-	ZKMux_Lock(wnd->dataMux);
+const char *pwre_wnd_title(pwre_wnd_t wnd) {
+	ZKMux_Lock(wnd->data_mux);
 	Atom type;
 	int format;
 	unsigned long nitems, after;
 	unsigned char *data;
-	if (Success == XGetWindowProperty(dpy, wnd->xWnd, netWmName, 0, LONG_MAX, False, utf8str, &type, &format, &nitems, &after, &data) && data) {
-		_PrWnd_flushTitleBuf(wnd, (const char *)data);
+	if (Success == XGetWindowProperty(dpy, wnd->XWnd, net_wm_name, 0, LONG_MAX, False, utf8_str, &type, &format, &nitems, &after, &data) && data) {
+		wnd_title_buf_flush(wnd, (const char *)data);
 		XFree(data);
 	} else {
-		_PrWnd_clearTitleBuf(wnd, 0);
+		wnd_title_buf_clear(wnd, 0);
 	}
-	ZKMux_UnLock(wnd->dataMux);
-	return (const char *)wnd->titleBuf;
+	ZKMux_UnLock(wnd->data_mux);
+	return (const char *)wnd->title_buf;
 }
 
-void PrWnd_SetTitle(PrWnd wnd, const char *title) {
-	XChangeProperty(dpy, wnd->xWnd, netWmName, utf8str, 8, PropModeReplace, (const unsigned char *)title, strlen(title));
+void pwre_wnd_retitle(pwre_wnd_t wnd, const char *title) {
+	XChangeProperty(dpy, wnd->XWnd, net_wm_name, utf8_str, 8, PropModeReplace, (const unsigned char *)title, strlen(title));
 }
 
-void PrWnd_Move(PrWnd wnd, int x, int y) {
-	XWindowAttributes attrs;
-	XGetWindowAttributes(dpy, wnd->xWnd, &attrs);
-	fixPos(&x, &y, attrs.width, attrs.height);
+void pwre_wnd_move(pwre_wnd_t wnd, int x, int y) {
+	XWindowAttributes wa;
+	XGetWindowAttributes(dpy, wnd->XWnd, &wa);
+	fix_pos(&x, &y, wa.width, wa.height);
 
-	ZKMux_Lock(wndMapAndEvtMux);
-	int err = XMoveWindow(dpy, wnd->xWnd, x, y);
+	ZKMux_Lock(wnd_map_and_evt_mux);
+	int err = XMoveWindow(dpy, wnd->XWnd, x, y);
 	if (err != BadValue && err != BadWindow && err != BadMatch) {
 		xSync(
-			wnd->xWnd,
+			wnd->XWnd,
 			ConfigureNotify,
 			&& (
 				((XConfigureEvent *)&event)->x != 0 ||
@@ -259,113 +259,113 @@ void PrWnd_Move(PrWnd wnd, int x, int y) {
 			)
 		)
 	}
-	ZKMux_UnLock(wndMapAndEvtMux);
+	ZKMux_UnLock(wnd_map_and_evt_mux);
 }
 
-void PrWnd_Size(PrWnd wnd, int *width, int *height) {
-	XWindowAttributes attrs;
-	XGetWindowAttributes(dpy, wnd->xWnd, &attrs);
+void pwre_wnd_size(pwre_wnd_t wnd, int *width, int *height) {
+	XWindowAttributes wa;
+	XGetWindowAttributes(dpy, wnd->XWnd, &wa);
 	if (width) {
-		*width = attrs.width;
+		*width = wa.width;
 	}
 	if (height) {
-		*height = attrs.height;
+		*height = wa.height;
 	}
 }
 
-void PrWnd_ReSize(PrWnd wnd, int width, int height) {
-	ZKMux_Lock(wndMapAndEvtMux);
-	int err = XResizeWindow(dpy, wnd->xWnd, width, height);
+void pwre_wnd_resize(pwre_wnd_t wnd, int width, int height) {
+	ZKMux_Lock(wnd_map_and_evt_mux);
+	int err = XResizeWindow(dpy, wnd->XWnd, width, height);
 	if (err != BadValue && err != BadWindow) {
 		xSync(
-			wnd->xWnd,
+			wnd->XWnd,
 			ConfigureNotify,
 			&& ((XConfigureEvent *)&event)->width == width
 			&& ((XConfigureEvent *)&event)->height == height
 		)
 	}
-	ZKMux_UnLock(wndMapAndEvtMux);
+	ZKMux_UnLock(wnd_map_and_evt_mux);
 }
 
-static void visible(PrWnd wnd) {
-	XWindowAttributes attrs;
-	XGetWindowAttributes(dpy, wnd->xWnd, &attrs);
-	ZKMux_Lock(wndMapAndEvtMux);
-	if (attrs.map_state != IsViewable && XMapWindow(dpy, wnd->xWnd) != BadWindow && attrs.map_state == IsUnmapped) {
+static void visible(pwre_wnd_t wnd) {
+	XWindowAttributes wa;
+	XGetWindowAttributes(dpy, wnd->XWnd, &wa);
+	ZKMux_Lock(wnd_map_and_evt_mux);
+	if (wa.map_state != IsViewable && XMapWindow(dpy, wnd->XWnd) != BadWindow && wa.map_state == IsUnmapped) {
 		xSync(
-			wnd->xWnd,
+			wnd->XWnd,
 			MapNotify,
 		)
 	}
-	ZKMux_UnLock(wndMapAndEvtMux);
+	ZKMux_UnLock(wnd_map_and_evt_mux);
 }
 
-void PrWnd_View(PrWnd wnd, PWRE_VIEW type) {
+void pwre_wnd_state_add(pwre_wnd_t wnd, PWRE_STATE type) {
 	XEvent event;
 	switch (type) {
-		case PWRE_VIEW_VISIBLE:
+		case PWRE_STATE_VISIBLE:
 			visible(wnd);
 			break;
-		case PWRE_VIEW_MINIMIZE:
+		case PWRE_STATE_MINIMIZE:
 			visible(wnd);
-			XIconifyWindow(dpy, wnd->xWnd, 0);
+			XIconifyWindow(dpy, wnd->XWnd, 0);
 			break;
-		case PWRE_VIEW_MAXIMIZE:
+		case PWRE_STATE_MAXIMIZE:
 			visible(wnd);
 			memset(&event, 0, sizeof(event));
 			event.type = ClientMessage;
-			event.xclient.window = wnd->xWnd;
-			event.xclient.message_type = netWmState;
+			event.xclient.window = wnd->XWnd;
+			event.xclient.message_type = net_wm_state;
 			event.xclient.format = 32;
-			event.xclient.data.l[0] = netWmStateAdd;
-			event.xclient.data.l[1] = netWmStateMaxVert;
-			event.xclient.data.l[2] = netWmStateMaxHorz;
+			event.xclient.data.l[0] = net_wm_state_add;
+			event.xclient.data.l[1] = net_wm_state_maxvert;
+			event.xclient.data.l[2] = net_wm_state_maxhorz;
 			XSendEvent(dpy, root, False, StructureNotifyMask, &event);
 			break;
-		case PWRE_VIEW_FULLSCREEN:
+		case PWRE_STATE_FULLSCREEN:
 			visible(wnd);
 			memset(&event, 0, sizeof(event));
 			event.type = ClientMessage;
-			event.xclient.window = wnd->xWnd;
-			event.xclient.message_type = netWmState;
+			event.xclient.window = wnd->XWnd;
+			event.xclient.message_type = net_wm_state;
 			event.xclient.format = 32;
-			event.xclient.data.l[0] = netWmStateAdd;
-			event.xclient.data.l[1] = netWmStateFullscreen;
+			event.xclient.data.l[0] = net_wm_state_add;
+			event.xclient.data.l[1] = net_wm_state_fullscr;
 			XSendEvent(dpy, root, False, StructureNotifyMask, &event);
 	}
 	return;
 }
 
-void PrWnd_UnView(PrWnd wnd, PWRE_VIEW type) {
+void pwre_wnd_state_rm(pwre_wnd_t wnd, PWRE_STATE type) {
 	XEvent event;
 	switch (type) {
-		case PWRE_VIEW_VISIBLE:
+		case PWRE_STATE_VISIBLE:
 			visible(wnd);
 			break;
-		case PWRE_VIEW_MINIMIZE:
+		case PWRE_STATE_MINIMIZE:
 			visible(wnd);
 			break;
-		case PWRE_VIEW_MAXIMIZE:
+		case PWRE_STATE_MAXIMIZE:
 			visible(wnd);
 			memset(&event, 0, sizeof(event));
 			event.type = ClientMessage;
-			event.xclient.window = wnd->xWnd;
-			event.xclient.message_type = netWmState;
+			event.xclient.window = wnd->XWnd;
+			event.xclient.message_type = net_wm_state;
 			event.xclient.format = 32;
-			event.xclient.data.l[0] = netWmStateRemove;
-			event.xclient.data.l[1] = netWmStateMaxVert;
-			event.xclient.data.l[2] = netWmStateMaxHorz;
+			event.xclient.data.l[0] = net_wm_state_remove;
+			event.xclient.data.l[1] = net_wm_state_maxvert;
+			event.xclient.data.l[2] = net_wm_state_maxhorz;
 			XSendEvent(dpy, root, False, StructureNotifyMask, &event);
 			break;
-		case PWRE_VIEW_FULLSCREEN:
+		case PWRE_STATE_FULLSCREEN:
 			visible(wnd);
 			memset(&event, 0, sizeof(event));
 			event.type = ClientMessage;
-			event.xclient.window = wnd->xWnd;
-			event.xclient.message_type = netWmState;
+			event.xclient.window = wnd->XWnd;
+			event.xclient.message_type = net_wm_state;
 			event.xclient.format = 32;
-			event.xclient.data.l[0] = netWmStateRemove;
-			event.xclient.data.l[1] = netWmStateFullscreen;
+			event.xclient.data.l[0] = net_wm_state_remove;
+			event.xclient.data.l[1] = net_wm_state_fullscr;
 			XSendEvent(dpy, root, False, StructureNotifyMask, &event);
 	}
 }
@@ -381,11 +381,11 @@ typedef struct {
 	unsigned long status;
 } PropMotifWmHints;
 
-void PrWnd_Less(PrWnd wnd, bool less) {
+void pwre_wnd_less(pwre_wnd_t wnd, bool less) {
 	PropMotifWmHints motif_hints;
 	motif_hints.flags = MWM_HINTS_DECORATIONS;
 	motif_hints.decorations = 0;
-	XChangeProperty(dpy, wnd->xWnd, motifWmHints, motifWmHints, 32, PropModeReplace, (unsigned char *) &motif_hints, PROP_MOTIF_WM_HINTS_ELEMENTS);
+	XChangeProperty(dpy, wnd->XWnd, motif_wm_hints, motif_wm_hints, 32, PropModeReplace, (unsigned char *) &motif_hints, PROP_MOTIF_WM_HINTS_ELEMENTS);
 }
 
-#endif // PWRE_X11
+#endif // PWRE_PLAT_X11

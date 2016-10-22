@@ -2,21 +2,21 @@
 #include <stdio.h>
 #include <pwre.h>
 
-bool eventHandler(PrWnd wnd, PWRE_EVENT event, void *data) {
+bool event_handler(pwre_wnd_t wnd, PWRE_EVENT event, void *data) {
 	printf("event: %d\n", event);
 	return true;
 }
 
 int main(void) {
-	pwre_init(eventHandler);
+	pwre_init(event_handler);
 
-	PrWnd wnd = new_PrWnd(0);
-	PrWnd_SetTitle(wnd, "我只是一个空白窗口_(:з」∠)_");
-	PrWnd_ReSize(wnd, 500, 500);
-	PrWnd_View(wnd, PWRE_VIEW_VISIBLE);
-	PrWnd_Move(wnd, PWRE_POS_AUTO, PWRE_POS_AUTO);
+	pwre_wnd_t wnd = pwre_new_wnd(0);
+	pwre_wnd_retitle(wnd, "我只是一个空白窗口_(:з」∠)_");
+	pwre_wnd_resize(wnd, 500, 500);
+	pwre_wnd_state_add(wnd, PWRE_STATE_VISIBLE);
+	pwre_wnd_move(wnd, PWRE_MOVE_AUTO, PWRE_MOVE_AUTO);
 
-	printf("title: %s\n", PrWnd_GetTitle(wnd));
+	printf("title: %s\n", pwre_wnd_title(wnd));
 
 	pwre_run();
 	return 0;

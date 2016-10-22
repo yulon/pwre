@@ -1,32 +1,32 @@
 // need {plat}.h
 
-static int wndCount;
+static int wnd_count;
 
 #include <zk/mux.h>
 
-static ZKMux wndCountMux;
+static ZKMux wnd_count_mux;
 
-static PrEventHandler eventHandler;
+static pwre_event_handler_t event_handler;
 
-#define eventPost(_hdr_existent_code, _event, _data) \
-	if (eventHandler) { \
+#define _EVENT_POST(_hdr_existent_code, _event, _data) \
+	if (event_handler) { \
 		_hdr_existent_code \
-		eventHandler(wnd, _event, _data); \
+		event_handler(wnd, _event, _data); \
 	}
 
-#define eventSend(_hdr_existent_code, _event, _data, _hdr_return_false_code) \
-	if (eventHandler) { \
+#define _EVENT_SEND(_hdr_existent_code, _event, _data, _hdr_return_false_code) \
+	if (event_handler) { \
 		_hdr_existent_code \
-		if (!eventHandler(wnd, _event, _data)) { \
+		if (!event_handler(wnd, _event, _data)) { \
 			_hdr_return_false_code \
 		} \
 	}
 
-static inline void fixPos(int *x, int *y, int width, int height) {
-	if (*x == PWRE_POS_AUTO) {
-		*x = (screenWidth - width) / 2;
+static inline void fix_pos(int *x, int *y, int width, int height) {
+	if (*x == PWRE_MOVE_AUTO) {
+		*x = (_SCREEN_W - width) / 2;
 	}
-	if (*y == PWRE_POS_AUTO) {
-		*y = (screenHeight - height) / 2;
+	if (*y == PWRE_MOVE_AUTO) {
+		*y = (_SCREEN_H - height) / 2;
 	}
 }

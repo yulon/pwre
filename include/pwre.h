@@ -9,14 +9,18 @@ extern "C" {
 #endif
 
 typedef struct {
-	int width, height;
-} PrSize;
+	int x, y;
+} pwre_point_t;
 
 typedef struct {
-	int x, y;
-} PrPoint;
+	int width, height;
+} pwre_size_t;
 
-typedef struct PrWnd *PrWnd;
+typedef struct {
+	int left, top, right, bottom;
+} pwre_bounds_t;
+
+typedef struct pwre_wnd *pwre_wnd_t;
 
 typedef enum {
 	PWRE_EVENT_CLOSE = -1,
@@ -31,9 +35,9 @@ typedef enum {
 	PWRE_EVENT_KEY_UP = 21
 } PWRE_EVENT;
 
-typedef bool (*PrEventHandler)(PrWnd, PWRE_EVENT, void *data);
+typedef bool (*pwre_event_handler_t)(pwre_wnd_t, PWRE_EVENT, void *data);
 
-bool pwre_init(PrEventHandler);
+bool pwre_init(pwre_event_handler_t);
 bool pwre_step(void);
 void pwre_run(void);
 
@@ -41,51 +45,49 @@ void pwre_run(void);
 #define PWRE_HINT_BLUR 0x00000010 // support for Windows Vista/7 (only Aero Glass), Windows 10 (unpublished API, not perfect, suggest less), macOS.
 #define PWRE_HINT_WMBACKGROUND 0x00000002 // support for Windows Vista+ (Aero Glass will automatically blur, but when less only shadow), macOS.
 
-PrWnd new_PrWnd(uint64_t hints);
-void PrWnd_Close(PrWnd);
-void PrWnd_Destroy(PrWnd);
+pwre_wnd_t pwre_new_wnd(uint64_t hints);
+void pwre_wnd_close(pwre_wnd_t);
+void pwre_wnd_destroy(pwre_wnd_t);
 
-void *PrWnd_NativePointer(PrWnd);
+void *pwre_wnd_native_id(pwre_wnd_t);
 
-const char *PrWnd_GetTitle(PrWnd);
-void PrWnd_SetTitle(PrWnd, const char *);
+const char *pwre_wnd_title(pwre_wnd_t);
+void pwre_wnd_retitle(pwre_wnd_t, const char *);
 
-#define PWRE_POS_AUTO -10101
+#define PWRE_MOVE_AUTO -10101
 
-void PrWnd_Move(PrWnd, int x, int y);
+void pwre_wnd_pos(pwre_wnd_t, int *x, int *y);
+void pwre_wnd_move(pwre_wnd_t, int x, int y);
 
-void PrWnd_Size(PrWnd, int *width, int *height);
-void PrWnd_ReSize(PrWnd, int width, int height);
+void pwre_wnd_size(pwre_wnd_t, int *width, int *height);
+void pwre_wnd_resize(pwre_wnd_t, int width, int height);
 
 typedef enum {
-	PWRE_VIEW_VISIBLE = 1,
-	PWRE_VIEW_MINIMIZE = 2,
-	PWRE_VIEW_MAXIMIZE = 3,
-	PWRE_VIEW_FULLSCREEN = 4
-} PWRE_VIEW;
+	PWRE_STATE_VISIBLE = 1,
+	PWRE_STATE_MINIMIZE = 2,
+	PWRE_STATE_MAXIMIZE = 3,
+	PWRE_STATE_FULLSCREEN = 4
+} PWRE_STATE;
 
-void PrWnd_View(PrWnd, PWRE_VIEW);
-void PrWnd_UnView(PrWnd, PWRE_VIEW);
-bool PrWnd_Viewed(PrWnd, PWRE_VIEW);
+void pwre_wnd_state_add(pwre_wnd_t, PWRE_STATE);
+void pwre_wnd_state_rm(pwre_wnd_t, PWRE_STATE);
+bool pwre_wnd_state_has(pwre_wnd_t, PWRE_STATE);
 
-void PrWnd_Less(PrWnd, bool);
-
-typedef struct {
-	int left, top, right, bottom;
-} PrBounds;
+void pwre_wnd_less(pwre_wnd_t, bool);
 
 typedef struct {
-	PrBounds border;
-	PrBounds padding;
-} PrArea;
+	pwre_bounds_t outer;
+	pwre_bounds_t border;
+	pwre_bounds_t control;
+} pwre_action_area_t;
 
-bool PrWnd_CustomArea(PrWnd, PrArea *);
+bool pwre_wnd_custom_action_area(pwre_wnd_t, pwre_action_area_t *);
 
 #define PWRE_HINT_GL_V3 0x3000000000
 
-PrWnd new_PrWnd_with_GL(uint64_t hints);
-void PrWnd_GL_MakeCurrent(PrWnd);
-void PrWnd_GL_SwapBuffers(PrWnd);
+pwre_wnd_t pwre_new_wnd_with_gl(uint64_t hints);
+void pwre_gl_make_current(pwre_wnd_t);
+void pwre_gl_swap_buffers(pwre_wnd_t);
 
 #ifdef __cplusplus
 }

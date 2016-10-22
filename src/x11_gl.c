@@ -1,26 +1,26 @@
 #include "plat.h"
 
-#ifdef PWRE_X11
+#ifdef PWRE_PLAT_X11
 
 #include "x11.h"
 #include <GL/glx.h>
 #include <X11/extensions/Xrender.h>
 
-typedef struct PrWnd_GL {
-	struct PrWnd wnd;
+typedef struct gl_wnd {
+	struct pwre_wnd wnd;
 	GLXContext ctx;
-} *PrWnd_GL;
+} *gl_wnd_t;
 
-static void _PrWnd_GL_free(PrWnd wnd) {
-	if (glXGetCurrentContext() == ((PrWnd_GL)wnd)->ctx) {
+static void gl_free(pwre_wnd_t wnd) {
+	if (glXGetCurrentContext() == ((gl_wnd_t)wnd)->ctx) {
 		glXMakeCurrent(dpy, None, NULL);
 	}
-	glXDestroyContext(dpy, ((PrWnd_GL)wnd)->ctx);
+	glXDestroyContext(dpy, ((gl_wnd_t)wnd)->ctx);
 }
 
-const GLint glAttr[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
+const GLint gl_attr[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
 
-const int glAlphaAttr[] = {
+const int gl_attr_a[] = {
 	GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
 	GLX_RENDER_TYPE, GLX_RGBA_BIT,
 	GLX_DOUBLEBUFFER, True,
@@ -32,30 +32,30 @@ const int glAlphaAttr[] = {
 	None
 };
 
-PrWnd new_PrWnd_with_GL(uint64_t hints) {
+pwre_wnd_t pwre_new_wnd_with_gl(uint64_t hints) {
 	XVisualInfo *vi;
 
 	if ((hints & PWRE_HINT_ALPHA) == PWRE_HINT_ALPHA) {
-		int iNumOfFBConfigs;
-		GLXFBConfig *pFBConfigs = glXChooseFBConfig(dpy, 0, glAlphaAttr, &iNumOfFBConfigs);
-		XRenderPictFormat *pPictFormat = NULL;
-		for (int i = 0; i < iNumOfFBConfigs; i++) {
-			vi = glXGetVisualFromFBConfig (dpy, pFBConfigs[i]);
+		int fbconf_len;
+		GLXFBConfig *fbconf = glXChooseFBConfig(dpy, 0, gl_attr_a, &fbconf_len);
+		XRenderPictFormat *pict_fmt = NULL;
+		for (int i = 0; i < fbconf_len; i++) {
+			vi = glXGetVisualFromFBConfig (dpy, fbconf[i]);
 			if (!vi) {
 				continue;
 			}
-			pPictFormat = XRenderFindVisualFormat (dpy, vi->visual);
-			if (!pPictFormat) {
+			pict_fmt = XRenderFindVisualFormat (dpy, vi->visual);
+			if (!pict_fmt) {
 				continue;
 			}
-			if (pPictFormat->direct.alphaMask > 0) {
-				vi = glXGetVisualFromFBConfig (dpy, pFBConfigs[i]);
+			if (pict_fmt->direct.alphaMask > 0) {
+				vi = glXGetVisualFromFBConfig (dpy, fbconf[i]);
 				break;
 			}
 			XFree(vi);
 		}
 	} else {
-		vi = glXChooseVisual(dpy, 0, (int *)&glAttr);
+		vi = glXChooseVisual(dpy, 0, (int *)&gl_attr);
 	}
 
 	XSetWindowAttributes swa;
@@ -64,29 +64,29 @@ PrWnd new_PrWnd_with_GL(uint64_t hints) {
 	swa.colormap = XCreateColormap(dpy, root, vi->visual, AllocNone);
 	swa.event_mask = ExposureMask | KeyPressMask | StructureNotifyMask;
 
-	PrWnd_GL glWnd = (PrWnd_GL)_alloc_PrWnd(
-		sizeof(struct PrWnd),
+	gl_wnd_t glwnd = (gl_wnd_t)alloc_wnd(
+		sizeof(struct gl_wnd),
 		hints,
 		vi->depth, vi->visual, CWBackPixel | CWBorderPixel | CWEventMask | CWColormap, &swa
 	);
-	glWnd->wnd.onFree = _PrWnd_GL_free;
+	glwnd->wnd.on_free = gl_free;
 
-	glWnd->ctx = glXCreateContext(dpy, vi, NULL, GL_TRUE);
+	glwnd->ctx = glXCreateContext(dpy, vi, NULL, GL_TRUE);
 	XFree(vi);
-	if (!glWnd->ctx) {
+	if (!glwnd->ctx) {
 		puts("Pwre: X11.glXCreateContext error!");
-		PrWnd_Destroy((PrWnd)glWnd);
+		pwre_wnd_destroy((pwre_wnd_t)glwnd);
 		return NULL;
 	}
-	return (PrWnd)glWnd;
+	return (pwre_wnd_t)glwnd;
 }
 
-void PrWnd_GL_MakeCurrent(PrWnd wnd) {
-	glXMakeCurrent(dpy, wnd->xWnd, ((PrWnd_GL)wnd)->ctx);
+void pwre_gl_make_current(pwre_wnd_t wnd) {
+	glXMakeCurrent(dpy, wnd->XWnd, ((gl_wnd_t)wnd)->ctx);
 }
 
-void PrWnd_GL_SwapBuffers(PrWnd wnd) {
-	glXSwapBuffers(dpy, wnd->xWnd);
+void pwre_gl_swap_buffers(pwre_wnd_t wnd) {
+	glXSwapBuffers(dpy, wnd->XWnd);
 }
 
-#endif // PWRE_X11
+#endif // PWRE_PLAT_X11

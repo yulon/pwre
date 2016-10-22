@@ -9,7 +9,7 @@
 	#include <GL/gl.h>
 #endif
 
-bool eventHandler(PrWnd wnd, PWRE_EVENT event, void *data) {
+bool event_handler(pwre_wnd_t wnd, PWRE_EVENT event, void *data) {
 	if (event == PWRE_EVENT_PAINT) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glBegin(GL_TRIANGLES);
@@ -24,23 +24,23 @@ bool eventHandler(PrWnd wnd, PWRE_EVENT event, void *data) {
 		glVertex3f(1.0, -1.0, 0.0);
 
 		glEnd();
-		PrWnd_GL_SwapBuffers(wnd);
+		pwre_gl_swap_buffers(wnd);
 	}
 	return true;
 }
 
 int main(void) {
-	pwre_init(eventHandler);
+	pwre_init(event_handler);
 
-	PrWnd wnd = new_PrWnd_with_GL(PWRE_HINT_ALPHA);
-	PrWnd_Less(wnd, true);
-	PrWnd_ReSize(wnd, 600, 500);
-	PrWnd_GL_MakeCurrent(wnd);
-	PrWnd_SetTitle(wnd, (const char *)glGetString(GL_VERSION));
+	pwre_wnd_t wnd = pwre_new_wnd_with_gl(PWRE_HINT_ALPHA);
+	pwre_wnd_less(wnd, true);
+	pwre_wnd_resize(wnd, 600, 500);
+	pwre_gl_make_current(wnd);
+	pwre_wnd_retitle(wnd, (const char *)glGetString(GL_VERSION));
 	glClearColor(0, 0, 0, 0.4);
 
-	PrWnd_View(wnd, PWRE_VIEW_VISIBLE);
-	PrWnd_Move(wnd, PWRE_POS_AUTO, PWRE_POS_AUTO);
+	pwre_wnd_state_add(wnd, PWRE_STATE_VISIBLE);
+	pwre_wnd_move(wnd, PWRE_MOVE_AUTO, PWRE_MOVE_AUTO);
 
 	pwre_run();
 	return 0;

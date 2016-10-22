@@ -1,9 +1,9 @@
 -I./include
 -I./src
 -I./deps
--DPWRE_WIN32
--DPWRE_X11
--DPWRE_COCOA
+-DPWRE_PLAT_WIN32
+-DPWRE_PLAT_X11
+-DPWRE_PLAT_COCOA
 -D_WIN32
 -D__unix__
 -D__APPLE__
