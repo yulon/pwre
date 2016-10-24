@@ -6,31 +6,31 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct _ZKPair {
+typedef struct _zk_pair {
 	void *key;
 	void *value;
-} *_ZKPairList;
+} *_zk_pair_list_t;
 
-typedef struct ZKMap {
+typedef struct zk_map {
 	size_t base;
 	size_t size;
-	_ZKPairList list;
-} *ZKMap;
+	_zk_pair_list_t list;
+} *zk_map_t;
 
-static ZKMap new_ZKMap(size_t baseSize) {
-	ZKMap map = calloc(1, sizeof(struct ZKMap));
-	map->base = baseSize;
-	map->size = baseSize;
-	map->list = calloc(baseSize, sizeof(struct _ZKPair));
+static zk_map_t zk_new_map(size_t base_size) {
+	zk_map_t map = calloc(1, sizeof(struct zk_map));
+	map->base = base_size;
+	map->size = base_size;
+	map->list = calloc(base_size, sizeof(struct _zk_pair));
 	return map;
 }
 
-static bool ZKMap_ReSize(ZKMap map, size_t size) {
+static bool zk_map_resize(zk_map_t map, size_t size) {
 	if (size <= map->base) {
 		return false;
 	}
-	_ZKPairList newList = calloc(size, sizeof(struct _ZKPair));
-	_ZKPairList oldList = map->list;
+	_zk_pair_list_t newList = calloc(size, sizeof(struct _zk_pair));
+	_zk_pair_list_t oldList = map->list;
 	memcpy(newList, oldList, map->size);
 	map->list = newList;
 	map->size = size;
@@ -38,7 +38,7 @@ static bool ZKMap_ReSize(ZKMap map, size_t size) {
 	return true;
 }
 
-static bool _ZKMap_Set(ZKMap map, void *key, void *value) {
+static bool _zk_map_set(zk_map_t map, void *key, void *value) {
 	for (size_t dvdnd = map->base; dvdnd <= map->size; dvdnd += map->base) {
 		size_t ix = (size_t)key % dvdnd;
 		if (!map->list[ix].key) {
@@ -54,11 +54,11 @@ static bool _ZKMap_Set(ZKMap map, void *key, void *value) {
 				if (!map->list[ix].key) {
 					map->list[ix].key = key;
 					map->list[ix].value = value;
-					ZKMap_ReSize(map, size);
+					zk_map_resize(map, size);
 					return true;
 				}
 			} else {
-				ZKMap_ReSize(map, size);
+				zk_map_resize(map, size);
 				map->list[ix].key = key;
 				map->list[ix].value = value;
 				return true;
@@ -67,9 +67,9 @@ static bool _ZKMap_Set(ZKMap map, void *key, void *value) {
 	}
 	return false;
 }
-#define ZKMap_Set(ZKMap_map, any_key, any_value) _ZKMap_Set(ZKMap_map, (void *)any_key, (void *)any_value)
+#define zk_map_set(map, key, value) _zk_map_set(map, (void *)key, (void *)value)
 
-static void *_ZKMap_Get(ZKMap map, void *key) {
+static void *_zk_map_get(zk_map_t map, void *key) {
 	for (size_t dvdnd = map->base; dvdnd <= map->size; dvdnd += map->base) {
 		size_t ix = (size_t)key % dvdnd;
 		if (map->list[ix].key == key) {
@@ -78,9 +78,9 @@ static void *_ZKMap_Get(ZKMap map, void *key) {
 	}
 	return NULL;
 }
-#define ZKMap_Get(ZKMap_map, any_key) _ZKMap_Get(ZKMap_map, (void *)any_key)
+#define zk_map_get(map, key) _zk_map_get(map, (void *)key)
 
-static void _ZKMap_Delete(ZKMap map, void *key) {
+static void _zk_map_delete(zk_map_t map, void *key) {
 	for (size_t dvdnd = map->base; dvdnd <= map->size; dvdnd += map->base) {
 		size_t ix = (size_t)key % dvdnd;
 		if (map->list[ix].key == key) {
@@ -89,9 +89,9 @@ static void _ZKMap_Delete(ZKMap map, void *key) {
 		}
 	}
 }
-#define ZKMap_Delete(ZKMap_map, any_key) _ZKMap_Delete(ZKMap_map, (void *)any_key)
+#define zk_map_delete(map, key) _zk_map_delete(map, (void *)key)
 
-static void ZKMap_Free(ZKMap map) {
+static void zk_map_free(zk_map_t map) {
 	free(map->list);
 	free(map);
 }

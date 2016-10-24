@@ -4,14 +4,16 @@
 #include <string.h>
 #include <windows.h>
 #include <dwmapi.h>
-#include <zk/mux.h>
+#include <zk/mutex.h>
+#include <zk/rwlock.h>
 
 struct pwre_wnd {
 	HWND hWnd;
 	int nc_width, nc_height;
 	char *title_buf;
 	size_t title_buf_len;
-	ZKMux data_mux;
+	zk_mutex_t data_mux;
+	zk_rwlock_t rwlock;
 	bool less;
 	void (*on_free)(pwre_wnd_t);
 };

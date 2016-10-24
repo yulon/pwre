@@ -1,7 +1,7 @@
-#ifndef _ZK_MUX_H
-#define _ZK_MUX_H
+#ifndef _ZK_MUTEX_H
+#define _ZK_MUTEX_H
 
-typedef struct ZKMux *ZKMux;
+typedef struct zk_mutex *zk_mutex_t;
 
 #include <stdlib.h>
 
@@ -10,28 +10,28 @@ typedef struct ZKMux *ZKMux;
 #elif defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 	#include <pthread.h>
 #else
-	#pragma message("ZKMux: not support this OS!")
+	#pragma message("ZK.mutex: not support this OS!")
 #endif
 
-static inline ZKMux new_ZKMux(void) {
+static inline zk_mutex_t zk_new_mutex(void) {
 	#if defined(_WIN32)
-		HANDLE ntvMux = CreateMutexW(NULL, FALSE, NULL);
-		if (!ntvMux) {
-			puts("ZK: Win32.CreateMutexW error!");
+		HANDLE ntv_mux = CreateMutexW(NULL, FALSE, NULL);
+		if (!ntv_mux) {
+			puts("ZK.mutex: Win32.CreateMutexW error!");
 			exit(1);
 		}
 	#elif defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
-		pthread_mutex_t *ntvMux = calloc(1, sizeof(pthread_mutex_t));
-		pthread_mutex_init(ntvMux, NULL);
-		if (!ntvMux) {
-			puts("ZK: pthread_mutex_init error!");
+		pthread_mutex_t *ntv_mux = calloc(1, sizeof(pthread_mutex_t));
+		int result = pthread_mutex_init(ntv_mux, NULL);
+		if (result) {
+			puts("ZK.mutex: POSIX.pthread_mutex_init error!");
 			exit(1);
 		}
 	#endif
-	return (ZKMux)ntvMux;
+	return (zk_mutex_t)ntv_mux;
 }
 
-static inline void ZKMux_Lock(ZKMux mux) {
+static inline void zk_mutex_lock(zk_mutex_t mux) {
 	#if defined(_WIN32)
 		WaitForSingleObject((HANDLE)mux, INFINITE);
 	#elif defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
@@ -39,7 +39,7 @@ static inline void ZKMux_Lock(ZKMux mux) {
 	#endif
 }
 
-static inline void ZKMux_UnLock(ZKMux mux) {
+static inline void zk_mutex_unlock(zk_mutex_t mux) {
 	#if defined(_WIN32)
 		ReleaseMutex((HANDLE)mux);
 	#elif defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
@@ -47,7 +47,7 @@ static inline void ZKMux_UnLock(ZKMux mux) {
 	#endif
 }
 
-static inline void ZKMux_Free(ZKMux mux) {
+static inline void zk_mutex_free(zk_mutex_t mux) {
 	#if defined(_WIN32)
 		CloseHandle((HANDLE)mux);
 	#elif defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
@@ -56,4 +56,4 @@ static inline void ZKMux_Free(ZKMux mux) {
 	#endif
 }
 
-#endif // !_ZK_MUX_H
+#endif // !_ZK_MUTEX_H

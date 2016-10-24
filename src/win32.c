@@ -22,12 +22,12 @@ static void pwre_free(pwre_wnd_t wnd) {
 	if (wnd->on_free) {
 		wnd->on_free(wnd);
 	}
-	ZKMux_Lock(wnd->data_mux);
+	zk_mutex_lock(wnd->data_mux);
 	if (wnd->title_buf) {
 		free(wnd->title_buf);
 	}
-	ZKMux_UnLock(wnd->data_mux);
-	ZKMux_Free(wnd->data_mux);
+	zk_mutex_unlock(wnd->data_mux);
+	zk_mutex_free(wnd->data_mux);
 	free(wnd);
 }
 
@@ -44,13 +44,16 @@ static LRESULT CALLBACK wm_handler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 	if (wnd) {
 		switch (uMsg) {
 			case WM_NCCALCSIZE:
+				zk_rwlock_reading(wnd->rwlock);
 				if (wnd->less) {
+					zk_rwlock_red(wnd->rwlock);
 					if (wParam) {
 						((LPNCCALCSIZE_PARAMS)lParam)->rgrc[2] = ((LPNCCALCSIZE_PARAMS)lParam)->rgrc[1];
 						((LPNCCALCSIZE_PARAMS)lParam)->rgrc[1] = ((LPNCCALCSIZE_PARAMS)lParam)->rgrc[0];
 					}
 					return 0;
 				}
+				zk_rwlock_red(wnd->rwlock);
 				break;
 			case WM_PAINT:
 				_EVENT_POST(, PWRE_EVENT_PAINT, NULL)
@@ -66,16 +69,16 @@ static LRESULT CALLBACK wm_handler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 
 				_EVENT_POST(, PWRE_EVENT_DESTROY, NULL)
 
-				ZKMux_Lock(wnd_count_mux);
+				zk_mutex_lock(wnd_count_mux);
 				wnd_count--;
 				pwre_free(wnd);
 				if (!wnd_count) {
-					ZKMux_UnLock(wnd_count_mux);
-					ZKMux_Free(wnd_count_mux);
+					zk_mutex_unlock(wnd_count_mux);
+					zk_mutex_free(wnd_count_mux);
 					PostQuitMessage(0);
 					return 0;
 				}
-				ZKMux_UnLock(wnd_count_mux);
+				zk_mutex_unlock(wnd_count_mux);
 		}
 	}
 	return DefWindowProcW(hWnd, uMsg, wParam, lParam);
@@ -114,7 +117,7 @@ bool pwre_init(pwre_event_handler_t evt_hdr) {
 		return false;
 	}
 
-	wnd_count_mux = new_ZKMux();
+	wnd_count_mux = zk_new_mutex();
 	event_handler = evt_hdr;
 	return true;
 }
@@ -167,9 +170,10 @@ pwre_wnd_t alloc_wnd(size_t struct_size, uint64_t hints) {
 		return NULL;
 	}
 
-	ZKMux_Lock(wnd_count_mux); wnd_count++; ZKMux_UnLock(wnd_count_mux);
+	zk_mutex_lock(wnd_count_mux); wnd_count++; zk_mutex_unlock(wnd_count_mux);
 
-	wnd->data_mux = new_ZKMux();
+	wnd->data_mux = zk_new_mutex();
+	wnd->rwlock = zk_new_rwlock();
 
 	SetWindowLongPtrW(wnd->hWnd, PWRE_PLAT_WIN32_WNDEXTRA_I, (LONG_PTR)(wnd));
 
@@ -206,7 +210,7 @@ void pwre_wnd_destroy(pwre_wnd_t wnd) {
 }
 
 const char *pwre_wnd_title(pwre_wnd_t wnd) {
-	ZKMux_Lock(wnd->data_mux);
+	zk_mutex_lock(wnd->data_mux);
 	int str16_len = GetWindowTextLengthW(wnd->hWnd);
 	if (str16_len) {
 		str16_len++;
@@ -222,7 +226,7 @@ const char *pwre_wnd_title(pwre_wnd_t wnd) {
 	} else {
 		wnd_title_buf_clear(wnd, 0);
 	}
-	ZKMux_UnLock(wnd->data_mux);
+	zk_mutex_unlock(wnd->data_mux);
 	return (const char *)wnd->title_buf;
 }
 
@@ -335,7 +339,11 @@ bool pwre_wnd_state_has(pwre_wnd_t wnd, PWRE_STATE type) {
 void pwre_wnd_less(pwre_wnd_t wnd, bool less) {
 	RECT rect;
 	GetClientRect(wnd->hWnd, &rect);
+
+	zk_rwlock_writing(wnd->rwlock);
 	wnd->less = less;
+	zk_rwlock_written(wnd->rwlock);
+
 	pwre_wnd_resize(wnd, rect.right, rect.bottom);
 }
 

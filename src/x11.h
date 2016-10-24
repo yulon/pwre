@@ -3,13 +3,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <X11/Xlib.h>
-#include <zk/mux.h>
+#include <zk/mutex.h>
 
 struct pwre_wnd {
 	Window XWnd;
 	char *title_buf;
 	size_t title_buf_len;
-	ZKMux data_mux;
+	zk_mutex_t data_mux;
 	void (*on_free)(pwre_wnd_t);
 };
 

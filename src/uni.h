@@ -2,9 +2,9 @@
 
 static int wnd_count;
 
-#include <zk/mux.h>
+#include <zk/mutex.h>
 
-static ZKMux wnd_count_mux;
+static zk_mutex_t wnd_count_mux;
 
 static pwre_event_handler_t event_handler;
 
