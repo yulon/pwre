@@ -43,7 +43,7 @@ workspace "Pwre"
 			linkoptions { "-framework Cocoa" }
 
 		configuration "linux"
-			links { "X11" }
+			links { "X11", "pthread" }
 
 		configuration "Debug"
 			defines { "DEBUG" }
@@ -69,7 +69,7 @@ workspace "Pwre"
 			linkoptions { "-framework Cocoa", "-framework OpenGL" }
 
 		configuration "linux"
-			links { "X11", "GL", "Xrender" }
+			links { "X11", "pthread", "GL", "Xrender" }
 
 		configuration "Debug"
 			defines { "DEBUG" }
@@ -95,7 +95,7 @@ workspace "Pwre"
 			linkoptions { "-framework Cocoa", "-framework OpenGL" }
 
 		configuration "linux"
-			links { "X11", "GL", "Xrender" }
+			links { "X11", "pthread", "GL", "Xrender" }
 
 		configuration "Debug"
 			defines { "DEBUG" }

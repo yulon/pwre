@@ -10,9 +10,11 @@
 #include <X11/Xutil.h>
 
 #include <zk/map.h>
+#include <zk/rwlock.h>
 
 static zk_map_t wnd_map;
-static zk_mutex_t wnd_map_and_evt_mux;
+static zk_rwlock_t wnd_map_rwlock;
+static zk_mutex_t evt_mux;
 
 Display *_pwre_x11_dpy;
 Window _pwre_x11_root;
@@ -56,11 +58,12 @@ bool pwre_init(pwre_event_handler_t evt_hdr) {
 	wnd_count_mux = zk_new_mutex();
 	event_handler = evt_hdr;
 	wnd_map = zk_new_map(256);
-	wnd_map_and_evt_mux = zk_new_mutex();
+	wnd_map_rwlock = zk_new_rwlock();
+	evt_mux = zk_new_mutex();
 	return true;
 }
 
-static void pwre_free(pwre_wnd_t wnd) {
+static void wnd_free(pwre_wnd_t wnd) {
 	if (wnd->on_free) {
 		wnd->on_free(wnd);
 	}
@@ -86,18 +89,18 @@ static void pwre_free(pwre_wnd_t wnd) {
 	} \
 }
 
-static bool handleXEvent(XEvent *event, bool lock) {
-	pwre_wnd_t wnd;
-
-	if (lock) {
-		zk_mutex_lock(wnd_map_and_evt_mux);
+static bool handleXEvent(XEvent *event, bool mux) {
+	if (mux) {
+		zk_mutex_lock(evt_mux);
 		XNextEvent(dpy, event);
-		wnd = (pwre_wnd_t)zk_map_get(wnd_map, ((XAnyEvent *)event)->window);
-		zk_mutex_unlock(wnd_map_and_evt_mux);
+		zk_mutex_unlock(evt_mux);
 	} else {
 		XNextEvent(dpy, event);
-		wnd = (pwre_wnd_t)zk_map_get(wnd_map, ((XAnyEvent *)event)->window);
 	}
+
+	zk_rwlock_reading(wnd_map_rwlock);
+	pwre_wnd_t wnd = (pwre_wnd_t)zk_map_get(wnd_map, ((XAnyEvent *)event)->window);
+	zk_rwlock_red(wnd_map_rwlock);
 
 	if (wnd) {
 		switch (((XAnyEvent *)event)->type) {
@@ -114,14 +117,15 @@ static bool handleXEvent(XEvent *event, bool lock) {
 				break;
 			case ClientMessage:
 				if (((XClientMessageEvent *)event)->message_type == wm_protocols && (Atom)((XClientMessageEvent *)event)->data.l[0] == wm_del_wnd) {
+
 					_EVENT_SEND(, PWRE_EVENT_CLOSE, NULL,
 						return true;
 					)
 
-					zk_mutex_lock(wnd_map_and_evt_mux);
+					zk_mutex_lock(evt_mux);
 					XDestroyWindow(dpy, ((XAnyEvent *)event)->window);
 					xSync(wnd->XWnd, DestroyNotify,)
-					zk_mutex_unlock(wnd_map_and_evt_mux);
+					zk_mutex_unlock(evt_mux);
 
 					return false;
 				}
@@ -129,18 +133,22 @@ static bool handleXEvent(XEvent *event, bool lock) {
 			case DestroyNotify:
 				_EVENT_POST(, PWRE_EVENT_DESTROY, NULL)
 
-				zk_mutex_lock(wnd_map_and_evt_mux);
+				wnd_free(wnd);
+
+				zk_rwlock_writing(wnd_map_rwlock);
 				zk_map_delete(wnd_map, wnd->XWnd);
-				zk_mutex_unlock(wnd_map_and_evt_mux);
+				zk_rwlock_written(wnd_map_rwlock);
 
 				zk_mutex_lock(wnd_count_mux);
 				wnd_count--;
-				pwre_free(wnd);
 				if (!wnd_count) {
 					zk_mutex_unlock(wnd_count_mux);
+
 					zk_mutex_free(wnd_count_mux);
-					zk_mutex_free(wnd_map_and_evt_mux);
 					zk_map_free(wnd_map);
+					zk_rwlock_free(wnd_map_rwlock);
+					zk_mutex_free(evt_mux);
+
 					XCloseDisplay(dpy);
 					return false;
 				}
@@ -195,10 +203,11 @@ pwre_wnd_t alloc_wnd(
 
 	pwre_wnd_t wnd = calloc(1, struct_size);
 	wnd->XWnd = XWnd;
+	wnd->data_mux = zk_new_mutex();
 
- 	zk_mutex_lock(wnd_map_and_evt_mux);
+	zk_rwlock_writing(wnd_map_rwlock);
 	zk_map_set(wnd_map, XWnd, wnd);
-	zk_mutex_unlock(wnd_map_and_evt_mux);
+	zk_rwlock_written(wnd_map_rwlock);
 	return wnd;
 }
 
@@ -247,7 +256,7 @@ void pwre_wnd_move(pwre_wnd_t wnd, int x, int y) {
 	XGetWindowAttributes(dpy, wnd->XWnd, &wa);
 	fix_pos(&x, &y, wa.width, wa.height);
 
-	zk_mutex_lock(wnd_map_and_evt_mux);
+	zk_mutex_lock(evt_mux);
 	int err = XMoveWindow(dpy, wnd->XWnd, x, y);
 	if (err != BadValue && err != BadWindow && err != BadMatch) {
 		xSync(
@@ -259,7 +268,7 @@ void pwre_wnd_move(pwre_wnd_t wnd, int x, int y) {
 			)
 		)
 	}
-	zk_mutex_unlock(wnd_map_and_evt_mux);
+	zk_mutex_unlock(evt_mux);
 }
 
 void pwre_wnd_size(pwre_wnd_t wnd, int *width, int *height) {
@@ -274,7 +283,7 @@ void pwre_wnd_size(pwre_wnd_t wnd, int *width, int *height) {
 }
 
 void pwre_wnd_resize(pwre_wnd_t wnd, int width, int height) {
-	zk_mutex_lock(wnd_map_and_evt_mux);
+	zk_mutex_lock(evt_mux);
 	int err = XResizeWindow(dpy, wnd->XWnd, width, height);
 	if (err != BadValue && err != BadWindow) {
 		xSync(
@@ -284,20 +293,20 @@ void pwre_wnd_resize(pwre_wnd_t wnd, int width, int height) {
 			&& ((XConfigureEvent *)&event)->height == height
 		)
 	}
-	zk_mutex_unlock(wnd_map_and_evt_mux);
+	zk_mutex_unlock(evt_mux);
 }
 
 static void visible(pwre_wnd_t wnd) {
 	XWindowAttributes wa;
 	XGetWindowAttributes(dpy, wnd->XWnd, &wa);
-	zk_mutex_lock(wnd_map_and_evt_mux);
+	zk_mutex_lock(evt_mux);
 	if (wa.map_state != IsViewable && XMapWindow(dpy, wnd->XWnd) != BadWindow && wa.map_state == IsUnmapped) {
 		xSync(
 			wnd->XWnd,
 			MapNotify,
 		)
 	}
-	zk_mutex_unlock(wnd_map_and_evt_mux);
+	zk_mutex_unlock(evt_mux);
 }
 
 void pwre_wnd_state_add(pwre_wnd_t wnd, PWRE_STATE type) {

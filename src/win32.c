@@ -18,7 +18,7 @@ static CreateRectRgn_t CreateRectRgn_fp;
 
 #define _LOAD_W32_API(m, f) f##_fp = ((f##_t)GetProcAddress(m, #f))
 
-static void pwre_free(pwre_wnd_t wnd) {
+static void wnd_free(pwre_wnd_t wnd) {
 	if (wnd->on_free) {
 		wnd->on_free(wnd);
 	}
@@ -28,6 +28,7 @@ static void pwre_free(pwre_wnd_t wnd) {
 	}
 	zk_mutex_unlock(wnd->data_mux);
 	zk_mutex_free(wnd->data_mux);
+	zk_rwlock_free(wnd->rwlock);
 	free(wnd);
 }
 
@@ -69,9 +70,10 @@ static LRESULT CALLBACK wm_handler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 
 				_EVENT_POST(, PWRE_EVENT_DESTROY, NULL)
 
+				wnd_free(wnd);
+
 				zk_mutex_lock(wnd_count_mux);
 				wnd_count--;
-				pwre_free(wnd);
 				if (!wnd_count) {
 					zk_mutex_unlock(wnd_count_mux);
 					zk_mutex_free(wnd_count_mux);
