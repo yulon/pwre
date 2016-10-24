@@ -4,7 +4,7 @@
 
 #include "x11.h"
 #include "uni.h"
-#include "titlebuf.h"
+#include "titlebuf_ex.h"
 
 #include <limits.h>
 #include <X11/Xutil.h>
