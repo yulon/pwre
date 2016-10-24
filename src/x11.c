@@ -76,9 +76,9 @@ static void wnd_free(pwre_wnd_t wnd) {
 	free(wnd);
 }
 
-#define xSync(_wnd, _event, _conds) { \
+#define _XEVENT_SYNC(_wnd, _event, _conds) { \
 	XEvent event; \
-	while (handleXEvent(&event, false)) { \
+	while (xevent_recv(&event, false)) { \
 		if ( \
 			((XAnyEvent *)&event)->window == _wnd && \
 			((XAnyEvent *)&event)->type == _event \
@@ -89,7 +89,7 @@ static void wnd_free(pwre_wnd_t wnd) {
 	} \
 }
 
-static bool handleXEvent(XEvent *event, bool mux) {
+static bool xevent_recv(XEvent *event, bool mux) {
 	if (mux) {
 		zk_mutex_lock(evt_mux);
 		XNextEvent(dpy, event);
@@ -124,7 +124,7 @@ static bool handleXEvent(XEvent *event, bool mux) {
 
 					zk_mutex_lock(evt_mux);
 					XDestroyWindow(dpy, ((XAnyEvent *)event)->window);
-					xSync(wnd->XWnd, DestroyNotify,)
+					_XEVENT_SYNC(wnd->XWnd, DestroyNotify,)
 					zk_mutex_unlock(evt_mux);
 
 					return false;
@@ -161,7 +161,7 @@ static bool handleXEvent(XEvent *event, bool mux) {
 bool pwre_step(void) {
 	XEvent event;
 	while (XPending(dpy)) {
-		if (!handleXEvent(&event, true)) {
+		if (!xevent_recv(&event, true)) {
 			return false;
 		}
 	}
@@ -170,7 +170,7 @@ bool pwre_step(void) {
 
 void pwre_run(void) {
 	XEvent event;
-	while (handleXEvent(&event, true));
+	while (xevent_recv(&event, true));
 }
 
 pwre_wnd_t alloc_wnd(
@@ -259,7 +259,7 @@ void pwre_wnd_move(pwre_wnd_t wnd, int x, int y) {
 	zk_mutex_lock(evt_mux);
 	int err = XMoveWindow(dpy, wnd->XWnd, x, y);
 	if (err != BadValue && err != BadWindow && err != BadMatch) {
-		xSync(
+		_XEVENT_SYNC(
 			wnd->XWnd,
 			ConfigureNotify,
 			&& (
@@ -286,7 +286,7 @@ void pwre_wnd_resize(pwre_wnd_t wnd, int width, int height) {
 	zk_mutex_lock(evt_mux);
 	int err = XResizeWindow(dpy, wnd->XWnd, width, height);
 	if (err != BadValue && err != BadWindow) {
-		xSync(
+		_XEVENT_SYNC(
 			wnd->XWnd,
 			ConfigureNotify,
 			&& ((XConfigureEvent *)&event)->width == width
@@ -301,7 +301,7 @@ static void visible(pwre_wnd_t wnd) {
 	XGetWindowAttributes(dpy, wnd->XWnd, &wa);
 	zk_mutex_lock(evt_mux);
 	if (wa.map_state != IsViewable && XMapWindow(dpy, wnd->XWnd) != BadWindow && wa.map_state == IsUnmapped) {
-		xSync(
+		_XEVENT_SYNC(
 			wnd->XWnd,
 			MapNotify,
 		)
