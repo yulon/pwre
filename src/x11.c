@@ -300,7 +300,7 @@ static void visible(pwre_wnd_t wnd) {
 	XWindowAttributes wa;
 	XGetWindowAttributes(dpy, wnd->XWnd, &wa);
 	zk_mutex_lock(xevent_mux);
-	if (wa.map_state != IsViewable && XMapWindow(dpy, wnd->XWnd) != BadWindow && wa.map_state == IsUnmapped) {
+	if (wa.map_state != IsViewable && XMapRaised(dpy, wnd->XWnd) != BadWindow && wa.map_state == IsUnmapped) {
 		_XEVENT_SYNC(
 			wnd->XWnd,
 			MapNotify,
