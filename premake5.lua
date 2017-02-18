@@ -1,4 +1,6 @@
 workspace "Pwre"
+	language "C++"
+	flags { "C++11" }
 	location ( "build" )
 	configurations { "Debug", "Release" }
 	platforms {"native", "x64", "x32"}
@@ -6,10 +8,9 @@ workspace "Pwre"
 	includedirs { "include" }
 
 	project "pwre"
-		language "C"
 		kind "StaticLib"
 		targetdir("lib/%{cfg.system}/%{cfg.platform}/%{cfg.buildcfg}")
-		files { "src/*.c", "src/*.h", "include/*.h" }
+		files { "src/*.cpp", "src/*.hpp", "include/*.hpp", "include/*.h" }
 		includedirs { "deps" }
 
 		configuration { "windows", "gmake" }
@@ -29,10 +30,9 @@ workspace "Pwre"
 			optimize "Speed"
 
 	project "demo_blank"
-		language "C"
 		kind "ConsoleApp"
 		targetdir("bin/%{cfg.system}/%{cfg.platform}/%{cfg.buildcfg}")
-		files { "demo/blank.c" }
+		files { "demo/blank.cpp" }
 		libdirs { "lib/%{cfg.system}/%{cfg.platform}/%{cfg.buildcfg}" }
 		links { "pwre" }
 
@@ -55,10 +55,9 @@ workspace "Pwre"
 			optimize "Speed"
 
 	project "demo_gl"
-		language "C"
 		kind "ConsoleApp"
 		targetdir("bin/%{cfg.system}/%{cfg.platform}/%{cfg.buildcfg}")
-		files { "demo/gl.c" }
+		files { "demo/gl.cpp" }
 		libdirs { "lib/%{cfg.system}/%{cfg.platform}/%{cfg.buildcfg}" }
 		links { "pwre" }
 
@@ -81,10 +80,9 @@ workspace "Pwre"
 			optimize "Speed"
 
 	project "demo_gl_alpha"
-		language "C"
 		kind "ConsoleApp"
 		targetdir("bin/%{cfg.system}/%{cfg.platform}/%{cfg.buildcfg}")
-		files { "demo/gl_alpha.c" }
+		files { "demo/gl_alpha.cpp" }
 		libdirs { "lib/%{cfg.system}/%{cfg.platform}/%{cfg.buildcfg}" }
 		links { "pwre" }
 

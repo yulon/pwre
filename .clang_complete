@@ -1,3 +1,4 @@
+-std=c++11
 -I./include
 -I./src
 -I./deps

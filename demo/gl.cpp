@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <pwre.h>
+#include <pwre.hpp>
 
 #if defined(__APPLE__) && defined(__MACH__)
 	#include <OpenGL/gl.h>
@@ -9,18 +9,18 @@
 	#include <GL/gl.h>
 #endif
 
-int main(void) {
-	pwre_init(NULL);
+int main() {
+	Pwre::System::Init();
 
-	pwre_wnd_t wnd = pwre_new_wnd_with_gl(0);
-	pwre_wnd_resize(wnd, 600, 500);
-	pwre_gl_make_current(wnd);
-	pwre_wnd_retitle(wnd, (const char *)glGetString(GL_VERSION));
+	Pwre::GLWindow wnd;
+	wnd.Resize(600, 500);
+	wnd.MakeCurrent();
+	wnd.Retitle((const char *)glGetString(GL_VERSION));
 	glClearColor(1, 1, 1, 1);
-	pwre_wnd_state_add(wnd, PWRE_STATE_VISIBLE);
-	pwre_wnd_move(wnd, PWRE_MOVE_AUTO, PWRE_MOVE_AUTO);
+	wnd.AddStates(PWRE_STATE_VISIBLE);
+	wnd.Move();
 
-	while (pwre_step()) {
+	while (Pwre::System::Step()) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glBegin(GL_TRIANGLES);
 
@@ -34,7 +34,7 @@ int main(void) {
 		glVertex3f(1.0, -1.0, 0.0);
 
 		glEnd();
-		pwre_gl_swap_buffers(wnd);
+		wnd.SwapBuffers();
 	}
 	return 0;
 }
