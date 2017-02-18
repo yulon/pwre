@@ -1,6 +1,3 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <pwre.hpp>
 
 #if defined(__APPLE__) && defined(__MACH__)
