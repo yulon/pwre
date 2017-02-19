@@ -7,9 +7,13 @@
 #include <X11/extensions/Xrender.h>
 
 namespace Pwre {
-	const GLint gl_attr[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
+	struct GLWindow::_BlackBox {
+		GLXContext ctx;
+	};
 
-	const int gl_attr_a[] = {
+	const GLint glAttr[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
+
+	const int glAttrA[] = {
 		GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
 		GLX_RENDER_TYPE, GLX_RGBA_BIT,
 		GLX_DOUBLEBUFFER, True,
@@ -21,12 +25,13 @@ namespace Pwre {
 		None
 	};
 
-	GLWindow::GLWindow(uint64_t hints):Window(-1) {
-		XVisualInfo *vi;
+	GLWindow::GLWindow(uint64_t hints):Window((uint64_t)-1) {
+		_glm = new _BlackBox;
 
+		XVisualInfo *vi;
 		if ((hints & PWRE_HINT_ALPHA) == PWRE_HINT_ALPHA) {
 			int fbConfLen;
-			GLXFBConfig *fbConf = glXChooseFBConfig(System::dpy, 0, gl_attr_a, &fbConfLen);
+			GLXFBConfig *fbConf = glXChooseFBConfig(System::dpy, 0, glAttrA, &fbConfLen);
 			XRenderPictFormat *pictFmt = NULL;
 			for (int i = 0; i < fbConfLen; i++) {
 				vi = glXGetVisualFromFBConfig(System::dpy, fbConf[i]);
@@ -44,7 +49,7 @@ namespace Pwre {
 				XFree(vi);
 			}
 		} else {
-			vi = glXChooseVisual(System::dpy, 0, (int *)&gl_attr);
+			vi = glXChooseVisual(System::dpy, 0, (int *)&glAttr);
 		}
 
 		XSetWindowAttributes swa;
@@ -53,36 +58,41 @@ namespace Pwre {
 		swa.colormap = XCreateColormap(System::dpy, System::root, vi->visual, AllocNone);
 		swa.event_mask = ExposureMask | KeyPressMask | StructureNotifyMask;
 
-		WindowCoreConstructor(
+		if (!WindowCoreConstructor(
 			this,
 			hints,
 			vi->depth, vi->visual, CWBackPixel | CWBorderPixel | CWEventMask | CWColormap, &swa
-		);
+		)) {
+			XFree(vi);
+			return;
+		}
 
-		_glm = (_BlackBox *)glXCreateContext(System::dpy, vi, NULL, GL_TRUE);
+		_glm->ctx = glXCreateContext(System::dpy, vi, NULL, GL_TRUE);
 		XFree(vi);
-		if (!_glm) {
+		if (!_glm->ctx) {
 			std::cout << "Pwre: X11.glXCreateContext error!" << std::endl;
 			Destroy();
 			return;
 		}
 
 		OnDestroy.AddCallBack([this]() {
-			if (glXGetCurrentContext() == (GLXContext)this->_glm) {
+			if (glXGetCurrentContext() == this->_glm->ctx) {
 				glXMakeCurrent(System::dpy, None, NULL);
 			}
-			glXDestroyContext(System::dpy, (GLXContext)this->_glm);
+			glXDestroyContext(System::dpy, this->_glm->ctx);
 		});
 	}
 
-	GLWindow::~GLWindow() {}
+	GLWindow::~GLWindow() {
+		delete _glm;
+	}
 
 	uintptr_t GLWindow::NativeGLCtx() {
-		return (uintptr_t)_glm;
+		return (uintptr_t)_glm->ctx;
 	}
 
 	void GLWindow::MakeCurrent() {
-		glXMakeCurrent(System::dpy, _m->xWnd, (GLXContext)_glm);
+		glXMakeCurrent(System::dpy, _m->xWnd, _glm->ctx);
 	}
 
 	void GLWindow::SwapBuffers() {

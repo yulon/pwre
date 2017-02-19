@@ -151,7 +151,7 @@ namespace Pwre {
 		}
 	} /* System */
 
-	void WindowCoreConstructor(
+	bool WindowCoreConstructor(
 		Window *wnd,
 		uint64_t hints,
 		int depth, Visual *visual, unsigned long valuemask, XSetWindowAttributes *swa
@@ -172,7 +172,7 @@ namespace Pwre {
 		);
 		if (!wnd->_m->xWnd) {
 			std::cout << "Pwre: X11.XCreateSimpleWindow error!" << std::endl;
-			return;
+			return false;
 		}
 
 		XSetWMProtocols(System::dpy, wnd->_m->xWnd, &wmDelWnd, 1);
@@ -182,12 +182,12 @@ namespace Pwre {
 		System::wndMapRWLock.Writing();
 		System::wndMap[wnd->_m->xWnd] = wnd;
 		System::wndMapRWLock.Written();
-		return;
+		return true;
 	}
 
 	Window::Window(uint64_t hints) {
 		_m = new _BlackBox;
-		if (hints != -1) {
+		if (hints != (uint64_t)-1) {
 			XSetWindowAttributes swa;
 			swa.event_mask = ExposureMask | KeyPressMask | StructureNotifyMask;
 			WindowCoreConstructor(
@@ -371,16 +371,16 @@ namespace Pwre {
 		return false;
 	}
 
-	static const unsigned MWM_HINTS_DECORATIONS = (1 << 1);
-	static const int PROP_MOTIF_WM_HINTS_ELEMENTS = 5;
+	const unsigned MWM_HINTS_DECORATIONS = (1 << 1);
+	const int PROP_MOTIF_WM_HINTS_ELEMENTS = 5;
 
-	typedef struct {
+	struct PropMotifWmHints {
 		unsigned long flags;
 		unsigned long functions;
 		unsigned long decorations;
 		long inputMode;
 		unsigned long status;
-	} PropMotifWmHints;
+	};
 
 	void Window::Less(bool less) {
 		PropMotifWmHints motif_hints;

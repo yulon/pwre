@@ -19,7 +19,7 @@ namespace Pwre {
 		std::mutex mux;
 	};
 
-	void WindowCoreConstructor(
+	bool WindowCoreConstructor(
 		Window *wnd,
 		uint64_t hints,
 		int depth, Visual *visual, unsigned long valuemask, XSetWindowAttributes *swa
