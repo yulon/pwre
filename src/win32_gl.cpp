@@ -12,10 +12,10 @@ namespace Pwre {
 	};
 
 	GLWindow::GLWindow(uint64_t hints):Window(hints) {
-		_GLM = new _BlackBox;
+		_glm = new _BlackBox;
 
-		_GLM->DC = GetDC(_M->HWnd);
-		if (!_GLM->DC) {
+		_glm->DC = GetDC(_m->hWnd);
+		if (!_glm->DC) {
 			std::cout << "Pwre: Win32.GetDC error!" << std::endl;
 			Destroy();
 			return;
@@ -36,21 +36,21 @@ namespace Pwre {
 			0, 0, 0,
 		};
 
-		int pixelFormat = ChoosePixelFormat(_GLM->DC, &pfd);
+		int pixelFormat = ChoosePixelFormat(_glm->DC, &pfd);
 		if (!pixelFormat) {
 			std::cout << "Pwre: Win32.ChoosePixelFormat error!" << std::endl;
 			Destroy();
 			return;
 		}
 
-		if (!SetPixelFormat(_GLM->DC, pixelFormat, &pfd)) {
+		if (!SetPixelFormat(_glm->DC, pixelFormat, &pfd)) {
 			std::cout << "Pwre: Win32.SetPixelFormat error!" << std::endl;
 			Destroy();
 			return;
 		}
 
-		_GLM->RC = wglCreateContext(_GLM->DC);
-		if (!_GLM->RC) {
+		_glm->RC = wglCreateContext(_glm->DC);
+		if (!_glm->RC) {
 			std::cout << "Pwre: Win32.wglCreateContext error!" << std::endl;
 			Destroy();
 			return;
@@ -60,20 +60,20 @@ namespace Pwre {
 	}
 
 	GLWindow::~GLWindow() {
-		if (wglGetCurrentDC() == _GLM->DC) {
+		if (wglGetCurrentDC() == _glm->DC) {
 			wglMakeCurrent(NULL, NULL);
 		}
-		wglDeleteContext(_GLM->RC);
+		wglDeleteContext(_glm->RC);
 
-		delete _GLM;
+		delete _glm;
 	}
 
 	uintptr_t GLWindow::NativeGLCtx() {
-		return (uintptr_t)_GLM->RC;
+		return (uintptr_t)_glm->RC;
 	}
 
 	void GLWindow::MakeCurrent() {
-		wglMakeCurrent(_GLM->DC, _GLM->RC);
+		wglMakeCurrent(_glm->DC, _glm->RC);
 	}
 
 	static inline void swapBuffers(HDC dc) {
@@ -81,7 +81,7 @@ namespace Pwre {
 	}
 
 	void GLWindow::SwapBuffers() {
-		swapBuffers(_GLM->DC);
+		swapBuffers(_glm->DC);
 	}
 } /* Pwre */
 

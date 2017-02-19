@@ -14,9 +14,9 @@ namespace Pwre {
 	} /* System */
 
 	struct Window::_BlackBox {
-		XWindow XWnd;
-		std::string TitleBuf;
-		std::mutex Mux;
+		XWindow xWnd;
+		std::string titCache;
+		std::mutex mux;
 	};
 
 	void WindowCoreConstructor(

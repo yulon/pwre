@@ -59,31 +59,31 @@ namespace Pwre {
 			vi->depth, vi->visual, CWBackPixel | CWBorderPixel | CWEventMask | CWColormap, &swa
 		);
 
-		_GLM = (_BlackBox *)glXCreateContext(System::dpy, vi, NULL, GL_TRUE);
+		_glm = (_BlackBox *)glXCreateContext(System::dpy, vi, NULL, GL_TRUE);
 		XFree(vi);
-		if (!_GLM) {
+		if (!_glm) {
 			std::cout << "Pwre: X11.glXCreateContext error!" << std::endl;
 			Destroy();
 		}
 	}
 
 	GLWindow::~GLWindow() {
-		if (glXGetCurrentContext() == (GLXContext)_GLM) {
+		if (glXGetCurrentContext() == (GLXContext)_glm) {
 			glXMakeCurrent(System::dpy, None, NULL);
 		}
-		glXDestroyContext(System::dpy, (GLXContext)_GLM);
+		glXDestroyContext(System::dpy, (GLXContext)_glm);
 	}
 
 	uintptr_t GLWindow::NativeGLCtx() {
-		return (uintptr_t)_GLM;
+		return (uintptr_t)_glm;
 	}
 
 	void GLWindow::MakeCurrent() {
-		glXMakeCurrent(System::dpy, _M->XWnd, (GLXContext)_GLM);
+		glXMakeCurrent(System::dpy, _m->xWnd, (GLXContext)_glm);
 	}
 
 	void GLWindow::SwapBuffers() {
-		glXSwapBuffers(System::dpy, _M->XWnd);
+		glXSwapBuffers(System::dpy, _m->xWnd);
 	}
 } /* Pwre */
 

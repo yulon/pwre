@@ -41,7 +41,7 @@ namespace Pwre {
 			if (wnd) {
 				switch (uMsg) {
 					case WM_NCCALCSIZE:
-						if (wnd->_M->Lessed) {
+						if (wnd->_m->less) {
 							if (wParam) {
 								((LPNCCALCSIZE_PARAMS)lParam)->rgrc[2] = ((LPNCCALCSIZE_PARAMS)lParam)->rgrc[1];
 								((LPNCCALCSIZE_PARAMS)lParam)->rgrc[1] = ((LPNCCALCSIZE_PARAMS)lParam)->rgrc[0];
@@ -132,8 +132,8 @@ namespace Pwre {
 	} /* System */
 
 	Window::Window(uint64_t hints) {
-		_M = new _BlackBox;
-		_M->Lessed = false;
+		_m = new _BlackBox;
+		_m->less = false;
 
 		RECT rect = { 500, 500, 1000, 1000 };
 		BOOL ok = AdjustWindowRectEx(&rect, WS_OVERLAPPEDWINDOW, FALSE, 0);
@@ -142,26 +142,26 @@ namespace Pwre {
 			return;
 		}
 
-		_M->NCWidth = (500 - rect.left) + (rect.right - 1000);
-		_M->NCHeight = (500 - rect.top) + (rect.bottom - 1000);
+		_m->ncWidth = (500 - rect.left) + (rect.right - 1000);
+		_m->ncHeight = (500 - rect.top) + (rect.bottom - 1000);
 
-		_M->HWnd = CreateWindowExW(
+		_m->hWnd = CreateWindowExW(
 			0,
 			System::wndClass.lpszClassName,
 			NULL,
 			WS_OVERLAPPEDWINDOW,
-			0, 0, 150 + _M->NCWidth, 150 + _M->NCHeight, NULL, NULL,
+			0, 0, 150 + _m->ncWidth, 150 + _m->ncHeight, NULL, NULL,
 			System::mainModule,
 			(LPVOID)this
 		);
-		if (!_M->HWnd) {
+		if (!_m->hWnd) {
 			std::cout << "Pwre: Win32.CreateWindowExW error!" << std::endl;
 			return;
 		}
 
 		System::wndCount++;
 
-		SetWindowLongPtrW(_M->HWnd, PWRE_PLAT_WIN32_WNDEXTRA_I, (LONG_PTR)(this));
+		SetWindowLongPtrW(_m->hWnd, PWRE_PLAT_WIN32_WNDEXTRA_I, (LONG_PTR)(this));
 
 		if (((hints & PWRE_HINT_ALPHA) == PWRE_HINT_ALPHA) && DLL::dwmapi::DwmEnableBlurBehindWindow && DLL::gdi32::CreateRectRgn) {
 			DWM_BLURBEHIND bb;
@@ -169,54 +169,54 @@ namespace Pwre {
 			bb.hRgnBlur = DLL::gdi32::CreateRectRgn(0, 0, -1, -1);
 			bb.fEnable = TRUE;
 			bb.fTransitionOnMaximized = 1;
-			DLL::dwmapi::DwmEnableBlurBehindWindow(_M->HWnd, &bb);
+			DLL::dwmapi::DwmEnableBlurBehindWindow(_m->hWnd, &bb);
 		} else
 		if (((hints & PWRE_HINT_WMBACKGROUND) == PWRE_HINT_WMBACKGROUND) && DLL::dwmapi::DwmExtendFrameIntoClientArea) {
 			MARGINS marInset;
 			marInset.cxLeftWidth = -1;
-			DLL::dwmapi::DwmExtendFrameIntoClientArea(_M->HWnd, &marInset);
+			DLL::dwmapi::DwmExtendFrameIntoClientArea(_m->hWnd, &marInset);
 		}
 	}
 
 	Window::~Window() {
-		delete _M;
+		delete _m;
 	}
 
 	uintptr_t Window::NativeObj() {
-		return (uintptr_t)_M->HWnd;
+		return (uintptr_t)_m->hWnd;
 	}
 
 	void Window::Close() {
-		CloseWindow(_M->HWnd);
+		CloseWindow(_m->hWnd);
 	}
 
 	void Window::Destroy() {
-		DestroyWindow(_M->HWnd);
+		DestroyWindow(_m->hWnd);
 	}
 
 	const std::string &Window::Title() {
-		_M->Mux.lock();
-		int str16_len = GetWindowTextLengthW(_M->HWnd);
+		_m->mux.lock();
+		int str16_len = GetWindowTextLengthW(_m->hWnd);
 		if (str16_len) {
 			str16_len++;
 			WCHAR *str16 = new WCHAR[str16_len];
-			GetWindowTextW(_M->HWnd, str16, str16_len);
+			GetWindowTextW(_m->hWnd, str16, str16_len);
 
 			int str8_len = WideCharToMultiByte(CP_UTF8, 0, str16, -1, NULL, 0, NULL, NULL);
 			if (str8_len) {
 				char *str8 = new char[str8_len + 1];
 				str8[str8_len] = '\0';
 				WideCharToMultiByte(CP_UTF8, 0, str16, -1, str8, str8_len, NULL, NULL);
-				_M->TitleBuf = str8;
+				_m->titCache = str8;
 				delete[] str8;
 			}
 
 			delete[] str16;
 		} else {
-			_M->TitleBuf.resize(0);
+			_m->titCache.resize(0);
 		}
-		_M->Mux.unlock();
-		return _M->TitleBuf;
+		_m->mux.unlock();
+		return _m->titCache;
 	}
 
 	void Window::Retitle(const std::string &s) {
@@ -232,14 +232,14 @@ namespace Pwre {
 		WCHAR *str16 = new WCHAR[str16_len + 1];
 		MultiByteToWideChar(CP_UTF8, 0, str8, -1, str16, str16_len);
 
-		SetWindowTextW(_M->HWnd, str16);
+		SetWindowTextW(_m->hWnd, str16);
 
 		delete[] str16;
 	}
 
 	void Window::Pos(int &x, int &y) {
 		RECT rect;
-		GetWindowRect(_M->HWnd, &rect);
+		GetWindowRect(_m->hWnd, &rect);
 		x = rect.left;
 		y = rect.top;
 	}
@@ -248,12 +248,12 @@ namespace Pwre {
 
 	void Window::Move(int x, int y) {
 		RECT rect;
-		GetWindowRect(_M->HWnd, &rect);
+		GetWindowRect(_m->hWnd, &rect);
 		int width = rect.right - rect.left;
 		int height = rect.bottom - rect.top;
 		FixPos(x, y, width, height);
 		MoveWindow(
-			_M->HWnd, x, y,
+			_m->hWnd, x, y,
 			width,
 			height,
 			FALSE
@@ -262,12 +262,12 @@ namespace Pwre {
 
 	void Window::Size(int &width, int &height) {
 		RECT rect;
-		if (_M->Lessed) {
-			GetWindowRect(_M->HWnd, &rect);
+		if (_m->less) {
+			GetWindowRect(_m->hWnd, &rect);
 			rect.right -= rect.left;
 			rect.bottom -= rect.top;
 		} else {
-			GetClientRect(_M->HWnd, &rect);
+			GetClientRect(_m->hWnd, &rect);
 		}
 		if (width) {
 			width = rect.right;
@@ -279,48 +279,48 @@ namespace Pwre {
 
 	void Window::Resize(int width, int height) {
 		RECT rect;
-		GetWindowRect(_M->HWnd, &rect);
-		if (!_M->Lessed) {
-			width += _M->NCWidth;
-			height += _M->NCHeight;
+		GetWindowRect(_m->hWnd, &rect);
+		if (!_m->less) {
+			width += _m->ncWidth;
+			height += _m->ncHeight;
 		}
 		MoveWindow(
-			_M->HWnd, rect.left, rect.top,
+			_m->hWnd, rect.left, rect.top,
 			width,
 			height,
 			TRUE
 		);
 	}
 
-	#define _STYLE_HAS(_style) (GetWindowLongW(_M->HWnd, GWL_STYLE) & _style) == _style
+	#define _STYLE_HAS(_style) (GetWindowLongW(_m->hWnd, GWL_STYLE) & _style) == _style
 
 	void Window::AddStates(uint32_t type) {
-		ShowWindow(_M->HWnd, SW_SHOW);
+		ShowWindow(_m->hWnd, SW_SHOW);
 		return;
 		switch (type) {
 			case PWRE_STATE_VISIBLE:
-				ShowWindow(_M->HWnd, SW_SHOW);
+				ShowWindow(_m->hWnd, SW_SHOW);
 				break;
 			case PWRE_STATE_MINIMIZE:
-				ShowWindow(_M->HWnd, SW_MINIMIZE);
+				ShowWindow(_m->hWnd, SW_MINIMIZE);
 				break;
 			case PWRE_STATE_MAXIMIZE:
-				ShowWindow(_M->HWnd, SW_MAXIMIZE);
+				ShowWindow(_m->hWnd, SW_MAXIMIZE);
 		}
 	}
 
 	void Window::RmStates(uint32_t type) {
 		switch (type) {
 			case PWRE_STATE_VISIBLE:
-				ShowWindow(_M->HWnd, SW_HIDE);
+				ShowWindow(_m->hWnd, SW_HIDE);
 				break;
 			case PWRE_STATE_MINIMIZE:
 				if (_STYLE_HAS(WS_MINIMIZE)) {
-					ShowWindow(_M->HWnd, SW_RESTORE);
+					ShowWindow(_m->hWnd, SW_RESTORE);
 				}
 				break;
 			case PWRE_STATE_MAXIMIZE:
-				ShowWindow(_M->HWnd, SW_SHOWNORMAL);
+				ShowWindow(_m->hWnd, SW_SHOWNORMAL);
 		}
 	}
 
@@ -340,8 +340,8 @@ namespace Pwre {
 
 	void Window::Less(bool less) {
 		RECT rect;
-		GetClientRect(_M->HWnd, &rect);
-		_M->Lessed = less;
+		GetClientRect(_m->hWnd, &rect);
+		_m->less = less;
 		Window::Resize(rect.right, rect.bottom);
 	}
 } /* Pwre */

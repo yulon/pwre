@@ -6,11 +6,11 @@
 
 namespace Pwre {
 	struct Window::_BlackBox {
-		HWND HWnd;
-		int NCWidth, NCHeight;
-		std::string TitleBuf;
-		std::mutex Mux;
-		std::atomic<bool> Lessed;
+		HWND hWnd;
+		int ncWidth, ncHeight;
+		std::string titCache;
+		std::mutex mux;
+		std::atomic<bool> less;
 	};
 } /* Pwre */
 

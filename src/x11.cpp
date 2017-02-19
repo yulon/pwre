@@ -108,7 +108,7 @@ namespace Pwre {
 							System::xEventMux.lock();
 							XDestroyWindow(dpy, event->xany.window);
 							_XEVENT_SYNC(
-								wnd->_M->XWnd,
+								wnd->_m->xWnd,
 								DestroyNotify,
 								,
 								ret = true;
@@ -122,7 +122,7 @@ namespace Pwre {
 						wnd->OnDestroy();
 
 						System::wndMapRWLock.Writing();
-						System::wndMap.erase(wnd->_M->XWnd);
+						System::wndMap.erase(wnd->_m->xWnd);
 						System::wndMapRWLock.Written();
 
 						if (!--wndCount) {
@@ -156,7 +156,7 @@ namespace Pwre {
 		uint64_t hints,
 		int depth, Visual *visual, unsigned long valuemask, XSetWindowAttributes *swa
 	) {
-		wnd->_M->XWnd = XCreateWindow(
+		wnd->_m->xWnd = XCreateWindow(
 			System::dpy,
 			System::root,
 			0,
@@ -170,23 +170,23 @@ namespace Pwre {
 			valuemask,
 			swa
 		);
-		if (!wnd->_M->XWnd) {
+		if (!wnd->_m->xWnd) {
 			std::cout << "Pwre: X11.XCreateSimpleWindow error!" << std::endl;
 			return;
 		}
 
-		XSetWMProtocols(System::dpy, wnd->_M->XWnd, &wmDelWnd, 1);
+		XSetWMProtocols(System::dpy, wnd->_m->xWnd, &wmDelWnd, 1);
 
 		System::wndCount++;
 
 		System::wndMapRWLock.Writing();
-		System::wndMap[wnd->_M->XWnd] = wnd;
+		System::wndMap[wnd->_m->xWnd] = wnd;
 		System::wndMapRWLock.Written();
 		return;
 	}
 
 	Window::Window(uint64_t hints) {
-		_M = new _BlackBox;
+		_m = new _BlackBox;
 		if (hints != -1) {
 			XSetWindowAttributes swa;
 			swa.event_mask = ExposureMask | KeyPressMask | StructureNotifyMask;
@@ -199,11 +199,11 @@ namespace Pwre {
 	}
 
 	Window::~Window() {
-		delete _M;
+		delete _m;
 	}
 
 	uintptr_t Window::NativeObj() {
-		return (uintptr_t)_M->XWnd;
+		return (uintptr_t)_m->xWnd;
 	}
 
 	void Window::Close() {
@@ -213,41 +213,41 @@ namespace Pwre {
 	}
 
 	void Window::Destroy() {
-		XDestroyWindow(System::dpy, _M->XWnd);
+		XDestroyWindow(System::dpy, _m->xWnd);
 	}
 
 	const std::string &Window::Title() {
-		_M->Mux.lock();
+		_m->mux.lock();
 		Atom type;
 		int format;
 		unsigned long nitems, after;
 		unsigned char *data;
-		if (Success == XGetWindowProperty(System::dpy, _M->XWnd, netWmName, 0, LONG_MAX, False, utf8Str, &type, &format, &nitems, &after, &data) && data) {
-			_M->TitleBuf = (char *)data;
+		if (Success == XGetWindowProperty(System::dpy, _m->xWnd, netWmName, 0, LONG_MAX, False, utf8Str, &type, &format, &nitems, &after, &data) && data) {
+			_m->titCache = (char *)data;
 			XFree(data);
 		} else {
-			_M->TitleBuf.resize(0);
+			_m->titCache.resize(0);
 		}
-		_M->Mux.unlock();
-		return _M->TitleBuf;
+		_m->mux.unlock();
+		return _m->titCache;
 	}
 
 	void Window::Retitle(const std::string &title) {
-		XChangeProperty(System::dpy, _M->XWnd, netWmName, utf8Str, 8, PropModeReplace, (const unsigned char*)title.c_str(), title.size());
+		XChangeProperty(System::dpy, _m->xWnd, netWmName, utf8Str, 8, PropModeReplace, (const unsigned char*)title.c_str(), title.size());
 	}
 
 	#include "fixpos.hpp"
 
 	void Window::Move(int x, int y) {
 		XWindowAttributes wa;
-		XGetWindowAttributes(System::dpy, _M->XWnd, &wa);
+		XGetWindowAttributes(System::dpy, _m->xWnd, &wa);
 		FixPos(x, y, wa.width, wa.height);
 
 		System::xEventMux.lock();
-		int err = XMoveWindow(System::dpy, _M->XWnd, x, y);
+		int err = XMoveWindow(System::dpy, _m->xWnd, x, y);
 		if (err != BadValue && err != BadWindow && err != BadMatch) {
 			_XEVENT_SYNC(
-				_M->XWnd,
+				_m->xWnd,
 				ConfigureNotify,
 				&& (
 					event.xconfigure.x != 0 ||
@@ -260,7 +260,7 @@ namespace Pwre {
 
 	void Window::Size(int &width, int &height) {
 		XWindowAttributes wa;
-		XGetWindowAttributes(System::dpy, _M->XWnd, &wa);
+		XGetWindowAttributes(System::dpy, _m->xWnd, &wa);
 		if (width) {
 			width = wa.width;
 		}
@@ -271,10 +271,10 @@ namespace Pwre {
 
 	void Window::Resize(int width, int height) {
 		System::xEventMux.lock();
-		int err = XResizeWindow(System::dpy, _M->XWnd, width, height);
+		int err = XResizeWindow(System::dpy, _m->xWnd, width, height);
 		if (err != BadValue && err != BadWindow) {
 			_XEVENT_SYNC(
-				_M->XWnd,
+				_m->xWnd,
 				ConfigureNotify,
 				&& event.xconfigure.width == width
 				&& event.xconfigure.height == height,
@@ -285,11 +285,11 @@ namespace Pwre {
 
 	static void visible(Window *wnd) {
 		XWindowAttributes wa;
-		XGetWindowAttributes(System::dpy, wnd->_M->XWnd, &wa);
+		XGetWindowAttributes(System::dpy, wnd->_m->xWnd, &wa);
 		System::xEventMux.lock();
-		if (wa.map_state != IsViewable && XMapRaised(System::dpy, wnd->_M->XWnd) != BadWindow && wa.map_state == IsUnmapped) {
+		if (wa.map_state != IsViewable && XMapRaised(System::dpy, wnd->_m->xWnd) != BadWindow && wa.map_state == IsUnmapped) {
 			_XEVENT_SYNC(
-				wnd->_M->XWnd,
+				wnd->_m->xWnd,
 				MapNotify,
 				,
 			)
@@ -305,13 +305,13 @@ namespace Pwre {
 				break;
 			case PWRE_STATE_MINIMIZE:
 				visible(this);
-				XIconifyWindow(System::dpy, _M->XWnd, 0);
+				XIconifyWindow(System::dpy, _m->xWnd, 0);
 				break;
 			case PWRE_STATE_MAXIMIZE:
 				visible(this);
 				memset(&event, 0, sizeof(event));
 				event.type = ClientMessage;
-				event.xclient.window = _M->XWnd;
+				event.xclient.window = _m->xWnd;
 				event.xclient.message_type = netWmState;
 				event.xclient.format = 32;
 				event.xclient.data.l[0] = netWmStateAdd;
@@ -323,7 +323,7 @@ namespace Pwre {
 				visible(this);
 				memset(&event, 0, sizeof(event));
 				event.type = ClientMessage;
-				event.xclient.window = _M->XWnd;
+				event.xclient.window = _m->xWnd;
 				event.xclient.message_type = netWmState;
 				event.xclient.format = 32;
 				event.xclient.data.l[0] = netWmStateAdd;
@@ -346,7 +346,7 @@ namespace Pwre {
 				visible(this);
 				memset(&event, 0, sizeof(event));
 				event.type = ClientMessage;
-				event.xclient.window = _M->XWnd;
+				event.xclient.window = _m->xWnd;
 				event.xclient.message_type = netWmState;
 				event.xclient.format = 32;
 				event.xclient.data.l[0] = netWmStateRemove;
@@ -358,7 +358,7 @@ namespace Pwre {
 				visible(this);
 				memset(&event, 0, sizeof(event));
 				event.type = ClientMessage;
-				event.xclient.window = _M->XWnd;
+				event.xclient.window = _m->xWnd;
 				event.xclient.message_type = netWmState;
 				event.xclient.format = 32;
 				event.xclient.data.l[0] = netWmStateRemove;
@@ -386,7 +386,7 @@ namespace Pwre {
 		PropMotifWmHints motif_hints;
 		motif_hints.flags = MWM_HINTS_DECORATIONS;
 		motif_hints.decorations = 0;
-		XChangeProperty(System::dpy, _M->XWnd, motifWmHints, motifWmHints, 32, PropModeReplace, (unsigned char *) &motif_hints, PROP_MOTIF_WM_HINTS_ELEMENTS);
+		XChangeProperty(System::dpy, _m->xWnd, motifWmHints, motifWmHints, 32, PropModeReplace, (unsigned char *) &motif_hints, PROP_MOTIF_WM_HINTS_ELEMENTS);
 	}
 } /* Pwre */
 

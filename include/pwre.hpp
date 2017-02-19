@@ -13,21 +13,21 @@ namespace Pwre {
 	} /* System */
 
 	typedef struct {
-		int X, Y;
+		int x, y;
 	} Point;
 
 	typedef struct {
-		int Width, Height;
+		int width, height;
 	} Size;
 
 	typedef struct {
-		int Left, Top, Right, Bottom;
+		int left, top, right, bottom;
 	} Bounds;
 
 	typedef struct {
-		Bounds Outer;
-		Bounds Border;
-		Bounds Control;
+		Bounds outer;
+		Bounds border;
+		Bounds control;
 	} ActionArea;
 
 	class Window {
@@ -81,7 +81,7 @@ namespace Pwre {
 			///////////////////////////////////////////////
 
 			struct _BlackBox;
-			_BlackBox *_M;
+			_BlackBox *_m;
 	};
 
 	class GLWindow : public Window {
@@ -98,7 +98,7 @@ namespace Pwre {
 			///////////////////////////////////////////////
 
 			struct _BlackBox;
-			_BlackBox *_GLM;
+			_BlackBox *_glm;
 	};
 } /* Pwre */
 
