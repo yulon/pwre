@@ -12,23 +12,23 @@ namespace Pwre {
 		void Run();
 	} /* System */
 
-	typedef struct {
+	struct Point {
 		int x, y;
-	} Point;
+	};
 
-	typedef struct {
+	struct Size {
 		int width, height;
-	} Size;
+	};
 
-	typedef struct {
+	struct Bounds {
 		int left, top, right, bottom;
-	} Bounds;
+	};
 
-	typedef struct {
+	struct ActionArea {
 		Bounds outer;
 		Bounds border;
 		Bounds control;
-	} ActionArea;
+	};
 
 	class Window {
 		public:
