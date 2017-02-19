@@ -92,14 +92,14 @@ namespace Pwre {
 			if (wnd) {
 				switch (event->xany.type) {
 					case ConfigureNotify:
-						wnd->OnSize(event->xconfigure.width, event->xconfigure.height);
+						wnd->OnSize.Calls(event->xconfigure.width, event->xconfigure.height);
 						break;
 					case Expose:
-						wnd->OnPaint();
+						wnd->OnPaint.Calls();
 						break;
 					case ClientMessage:
 						if (event->xclient.message_type == wmProtocols && (Atom)event->xclient.data.l[0] == wmDelWnd) {
-							if (!wnd->OnClose()) {
+							if (!wnd->OnClose.Calls()) {
 								return true;
 							}
 
@@ -119,7 +119,7 @@ namespace Pwre {
 						}
 						break;
 					case DestroyNotify:
-						wnd->OnDestroy();
+						wnd->OnDestroy.Calls();
 
 						System::wndMapRWLock.Writing();
 						System::wndMap.erase(wnd->_m->xWnd);
@@ -207,7 +207,7 @@ namespace Pwre {
 	}
 
 	void Window::Close() {
-		if (OnClose()) {
+		if (OnClose.Calls()) {
 			Destroy();
 		}
 	}

@@ -2,6 +2,7 @@
 #define _PWRE_H
 
 #include <string>
+#include <vector>
 #include <functional>
 
 namespace Pwre {
@@ -28,6 +29,41 @@ namespace Pwre {
 		Bounds outer;
 		Bounds border;
 		Bounds control;
+	};
+
+	template <typename... Args>
+	class BoolCallBacks {
+		public:
+			int AddCallBack(std::function<bool(Args...)> handler) {
+				_cbs.push_back(handler);
+				return _cbs.size() - 1;
+			}
+			bool Calls(Args... a) {
+				for (int i = _cbs.size() - 1; i >= 0; i--) {
+					if (!_cbs[i](a...)) {
+						return false;
+					}
+				}
+				return true;
+			}
+		private:
+			std::vector<std::function<bool(Args...)>> _cbs;
+	};
+
+	template <typename... Args>
+	class CallBacks {
+		public:
+			int AddCallBack(std::function<void(Args...)> handler) {
+				_cbs.push_back(handler);
+				return _cbs.size() - 1;
+			}
+			void Calls(Args... a) {
+				for (int i = _cbs.size() - 1; i >= 0; i--) {
+					_cbs[i](a...);
+				}
+			}
+		private:
+			std::vector<std::function<void(Args...)>> _cbs;
 	};
 
 	class Window {
@@ -67,16 +103,16 @@ namespace Pwre {
 			void Less(bool);
 			bool CustomActionArea(const ActionArea &);
 
-			virtual bool OnClose() { return true; }
-			virtual void OnDestroy() {}
-			virtual void OnSize(int width, int height) {}
-			virtual void OnMove() {}
-			virtual void OnPaint() {}
-			virtual void OnMouseMove() {}
-			virtual void OnMouseDown() {}
-			virtual void OnMouseUp() {}
-			virtual void OnKeyDown() {}
-			virtual void OnKeyUp() {}
+			BoolCallBacks<> OnClose;
+			CallBacks<> OnDestroy;
+			CallBacks<int/*width*/, int/*height*/> OnSize;
+			CallBacks<> OnMove;
+			CallBacks<> OnPaint;
+			CallBacks<> OnMouseMove;
+			CallBacks<> OnMouseDown;
+			CallBacks<> OnMouseUp;
+			CallBacks<> OnKeyDown;
+			CallBacks<> OnKeyUp;
 
 			///////////////////////////////////////////////
 

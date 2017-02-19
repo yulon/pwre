@@ -64,15 +64,18 @@ namespace Pwre {
 		if (!_glm) {
 			std::cout << "Pwre: X11.glXCreateContext error!" << std::endl;
 			Destroy();
+			return;
 		}
+
+		OnDestroy.AddCallBack([this]() {
+			if (glXGetCurrentContext() == (GLXContext)this->_glm) {
+				glXMakeCurrent(System::dpy, None, NULL);
+			}
+			glXDestroyContext(System::dpy, (GLXContext)this->_glm);
+		});
 	}
 
-	GLWindow::~GLWindow() {
-		if (glXGetCurrentContext() == (GLXContext)_glm) {
-			glXMakeCurrent(System::dpy, None, NULL);
-		}
-		glXDestroyContext(System::dpy, (GLXContext)_glm);
-	}
+	GLWindow::~GLWindow() {}
 
 	uintptr_t GLWindow::NativeGLCtx() {
 		return (uintptr_t)_glm;

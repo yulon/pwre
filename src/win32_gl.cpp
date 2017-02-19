@@ -56,15 +56,17 @@ namespace Pwre {
 			return;
 		}
 
+		OnDestroy.AddCallBack([this]() {
+			if (wglGetCurrentDC() == this->_glm->DC) {
+				wglMakeCurrent(NULL, NULL);
+			}
+			wglDeleteContext(this->_glm->RC);
+		});
+
 		return;
 	}
 
 	GLWindow::~GLWindow() {
-		if (wglGetCurrentDC() == _glm->DC) {
-			wglMakeCurrent(NULL, NULL);
-		}
-		wglDeleteContext(_glm->RC);
-
 		delete _glm;
 	}
 

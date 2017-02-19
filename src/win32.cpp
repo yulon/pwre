@@ -50,17 +50,17 @@ namespace Pwre {
 						}
 						break;
 					case WM_PAINT:
-						wnd->OnPaint();
+						wnd->OnPaint.Calls();
 						ValidateRect(hWnd, NULL);
 						return 0;
 					case WM_CLOSE:
-						if (!wnd->OnClose()) {
+						if (!wnd->OnClose.Calls()) {
 							return 0;
 						}
 						break;
 					case WM_DESTROY:
 						SetWindowLongPtrW(hWnd, PWRE_PLAT_WIN32_WNDEXTRA_I, 0);
-						wnd->OnDestroy();
+						wnd->OnDestroy.Calls();
 						if (!--wndCount) {
 							PostQuitMessage(0);
 							return 0;
