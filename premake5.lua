@@ -10,7 +10,7 @@ workspace "Pwre"
 	project "pwre"
 		kind "StaticLib"
 		targetdir("lib/%{cfg.system}/%{cfg.platform}/%{cfg.buildcfg}")
-		files { "src/*.cpp", "src/*.hpp", "include/*.hpp", "include/*.h" }
+		files { "src/*.cpp", "src/*.hpp", "src/*.h", "include/*.hpp", "include/*.h" }
 		includedirs { "deps" }
 
 		configuration { "windows", "gmake" }
