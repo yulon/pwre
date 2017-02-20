@@ -11,6 +11,21 @@ namespace Pwre {
 		HGLRC RC;
 	};
 
+	const PIXELFORMATDESCRIPTOR pfd = {
+		40,
+		1,
+		PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER | PFD_SUPPORT_COMPOSITION,
+		PFD_TYPE_RGBA,
+		32,
+		0, 0, 0, 0, 0, 0,
+		8, 24, 0, 0, 0, 0, 0,
+		32,
+		0, 0,
+		PFD_MAIN_PLANE,
+		0,
+		0, 0, 0,
+	};
+
 	GLWindow::GLWindow(uint64_t hints):Window(hints) {
 		_glm = new _BlackBox;
 
@@ -20,21 +35,6 @@ namespace Pwre {
 			Destroy();
 			return;
 		}
-
-		PIXELFORMATDESCRIPTOR pfd = (PIXELFORMATDESCRIPTOR){
-			40,
-			1,
-			PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER | PFD_SUPPORT_COMPOSITION,
-			PFD_TYPE_RGBA,
-			32,
-			0, 0, 0, 0, 0, 0,
-			8, 24, 0, 0, 0, 0, 0,
-			32,
-			0, 0,
-			PFD_MAIN_PLANE,
-			0,
-			0, 0, 0,
-		};
 
 		int pixelFormat = ChoosePixelFormat(_glm->DC, &pfd);
 		if (!pixelFormat) {
