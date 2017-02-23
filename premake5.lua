@@ -18,7 +18,7 @@ workspace "Pwre"
 			targetextension ".a"
 
 		configuration "macosx"
-			files { "src/*.m" }
+			files { "src/*.mm" }
 
 		configuration "Debug"
 			defines { "DEBUG" }
