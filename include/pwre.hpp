@@ -106,13 +106,13 @@ namespace Pwre {
 			BoolCallBacks<> OnClose;
 			CallBacks<> OnDestroy;
 			CallBacks<int/*width*/, int/*height*/> OnSize;
-			CallBacks<> OnMove;
+			CallBacks<int/*x*/, int/*y*/> OnMove;
 			CallBacks<> OnPaint;
-			CallBacks<> OnMouseMove;
-			CallBacks<> OnMouseDown;
-			CallBacks<> OnMouseUp;
-			CallBacks<> OnKeyDown;
-			CallBacks<> OnKeyUp;
+			CallBacks<int/*x*/, int/*y*/> OnMouseMove;
+			CallBacks<int/*x*/, int/*y*/> OnMouseDown;
+			CallBacks<int/*x*/, int/*y*/> OnMouseUp;
+			CallBacks<int/*keyCode*/> OnKeyDown;
+			CallBacks<int/*keyCode*/> OnKeyUp;
 
 			///////////////////////////////////////////////
 
