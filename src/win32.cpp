@@ -135,7 +135,7 @@ namespace Pwre {
 		_m = new _BlackBox;
 		_m->less = false;
 
-		RECT rect = { 500, 500, 1000, 1000 };
+		RECT rect{500, 500, 1000, 1000};
 		BOOL ok = AdjustWindowRectEx(&rect, WS_OVERLAPPEDWINDOW, FALSE, 0);
 		if (!ok) {
 			std::cout << "Pwre: Win32.AdjustWindowRectEx error!" << std::endl;

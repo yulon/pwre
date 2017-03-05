@@ -9,12 +9,12 @@ namespace Pwre {
 		NSOpenGLContext *ctx;
 	};
 
-	const NSOpenGLPixelFormatAttribute gl2[] = {
+	const NSOpenGLPixelFormatAttribute gl2[]{
 		NSOpenGLPFADoubleBuffer,
 		0
 	};
 
-	const NSOpenGLPixelFormatAttribute gl3[] = {
+	const NSOpenGLPixelFormatAttribute gl3[]{
 		NSOpenGLPFADoubleBuffer,
 		NSOpenGLPFAOpenGLProfile,
 		NSOpenGLProfileVersion3_2Core,

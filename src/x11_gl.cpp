@@ -11,9 +11,9 @@ namespace Pwre {
 		GLXContext ctx;
 	};
 
-	const GLint glAttr[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
+	const GLint glAttr[]{ GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
 
-	const int glAttrA[] = {
+	const int glAttrA[]{
 		GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
 		GLX_RENDER_TYPE, GLX_RGBA_BIT,
 		GLX_DOUBLEBUFFER, True,
