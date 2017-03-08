@@ -41,7 +41,7 @@ namespace Pwre {
 		_m = new _BlackBox;
 
 		_m->nsWnd = [[NSWindow alloc]
-			initWithContentRect:NSMakeRect(x, y, width, height)
+			initWithContentRect:NSMakeRect(0, 0, 150, 150)
 			styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskMiniaturizable| NSWindowStyleMaskResizable | NSWindowStyleMaskClosable)
 			backing:NSBackingStoreBuffered
 			defer:NO
@@ -50,7 +50,7 @@ namespace Pwre {
 		[NSApp hide:_m->nsWnd];
 		_m->nsWnd.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
 
-		wndCount++;
+		System::wndCount++;
 	}
 
 	Window::~Window() {
@@ -62,7 +62,10 @@ namespace Pwre {
 	}
 
 	const std::string &Window::Title() {
-		return _m->nsWnd.title.UTF8String;
+		_m->mux.lock();
+		_m->titCache = _m->nsWnd.title.UTF8String;
+		_m->mux.unlock();
+		return _m->titCache;
 	}
 
 	void Window::Retitle(const std::string &title) {
@@ -90,7 +93,7 @@ namespace Pwre {
 		[_m->nsWnd setContentSize:NSMakeSize(width, height)];
 	}
 
-	void Visible(pwre_wnd_t wnd) {
+	void Visible(Window::_BlackBox *_m) {
 		if (!_m->nsWnd.visible) {
 			[NSApp unhide:_m->nsWnd];
 		}
@@ -99,14 +102,14 @@ namespace Pwre {
 	void Window::AddStates(uint32_t type) {
 		switch (type) {
 			case PWRE_STATE_VISIBLE:
-				Visible(wnd);
+				Visible(_m);
 				break;
 			case PWRE_STATE_MINIMIZE:
-				Visible(wnd);
+				Visible(_m);
 				[_m->nsWnd miniaturize:_m->nsWnd];
 				break;
 			case PWRE_STATE_MAXIMIZE:
-				Visible(wnd);
+				Visible(_m);
 				if (!_m->nsWnd.zoomed) {
 					[_m->nsWnd zoom:_m->nsWnd];
 				} else if (_m->nsWnd.miniaturized) {
@@ -114,7 +117,7 @@ namespace Pwre {
 				}
 				break;
 			case PWRE_STATE_FULLSCREEN:
-				Visible(wnd);
+				Visible(_m);
 				if (!(_m->nsWnd.styleMask & NSWindowStyleMaskFullScreen)) {
 					[_m->nsWnd toggleFullScreen:_m->nsWnd];
 				} else if (_m->nsWnd.miniaturized) {
@@ -129,11 +132,11 @@ namespace Pwre {
 				[NSApp hide:_m->nsWnd];
 				break;
 			case PWRE_STATE_MINIMIZE:
-				Visible(wnd);
+				Visible(_m);
 				[_m->nsWnd deminiaturize:_m->nsWnd];
 				break;
 			case PWRE_STATE_MAXIMIZE:
-				Visible(wnd);
+				Visible(_m);
 				if (_m->nsWnd.zoomed) {
 					[_m->nsWnd zoom:_m->nsWnd];
 				} else if (_m->nsWnd.miniaturized) {
@@ -141,7 +144,7 @@ namespace Pwre {
 				}
 				break;
 			case PWRE_STATE_FULLSCREEN:
-				Visible(wnd);
+				Visible(_m);
 				if (_m->nsWnd.styleMask & NSWindowStyleMaskFullScreen) {
 					[_m->nsWnd toggleFullScreen:_m->nsWnd];
 				} else if (_m->nsWnd.miniaturized) {
@@ -162,6 +165,9 @@ namespace Pwre {
 				return _m->nsWnd.styleMask & NSWindowStyleMaskFullScreen;
 		}
 		return false;
+	}
+
+	void Window::Less(bool less) {
 	}
 } /* Pwre */
 

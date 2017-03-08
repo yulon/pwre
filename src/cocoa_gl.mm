@@ -24,14 +24,13 @@ namespace Pwre {
 	GLWindow::GLWindow(uint64_t hints):Window(hints) {
 		_glm = new _BlackBox;
 
-		NSOpenGLPixelFormatAttribute glAttr;
-		if (hints & PWRE_HINT_GL_V3 == PWRE_HINT_GL_V3) {
-			glAttr = gl3;
+		NSOpenGLPixelFormat *pixelFormat;
+		if ((hints & PWRE_HINT_GL_V3) == PWRE_HINT_GL_V3) {
+			pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:gl3];
 		} else {
-			glAttr = gl2;
+			pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:gl2];
 		}
 
-		NSOpenGLPixelFormat *pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:glAttr];
 		_glm->ctx = [[NSOpenGLContext alloc] initWithFormat:pixelFormat shareContext:nil];
 		[_glm->ctx setView:[_m->nsWnd contentView]];
 		[pixelFormat release];

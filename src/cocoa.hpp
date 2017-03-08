@@ -1,10 +1,12 @@
-#include "pwre.h"
+#include "pwre.hpp"
 #include <iostream>
 #import <Cocoa/Cocoa.h>
 
 namespace Pwre {
 	struct Window::_BlackBox {
 		NSWindow *nsWnd;
+		std::string titCache;
+		std::mutex mux;
 	};
 } /* Pwre */
 
