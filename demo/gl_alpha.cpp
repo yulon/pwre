@@ -4,6 +4,10 @@
 #if defined(__APPLE__) && defined(__MACH__)
 	#include <OpenGL/gl.h>
 #else
+	#if defined(_WIN32) && defined(_MSC_VER)
+		#include <windows.h>
+	#endif
+
 	#include <GL/gl.h>
 #endif
 
