@@ -34,36 +34,42 @@ namespace Pwre {
 	template <typename... Args>
 	class EventAcceptor {
 		public:
-			int Add(const std::function<bool(Args...)> &handler) {
-				_cbs.push_back(handler);
-				return _cbs.size() - 1;
+			std::function<void()> Add(const std::function<bool(Args...)> &handler) {
+				_eas.push_back(handler);
+				auto it = --_eas.end();
+				return [this, it](){
+					this->_eas.erase(it);
+				};
 			}
 			bool Accept(Args... a) {
-				for (int i = _cbs.size() - 1; i >= 0; i--) {
-					if (!_cbs[i](a...)) {
+				for (auto rit = _eas.rbegin(); rit != _eas.rend(); rit++) {
+					if (!(*rit)(a...)) {
 						return false;
 					}
 				}
 				return true;
 			}
 		private:
-			std::vector<std::function<bool(Args...)>> _cbs;
+			std::vector<std::function<bool(Args...)>> _eas;
 	};
 
 	template <typename... Args>
 	class EventReceiver {
 		public:
-			int Add(const std::function<void(Args...)> &handler) {
-				_cbs.push_back(handler);
-				return _cbs.size() - 1;
+			std::function<void()> Add(const std::function<void(Args...)> &handler) {
+				_ers.push_back(handler);
+				auto it = --_ers.end();
+				return [this, it](){
+					this->_ers.erase(it);
+				};
 			}
 			void Receive(Args... a) {
-				for (int i = _cbs.size() - 1; i >= 0; i--) {
-					_cbs[i](a...);
+				for (auto rit = _ers.rbegin(); rit != _ers.rend(); rit++) {
+					(*rit)(a...);
 				}
 			}
 		private:
-			std::vector<std::function<void(Args...)>> _cbs;
+			std::vector<std::function<void(Args...)>> _ers;
 	};
 
 	class Window {
