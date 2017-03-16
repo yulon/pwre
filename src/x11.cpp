@@ -218,18 +218,18 @@ namespace Pwre {
 	}
 
 	std::string Window::Title() {
-		std::string titCache;
+		std::string title;
 
 		Atom type;
 		int format;
 		unsigned long nitems, after;
 		unsigned char *data;
 		if (Success == XGetWindowProperty(System::dpy, _m->xWnd, netWmName, 0, LONG_MAX, False, utf8Str, &type, &format, &nitems, &after, &data) && data) {
-			titCache = (const char *)data;
+			title = (const char *)data;
 			XFree(data);
 		}
 
-		return titCache;
+		return title;
 	}
 
 	void Window::Retitle(const std::string &title) {
@@ -283,7 +283,7 @@ namespace Pwre {
 		System::xEventMux.unlock();
 	}
 
-	static void visible(Window *wnd) {
+	static void Visible(Window *wnd) {
 		XWindowAttributes wa;
 		XGetWindowAttributes(System::dpy, wnd->_m->xWnd, &wa);
 		System::xEventMux.lock();
@@ -301,14 +301,14 @@ namespace Pwre {
 		XEvent event;
 		switch (type) {
 			case PWRE_STATE_VISIBLE:
-				visible(this);
+				Visible(this);
 				break;
 			case PWRE_STATE_MINIMIZE:
-				visible(this);
+				Visible(this);
 				XIconifyWindow(System::dpy, _m->xWnd, 0);
 				break;
 			case PWRE_STATE_MAXIMIZE:
-				visible(this);
+				Visible(this);
 				memset(&event, 0, sizeof(event));
 				event.type = ClientMessage;
 				event.xclient.window = _m->xWnd;
@@ -320,7 +320,7 @@ namespace Pwre {
 				XSendEvent(System::dpy, System::root, False, StructureNotifyMask, &event);
 				break;
 			case PWRE_STATE_FULLSCREEN:
-				visible(this);
+				Visible(this);
 				memset(&event, 0, sizeof(event));
 				event.type = ClientMessage;
 				event.xclient.window = _m->xWnd;
@@ -337,13 +337,13 @@ namespace Pwre {
 		XEvent event;
 		switch (type) {
 			case PWRE_STATE_VISIBLE:
-				visible(this);
+				Visible(this);
 				break;
 			case PWRE_STATE_MINIMIZE:
-				visible(this);
+				Visible(this);
 				break;
 			case PWRE_STATE_MAXIMIZE:
-				visible(this);
+				Visible(this);
 				memset(&event, 0, sizeof(event));
 				event.type = ClientMessage;
 				event.xclient.window = _m->xWnd;
@@ -355,7 +355,7 @@ namespace Pwre {
 				XSendEvent(System::dpy, System::root, False, StructureNotifyMask, &event);
 				break;
 			case PWRE_STATE_FULLSCREEN:
-				visible(this);
+				Visible(this);
 				memset(&event, 0, sizeof(event));
 				event.type = ClientMessage;
 				event.xclient.window = _m->xWnd;
@@ -383,10 +383,10 @@ namespace Pwre {
 	};
 
 	void Window::Less(bool less) {
-		PropMotifWmHints motif_hints;
-		motif_hints.flags = MWM_HINTS_DECORATIONS;
-		motif_hints.decorations = 0;
-		XChangeProperty(System::dpy, _m->xWnd, motifWmHints, motifWmHints, 32, PropModeReplace, (unsigned char *) &motif_hints, PROP_MOTIF_WM_HINTS_ELEMENTS);
+		PropMotifWmHints motifHints;
+		motifHints.flags = MWM_HINTS_DECORATIONS;
+		motifHints.decorations = 0;
+		XChangeProperty(System::dpy, _m->xWnd, motifWmHints, motifWmHints, 32, PropModeReplace, (unsigned char *) &motifHints, PROP_MOTIF_WM_HINTS_ELEMENTS);
 	}
 } /* Pwre */
 

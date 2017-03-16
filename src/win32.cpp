@@ -195,45 +195,45 @@ namespace Pwre {
 	}
 
 	std::string Window::Title() {
-		std::string titCache;
+		std::string title;
 
-		int str16_len = GetWindowTextLengthW(_m->hWnd);
-		if (str16_len) {
-			str16_len++;
-			WCHAR *str16 = new WCHAR[str16_len];
-			GetWindowTextW(_m->hWnd, str16, str16_len);
+		int wcharsLen = GetWindowTextLengthW(_m->hWnd);
+		if (wcharsLen) {
+			wcharsLen++;
+			WCHAR *wchars = new WCHAR[wcharsLen];
+			GetWindowTextW(_m->hWnd, wchars, wcharsLen);
 
-			int str8_len = WideCharToMultiByte(CP_UTF8, 0, str16, -1, NULL, 0, NULL, NULL);
-			if (str8_len) {
-				char *str8 = new char[str8_len + 1];
-				str8[str8_len] = '\0';
-				WideCharToMultiByte(CP_UTF8, 0, str16, -1, str8, str8_len, NULL, NULL);
-				titCache = str8;
-				delete[] str8;
+			int charsLen = WideCharToMultiByte(CP_UTF8, 0, wchars, -1, NULL, 0, NULL, NULL);
+			if (charsLen) {
+				char *chars = new char[charsLen + 1];
+				chars[charsLen] = '\0';
+				WideCharToMultiByte(CP_UTF8, 0, wchars, -1, chars, charsLen, NULL, NULL);
+				title = chars;
+				delete[] chars;
 			}
 
-			delete[] str16;
+			delete[] wchars;
 		}
 
-		return titCache;
+		return title;
 	}
 
-	void Window::Retitle(const std::string &s) {
-		if (s.size() == 0) {
+	void Window::Retitle(const std::string &title) {
+		if (title.size() == 0) {
 			return;
 		}
-		const char *str8 = s.c_str();
+		const char *chars = title.c_str();
 
-		int str16_len = MultiByteToWideChar(CP_UTF8, 0, str8, -1, NULL, 0);
-		if (!str16_len) {
+		int wcharsLen = MultiByteToWideChar(CP_UTF8, 0, chars, -1, NULL, 0);
+		if (!wcharsLen) {
 			return;
 		}
-		WCHAR *str16 = new WCHAR[str16_len + 1];
-		MultiByteToWideChar(CP_UTF8, 0, str8, -1, str16, str16_len);
+		WCHAR *wchars = new WCHAR[wcharsLen + 1];
+		MultiByteToWideChar(CP_UTF8, 0, chars, -1, wchars, wcharsLen);
 
-		SetWindowTextW(_m->hWnd, str16);
+		SetWindowTextW(_m->hWnd, wchars);
 
-		delete[] str16;
+		delete[] wchars;
 	}
 
 	void Window::Pos(int &x, int &y) {
