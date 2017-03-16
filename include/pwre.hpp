@@ -32,13 +32,13 @@ namespace Pwre {
 	};
 
 	template <typename... Args>
-	class BoolCallBacks {
+	class EventAcceptor {
 		public:
-			int AddCallBack(std::function<bool(Args...)> handler) {
+			int Add(std::function<bool(Args...)> handler) {
 				_cbs.push_back(handler);
 				return _cbs.size() - 1;
 			}
-			bool Calls(Args... a) {
+			bool Accept(Args... a) {
 				for (int i = _cbs.size() - 1; i >= 0; i--) {
 					if (!_cbs[i](a...)) {
 						return false;
@@ -51,13 +51,13 @@ namespace Pwre {
 	};
 
 	template <typename... Args>
-	class CallBacks {
+	class EventReceiver {
 		public:
-			int AddCallBack(std::function<void(Args...)> handler) {
+			int Add(std::function<void(Args...)> handler) {
 				_cbs.push_back(handler);
 				return _cbs.size() - 1;
 			}
-			void Calls(Args... a) {
+			void Receive(Args... a) {
 				for (int i = _cbs.size() - 1; i >= 0; i--) {
 					_cbs[i](a...);
 				}
@@ -103,16 +103,16 @@ namespace Pwre {
 			void Less(bool);
 			bool CustomActionArea(const ActionArea &);
 
-			BoolCallBacks<> OnClose;
-			CallBacks<> OnDestroy;
-			CallBacks<int/*width*/, int/*height*/> OnSize;
-			CallBacks<int/*x*/, int/*y*/> OnMove;
-			CallBacks<> OnPaint;
-			CallBacks<int/*x*/, int/*y*/> OnMouseMove;
-			CallBacks<int/*x*/, int/*y*/> OnMouseDown;
-			CallBacks<int/*x*/, int/*y*/> OnMouseUp;
-			CallBacks<int/*keyCode*/> OnKeyDown;
-			CallBacks<int/*keyCode*/> OnKeyUp;
+			EventAcceptor<> OnClose;
+			EventReceiver<> OnDestroy;
+			EventReceiver<int/*width*/, int/*height*/> OnSize;
+			EventReceiver<int/*x*/, int/*y*/> OnMove;
+			EventReceiver<> OnPaint;
+			EventReceiver<int/*x*/, int/*y*/> OnMouseMove;
+			EventReceiver<int/*x*/, int/*y*/> OnMouseDown;
+			EventReceiver<int/*x*/, int/*y*/> OnMouseUp;
+			EventReceiver<int/*keyCode*/> OnKeyDown;
+			EventReceiver<int/*keyCode*/> OnKeyUp;
 
 			///////////////////////////////////////////////
 

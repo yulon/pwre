@@ -22,7 +22,7 @@ int main() {
 
 	glClearColor(0, 0, 0, 0.4);
 
-	wnd.OnPaint.AddCallBack([&wnd]() {
+	wnd.OnPaint.Add([&wnd]() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glBegin(GL_TRIANGLES);
 

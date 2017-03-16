@@ -56,7 +56,7 @@ namespace Pwre {
 			return;
 		}
 
-		OnDestroy.AddCallBack([this]() {
+		OnDestroy.Add([this]() {
 			if (wglGetCurrentDC() == this->_glm->DC) {
 				wglMakeCurrent(NULL, NULL);
 			}

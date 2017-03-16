@@ -75,7 +75,7 @@ namespace Pwre {
 			return;
 		}
 
-		OnDestroy.AddCallBack([this]() {
+		OnDestroy.Add([this]() {
 			if (glXGetCurrentContext() == this->_glm->ctx) {
 				glXMakeCurrent(System::dpy, None, NULL);
 			}

@@ -35,7 +35,7 @@ namespace Pwre {
 		[_glm->ctx setView:[_m->nsWnd contentView]];
 		[pixelFormat release];
 
-		OnDestroy.AddCallBack([this]() {
+		OnDestroy.Add([this]() {
 			if ([NSOpenGLContext currentContext] == this->_glm->ctx) {
 				[NSOpenGLContext clearCurrentContext];
 			}
