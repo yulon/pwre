@@ -34,7 +34,7 @@ namespace Pwre {
 	template <typename... Args>
 	class EventAcceptor {
 		public:
-			int Add(std::function<bool(Args...)> handler) {
+			int Add(const std::function<bool(Args...)> &handler) {
 				_cbs.push_back(handler);
 				return _cbs.size() - 1;
 			}
@@ -53,7 +53,7 @@ namespace Pwre {
 	template <typename... Args>
 	class EventReceiver {
 		public:
-			int Add(std::function<void(Args...)> handler) {
+			int Add(const std::function<void(Args...)> &handler) {
 				_cbs.push_back(handler);
 				return _cbs.size() - 1;
 			}
@@ -80,7 +80,7 @@ namespace Pwre {
 
 			uintptr_t NativeObj();
 
-			const std::string &Title();
+			std::string Title();
 			void Retitle(const std::string &);
 
 			#define PWRE_MOVE_AUTO -10101

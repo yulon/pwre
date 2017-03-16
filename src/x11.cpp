@@ -7,6 +7,7 @@
 
 #include <unordered_map>
 #include "zk_rwlock.hpp"
+#include <mutex>
 #include <atomic>
 
 #include <climits>
@@ -216,20 +217,19 @@ namespace Pwre {
 		XDestroyWindow(System::dpy, _m->xWnd);
 	}
 
-	const std::string &Window::Title() {
-		_m->mux.lock();
+	std::string Window::Title() {
+		std::string titCache;
+
 		Atom type;
 		int format;
 		unsigned long nitems, after;
 		unsigned char *data;
 		if (Success == XGetWindowProperty(System::dpy, _m->xWnd, netWmName, 0, LONG_MAX, False, utf8Str, &type, &format, &nitems, &after, &data) && data) {
-			_m->titCache = (char *)data;
+			titCache = (const char *)data;
 			XFree(data);
-		} else {
-			_m->titCache.resize(0);
 		}
-		_m->mux.unlock();
-		return _m->titCache;
+
+		return titCache;
 	}
 
 	void Window::Retitle(const std::string &title) {

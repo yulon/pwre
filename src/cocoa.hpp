@@ -5,8 +5,6 @@
 namespace Pwre {
 	struct Window::_BlackBox {
 		NSWindow *nsWnd;
-		std::string titCache;
-		std::mutex mux;
 	};
 } /* Pwre */
 

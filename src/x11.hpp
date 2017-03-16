@@ -5,7 +5,6 @@ namespace Pwre {
 
 #include "pwre.hpp"
 #include <iostream>
-#include <mutex>
 
 namespace Pwre {
 	namespace System {
@@ -15,8 +14,6 @@ namespace Pwre {
 
 	struct Window::_BlackBox {
 		XWindow xWnd;
-		std::string titCache;
-		std::mutex mux;
 	};
 
 	bool WindowCoreConstructor(

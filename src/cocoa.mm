@@ -61,11 +61,8 @@ namespace Pwre {
 		return (uintptr_t)_m->nsWnd;
 	}
 
-	const std::string &Window::Title() {
-		_m->mux.lock();
-		_m->titCache = _m->nsWnd.title.UTF8String;
-		_m->mux.unlock();
-		return _m->titCache;
+	std::string Window::Title() {
+		return _m->nsWnd.title.UTF8String;
 	}
 
 	void Window::Retitle(const std::string &title) {

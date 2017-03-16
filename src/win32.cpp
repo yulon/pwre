@@ -194,8 +194,9 @@ namespace Pwre {
 		DestroyWindow(_m->hWnd);
 	}
 
-	const std::string &Window::Title() {
-		_m->mux.lock();
+	std::string Window::Title() {
+		std::string titCache;
+
 		int str16_len = GetWindowTextLengthW(_m->hWnd);
 		if (str16_len) {
 			str16_len++;
@@ -207,16 +208,14 @@ namespace Pwre {
 				char *str8 = new char[str8_len + 1];
 				str8[str8_len] = '\0';
 				WideCharToMultiByte(CP_UTF8, 0, str16, -1, str8, str8_len, NULL, NULL);
-				_m->titCache = str8;
+				titCache = str8;
 				delete[] str8;
 			}
 
 			delete[] str16;
-		} else {
-			_m->titCache.resize(0);
 		}
-		_m->mux.unlock();
-		return _m->titCache;
+
+		return titCache;
 	}
 
 	void Window::Retitle(const std::string &s) {
