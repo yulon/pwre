@@ -207,7 +207,7 @@ namespace Pwre {
 	}
 
 	void Window::Close() {
-		if (OnClose.Receive()) {
+		if (OnClose.Accept()) {
 			Destroy();
 		}
 	}
