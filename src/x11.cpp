@@ -31,7 +31,7 @@ namespace Pwre {
 
 	namespace System {
 		std::unordered_map<XWindow, Window *> wndMap;
-		ZK::RWLock wndMapRWLock;
+		_PWRE_SHARED_MUTEX_NS::shared_mutex wndMapLock;
 		std::mutex xEventMux;
 		std::atomic<int> wndCount;
 
@@ -86,9 +86,9 @@ namespace Pwre {
 				XNextEvent(dpy, event);
 			}
 
-			System::wndMapRWLock.Reading();
+			System::wndMapLock.lock_shared();
 			auto wnd = System::wndMap[event->xany.window];
-			System::wndMapRWLock.Red();
+			System::wndMapLock.unlock_shared();
 
 			if (wnd) {
 				switch (event->xany.type) {
@@ -122,9 +122,9 @@ namespace Pwre {
 					case DestroyNotify:
 						wnd->OnDestroy.Receive();
 
-						System::wndMapRWLock.Writing();
+						System::wndMapLock.lock();
 						System::wndMap.erase(wnd->_m->xWnd);
-						System::wndMapRWLock.Written();
+						System::wndMapLock.unlock();
 
 						if (!--wndCount) {
 							System::wndMap.clear();
@@ -180,9 +180,9 @@ namespace Pwre {
 
 		System::wndCount++;
 
-		System::wndMapRWLock.Writing();
+		System::wndMapLock.lock();
 		System::wndMap[wnd->_m->xWnd] = wnd;
-		System::wndMapRWLock.Written();
+		System::wndMapLock.unlock();
 		return true;
 	}
 

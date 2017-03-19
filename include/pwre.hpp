@@ -5,6 +5,15 @@
 #include <vector>
 #include <functional>
 
+#if (defined(_WIN32) && defined(_MSC_VER) && !defined(_USING_V110_SDK71)) || __cplusplus > 201402L
+	#define _PWRE_SHARED_MUTEX_NS std
+	#include <shared_mutex>
+#else
+	#define _PWRE_SHARED_MUTEX_NS _pstd
+	#include <mutex>
+	#include <atomic>
+#endif
+
 namespace Pwre {
 	namespace System {
 		bool Init();
@@ -31,45 +40,98 @@ namespace Pwre {
 		Bounds control;
 	};
 
-	template <typename... Args>
-	class EventAcceptor {
+	#if !((defined(_WIN32) && defined(_MSC_VER) && !defined(_USING_V110_SDK71)) || __cplusplus > 201402L)
+		namespace _pstd {
+			class shared_mutex {
+				public:
+					shared_mutex() : _shared(0) {}
+
+					void lock() {
+						_mainMux.lock();
+					}
+
+					void unlock() {
+						_mainMux.unlock();
+					}
+
+					void lock_shared() {
+						if (_shared == 0) {
+							_secMux.lock();
+							if (_shared == 0) {
+								_mainMux.lock();
+							}
+							++_shared;
+							_secMux.unlock();
+						} else {
+							++_shared;
+						}
+					}
+
+					void unlock_shared() {
+						if (_shared == 1) {
+							_secMux.lock();
+							if (_shared == 1) {
+								_mainMux.unlock();
+							}
+							--_shared;
+							_secMux.unlock();
+						} else {
+							--_shared;
+						}
+					}
+
+				private:
+					std::mutex _mainMux, _secMux;
+					std::atomic<size_t> _shared;
+				};
+		} /* _pstd */
+	#endif
+
+	template <typename Ret, typename... Args>
+	class EventHandler {
 		public:
-			std::function<void()> Add(const std::function<bool(Args...)> &handler) {
-				_eas.push_back(handler);
-				auto it = --_eas.end();
+			std::function<void()> Add(const std::function<Ret(Args...)> &handler) {
+				_sm.lock();
+				_funcs.push_back(handler);
+				auto it = --_funcs.end();
+				_sm.unlock();
 				return [this, it](){
-					this->_eas.erase(it);
+					_sm.lock();
+					this->_funcs.erase(it);
+					_sm.unlock();
 				};
 			}
-			bool Accept(Args... a) {
-				for (auto rit = _eas.rbegin(); rit != _eas.rend(); rit++) {
-					if (!(*rit)(a...)) {
-						return false;
-					}
-				}
-				return true;
-			}
-		private:
-			std::vector<std::function<bool(Args...)>> _eas;
+		protected:
+			std::vector<std::function<Ret(Args...)>> _funcs;
+			_PWRE_SHARED_MUTEX_NS::shared_mutex _sm;
 	};
 
 	template <typename... Args>
-	class EventReceiver {
+	class EventAcceptor : public EventHandler<bool, Args...> {
 		public:
-			std::function<void()> Add(const std::function<void(Args...)> &handler) {
-				_ers.push_back(handler);
-				auto it = --_ers.end();
-				return [this, it](){
-					this->_ers.erase(it);
-				};
+			bool Accept(Args... a) {
+				this->_sm.lock_shared();
+				for (auto rit = this->_funcs.rbegin(); rit != this->_funcs.rend(); rit++) {
+					if (!(*rit)(a...)) {
+						this->_sm.unlock_shared();
+						return false;
+					}
+				}
+				this->_sm.unlock_shared();
+				return true;
 			}
+	};
+
+	template <typename... Args>
+	class EventReceiver : public EventHandler<void, Args...> {
+		public:
 			void Receive(Args... a) {
-				for (auto rit = _ers.rbegin(); rit != _ers.rend(); rit++) {
+				this->_sm.lock_shared();
+				for (auto rit = this->_funcs.rbegin(); rit != this->_funcs.rend(); rit++) {
 					(*rit)(a...);
 				}
+				this->_sm.unlock_shared();
 			}
-		private:
-			std::vector<std::function<void(Args...)>> _ers;
 	};
 
 	class Window {
