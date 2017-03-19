@@ -31,7 +31,7 @@ namespace Pwre {
 
 	namespace System {
 		std::unordered_map<XWindow, Window *> wndMap;
-		_PWRE_SHARED_MUTEX_NS::shared_mutex wndMapLock;
+		_shared_mutex wndMapLock;
 		std::mutex xEventMux;
 		std::atomic<int> wndCount;
 

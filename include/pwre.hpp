@@ -6,10 +6,8 @@
 #include <functional>
 
 #if (defined(_WIN32) && defined(_MSC_VER) && !defined(_USING_V110_SDK71)) || __cplusplus > 201402L
-	#define _PWRE_SHARED_MUTEX_NS std
 	#include <shared_mutex>
 #else
-	#define _PWRE_SHARED_MUTEX_NS _pstd
 	#include <mutex>
 	#include <atomic>
 #endif
@@ -40,51 +38,51 @@ namespace Pwre {
 		Bounds control;
 	};
 
-	#if !((defined(_WIN32) && defined(_MSC_VER) && !defined(_USING_V110_SDK71)) || __cplusplus > 201402L)
-		namespace _pstd {
-			class shared_mutex {
-				public:
-					shared_mutex() : _shared(0) {}
+	#if (defined(_WIN32) && defined(_MSC_VER) && !defined(_USING_V110_SDK71)) || __cplusplus > 201402L
+		typedef std::shared_mutex _shared_mutex;
+	#else
+		class _shared_mutex {
+			public:
+				_shared_mutex() : _shared(0) {}
 
-					void lock() {
-						_mainMux.lock();
-					}
+				void lock() {
+					_mainMux.lock();
+				}
 
-					void unlock() {
-						_mainMux.unlock();
-					}
+				void unlock() {
+					_mainMux.unlock();
+				}
 
-					void lock_shared() {
+				void lock_shared() {
+					if (_shared == 0) {
+						_secMux.lock();
 						if (_shared == 0) {
-							_secMux.lock();
-							if (_shared == 0) {
-								_mainMux.lock();
-							}
-							++_shared;
-							_secMux.unlock();
-						} else {
-							++_shared;
+							_mainMux.lock();
 						}
+						++_shared;
+						_secMux.unlock();
+					} else {
+						++_shared;
 					}
+				}
 
-					void unlock_shared() {
+				void unlock_shared() {
+					if (_shared == 1) {
+						_secMux.lock();
 						if (_shared == 1) {
-							_secMux.lock();
-							if (_shared == 1) {
-								_mainMux.unlock();
-							}
-							--_shared;
-							_secMux.unlock();
-						} else {
-							--_shared;
+							_mainMux.unlock();
 						}
+						--_shared;
+						_secMux.unlock();
+					} else {
+						--_shared;
 					}
+				}
 
-				private:
-					std::mutex _mainMux, _secMux;
-					std::atomic<size_t> _shared;
-				};
-		} /* _pstd */
+			private:
+				std::mutex _mainMux, _secMux;
+				std::atomic<size_t> _shared;
+		};
 	#endif
 
 	template <typename Ret, typename... Args>
@@ -103,7 +101,7 @@ namespace Pwre {
 			}
 		protected:
 			std::vector<std::function<Ret(Args...)>> _funcs;
-			_PWRE_SHARED_MUTEX_NS::shared_mutex _sm;
+			_shared_mutex _sm;
 	};
 
 	template <typename... Args>
