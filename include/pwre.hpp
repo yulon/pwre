@@ -10,6 +10,7 @@
 #else
 	#include <mutex>
 	#include <atomic>
+	#include <condition_variable>
 #endif
 
 namespace Pwre {
@@ -43,45 +44,44 @@ namespace Pwre {
 	#else
 		class _shared_mutex {
 			public:
-				_shared_mutex() : _shared(0) {}
-
 				void lock() {
-					_mainMux.lock();
+					std::unique_lock<std::mutex> ul(_atomMux);
+
+					if (_exclusive || _shared) {
+						_cond.wait(ul);
+					}
+					_exclusive = true;
 				}
 
 				void unlock() {
-					_mainMux.unlock();
+					std::unique_lock<std::mutex> ul(_atomMux);
+
+					_exclusive = false;
+					_cond.notify_all();
 				}
 
 				void lock_shared() {
-					if (_shared == 0) {
-						_secMux.lock();
-						if (_shared == 0) {
-							_mainMux.lock();
-						}
-						++_shared;
-						_secMux.unlock();
-					} else {
-						++_shared;
+					std::unique_lock<std::mutex> ul(_atomMux);
+
+					if (_exclusive) {
+						_cond.wait(ul);
 					}
+					_shared++;
 				}
 
 				void unlock_shared() {
-					if (_shared == 1) {
-						_secMux.lock();
-						if (_shared == 1) {
-							_mainMux.unlock();
-						}
-						--_shared;
-						_secMux.unlock();
-					} else {
-						--_shared;
+					std::unique_lock<std::mutex> ul(_atomMux);
+
+					if (--_shared == 0) {
+						_cond.notify_all();
 					}
 				}
 
 			private:
-				std::mutex _mainMux, _secMux;
-				std::atomic<size_t> _shared;
+				std::mutex _atomMux;
+				bool _exclusive = false;
+				size_t _shared = 0;
+				std::condition_variable _cond;
 		};
 	#endif
 
