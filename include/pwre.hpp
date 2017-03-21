@@ -1,5 +1,5 @@
-#ifndef _PWRE_H
-#define _PWRE_H
+#ifndef _PWRE_HPP
+#define _PWRE_HPP
 
 #include <string>
 #include <vector>
@@ -204,4 +204,4 @@ namespace Pwre {
 	};
 } /* Pwre */
 
-#endif // !_PWRE_H
+#endif // !_PWRE_HPP
