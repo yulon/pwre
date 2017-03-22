@@ -53,6 +53,8 @@ namespace Pwre {
 						wnd->OnPaint.Receive();
 						ValidateRect(hWnd, NULL);
 						return 0;
+					case WM_ERASEBKGND:
+						return 0;
 					case WM_CLOSE:
 						if (!wnd->OnClose.Accept()) {
 							return 0;
