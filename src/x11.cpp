@@ -6,7 +6,6 @@
 #include <X11/Xutil.h>
 
 #include <unordered_map>
-#include "zk_rwlock.hpp"
 #include <mutex>
 #include <atomic>
 
