@@ -25,113 +25,112 @@ namespace Pwre {
 		} /* gdi32 */
 	} /* DLL */
 
-	namespace System {
-		#ifndef PWRE_PLAT_WIN32_WNDEXTRA
-		#define PWRE_PLAT_WIN32_WNDEXTRA 10
-		#endif
+	#ifndef PWRE_PLAT_WIN32_WNDEXTRA
+	#define PWRE_PLAT_WIN32_WNDEXTRA 10
+	#endif
 
-		#ifndef PWRE_PLAT_WIN32_WNDEXTRA_I
-		#define PWRE_PLAT_WIN32_WNDEXTRA_I 6
-		#endif
+	#ifndef PWRE_PLAT_WIN32_WNDEXTRA_I
+	#define PWRE_PLAT_WIN32_WNDEXTRA_I 6
+	#endif
 
-		std::atomic<int> wndCount;
+	std::atomic<int> wndCount;
 
-		LRESULT CALLBACK WndMsgHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-			auto wnd = (Window *)GetWindowLongPtrW(hWnd, PWRE_PLAT_WIN32_WNDEXTRA_I);
-			if (wnd) {
-				switch (uMsg) {
-					case WM_NCCALCSIZE:
-						if (wnd->_m->less) {
-							if (wParam) {
-								((LPNCCALCSIZE_PARAMS)lParam)->rgrc[2] = ((LPNCCALCSIZE_PARAMS)lParam)->rgrc[1];
-								((LPNCCALCSIZE_PARAMS)lParam)->rgrc[1] = ((LPNCCALCSIZE_PARAMS)lParam)->rgrc[0];
-							}
-							return 0;
+	LRESULT CALLBACK WndMsgHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+		auto wnd = (Window *)GetWindowLongPtrW(hWnd, PWRE_PLAT_WIN32_WNDEXTRA_I);
+		if (wnd) {
+			switch (uMsg) {
+				case WM_NCCALCSIZE:
+					if (wnd->_m->less) {
+						if (wParam) {
+							((LPNCCALCSIZE_PARAMS)lParam)->rgrc[2] = ((LPNCCALCSIZE_PARAMS)lParam)->rgrc[1];
+							((LPNCCALCSIZE_PARAMS)lParam)->rgrc[1] = ((LPNCCALCSIZE_PARAMS)lParam)->rgrc[0];
 						}
-						break;
-					case WM_PAINT:
-						wnd->OnPaint.Receive();
-						ValidateRect(hWnd, NULL);
 						return 0;
-					case WM_ERASEBKGND:
+					}
+					break;
+				case WM_PAINT:
+					wnd->OnPaint.Receive();
+					ValidateRect(hWnd, NULL);
+					return 0;
+				case WM_ERASEBKGND:
+					return 0;
+				case WM_CLOSE:
+					if (!wnd->OnClose.Accept()) {
 						return 0;
-					case WM_CLOSE:
-						if (!wnd->OnClose.Accept()) {
-							return 0;
-						}
-						break;
-					case WM_DESTROY:
-						SetWindowLongPtrW(hWnd, PWRE_PLAT_WIN32_WNDEXTRA_I, 0);
-						wnd->OnDestroy.Receive();
-						if (!--wndCount) {
-							PostQuitMessage(0);
-							return 0;
-						}
-				}
+					}
+					break;
+				case WM_DESTROY:
+					SetWindowLongPtrW(hWnd, PWRE_PLAT_WIN32_WNDEXTRA_I, 0);
+					wnd->OnDestroy.Receive();
+					if (!--wndCount) {
+						PostQuitMessage(0);
+						return 0;
+					}
 			}
-			return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 		}
+		return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+	}
 
-		static HMODULE mainModule;
-		static WNDCLASSEXW wndClass;
+	class WindowSystem {
+		public:
+			HMODULE mainModule;
+			WNDCLASSEXW wndClass;
 
-		bool Init() {
-			_LOAD_DLL(dwmapi,
-				_LOAD_DLL_FUNC(dwmapi, DwmEnableBlurBehindWindow);
-				_LOAD_DLL_FUNC(dwmapi, DwmExtendFrameIntoClientArea);
+			WindowSystem() {
+				_LOAD_DLL(dwmapi,
+					_LOAD_DLL_FUNC(dwmapi, DwmEnableBlurBehindWindow);
+					_LOAD_DLL_FUNC(dwmapi, DwmExtendFrameIntoClientArea);
 
-				_LOAD_DLL(gdi32,
-					_LOAD_DLL_FUNC(gdi32, CreateRectRgn);
+					_LOAD_DLL(gdi32,
+						_LOAD_DLL_FUNC(gdi32, CreateRectRgn);
+					)
 				)
-			)
 
-			mainModule = GetModuleHandleW(NULL);
+				mainModule = GetModuleHandleW(NULL);
 
-			wndClass.style = CS_OWNDC | CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
-			wndClass.hInstance = mainModule;
-			wndClass.hIcon = LoadIconW(NULL, (LPCWSTR)IDI_APPLICATION);
-			wndClass.hIconSm = LoadIconW(NULL, (LPCWSTR)IDI_WINLOGO);
-			wndClass.hCursor = LoadCursorW(NULL, (LPCWSTR)IDC_ARROW);
-			wndClass.lpszClassName = L"Pwre::Window";
-			wndClass.cbWndExtra = sizeof(void *) * PWRE_PLAT_WIN32_WNDEXTRA;
-			wndClass.lpfnWndProc = WndMsgHandler;
-			wndClass.cbSize = sizeof(wndClass);
+				wndClass.style = CS_OWNDC | CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
+				wndClass.hInstance = mainModule;
+				wndClass.hIcon = LoadIconW(NULL, (LPCWSTR)IDI_APPLICATION);
+				wndClass.hIconSm = LoadIconW(NULL, (LPCWSTR)IDI_WINLOGO);
+				wndClass.hCursor = LoadCursorW(NULL, (LPCWSTR)IDC_ARROW);
+				wndClass.lpszClassName = L"Pwre::Window";
+				wndClass.cbWndExtra = sizeof(void *) * PWRE_PLAT_WIN32_WNDEXTRA;
+				wndClass.lpfnWndProc = WndMsgHandler;
+				wndClass.cbSize = sizeof(wndClass);
 
-			ATOM ok = RegisterClassExW(&wndClass);
-			if (!ok) {
-				std::cout << "Pwre: Win32.RegisterClassExW error!" << std::endl;
+				ATOM ok = RegisterClassExW(&wndClass);
+				if (!ok) {
+					std::cout << "Pwre: Win32.RegisterClassExW error!" << std::endl;
+					exit(1);
+				}
+
+				wndCount = 0;
+			}
+	} wndSys;
+
+	bool CleanEvents() {
+		MSG msg;
+		while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE) > 0) {
+			TranslateMessage(&msg);
+			DispatchMessageW(&msg);
+			if (msg.message == WM_QUIT) {
 				return false;
 			}
-
-			wndCount = 0;
-			return true;
 		}
+		return true;
+	}
 
-		uintptr_t NativeObj() {
-			return (uintptr_t)mainModule;
-		}
-
-		bool Step() {
-			MSG msg;
-			while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE) > 0) {
-				TranslateMessage(&msg);
-				DispatchMessageW(&msg);
-				if (msg.message == WM_QUIT) {
-					return false;
-				}
-			}
-			return true;
-		}
-
-		void Run() {
-			MSG msg;
-			msg.message = 0;
-			while (msg.message != WM_QUIT && (GetMessageW(&msg, NULL, 0, 0) > 0)) {
-				TranslateMessage(&msg);
-				DispatchMessageW(&msg);
+	bool WaitEvent() {
+		MSG msg;
+		if (GetMessageW(&msg, NULL, 0, 0) > 0) {
+			TranslateMessage(&msg);
+			DispatchMessageW(&msg);
+			if (msg.message == WM_QUIT) {
+				return false;
 			}
 		}
-	} /* System */
+		return true;
+	}
 
 	Window::Window(uint64_t hints) {
 		_m = new _BlackBox;
@@ -149,11 +148,11 @@ namespace Pwre {
 
 		_m->hWnd = CreateWindowExW(
 			0,
-			System::wndClass.lpszClassName,
+			wndSys.wndClass.lpszClassName,
 			NULL,
 			WS_OVERLAPPEDWINDOW,
 			0, 0, 150 + _m->ncWidth, 150 + _m->ncHeight, NULL, NULL,
-			System::mainModule,
+			wndSys.mainModule,
 			(LPVOID)this
 		);
 		if (!_m->hWnd) {
@@ -161,7 +160,7 @@ namespace Pwre {
 			return;
 		}
 
-		System::wndCount++;
+		wndCount++;
 
 		SetWindowLongPtrW(_m->hWnd, PWRE_PLAT_WIN32_WNDEXTRA_I, (LONG_PTR)(this));
 

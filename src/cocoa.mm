@@ -5,37 +5,37 @@
 #include "cocoa.hpp"
 
 namespace Pwre {
-	namespace System {
-		NSAutoreleasePool *pool;
-		std::atomic<int> wndCount;
+	std::atomic<int> wndCount;
 
-		bool Init() {
-			pool = [[NSAutoreleasePool alloc] init];
+	class WindowSystem {
+		public:
+			NSAutoreleasePool *pool;
 
-			wndCount = 0;
-			return true;
-		}
+			WindowSystem() {
+				pool = [[NSAutoreleasePool alloc] init];
 
-		uintptr_t NativeObj() {
-			return (uintptr_t)pool;
-		}
-
-		bool Step(void) {
-			for (;;) {
-				NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:0 inMode:NSDefaultRunLoopMode dequeue:YES];
-				if (!event) {
-					break;
-				}
-				[NSApp sendEvent:event];
+				wndCount = 0;
 			}
-			return true;
-		}
+	} wndSys;
 
-		void Run(void) {
-			[NSApp run];
-			[pool drain];
+	bool CleanEvents() {
+		for (;;) {
+			NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:0 inMode:NSDefaultRunLoopMode dequeue:YES];
+			if (!event) {
+				break;
+			}
+			[NSApp sendEvent:event];
 		}
-	} /* System */
+		return true;
+	}
+
+	bool WaitEvent() {
+		NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:[NSDate distantFuture] inMode:NSDefaultRunLoopMode dequeue:YES];
+		if (event) {
+			[NSApp sendEvent:event];
+		}
+		return true;
+	}
 
 	Window::Window(uint64_t hints) {
 		_m = new _BlackBox;
@@ -50,7 +50,7 @@ namespace Pwre {
 		[NSApp hide:_m->nsWnd];
 		_m->nsWnd.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
 
-		System::wndCount++;
+		wndCount++;
 	}
 
 	Window::~Window() {

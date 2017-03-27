@@ -14,12 +14,8 @@
 #endif
 
 namespace Pwre {
-	namespace System {
-		bool Init();
-		uintptr_t NativeObj();
-		bool Step();
-		void Run();
-	} /* System */
+	bool CleanEvents();
+	bool WaitEvent();
 
 	struct Point {
 		int x, y;

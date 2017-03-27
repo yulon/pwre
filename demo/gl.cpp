@@ -11,8 +11,6 @@
 #endif
 
 int main() {
-	Pwre::System::Init();
-
 	Pwre::GLWindow wnd;
 	wnd.Resize(600, 500);
 	wnd.MakeCurrent();
@@ -21,7 +19,7 @@ int main() {
 	wnd.AddStates(PWRE_STATE_VISIBLE);
 	wnd.Move();
 
-	while (Pwre::System::Step()) {
+	while (Pwre::CleanEvents()) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glBegin(GL_TRIANGLES);
 

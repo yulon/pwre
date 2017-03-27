@@ -12,8 +12,6 @@
 #endif
 
 int main() {
-	Pwre::System::Init();
-
 	Pwre::GLWindow wnd(PWRE_HINT_ALPHA);
 	wnd.Less(true);
 	wnd.Resize(600, 500);
@@ -42,6 +40,6 @@ int main() {
 	wnd.AddStates(PWRE_STATE_VISIBLE);
 	wnd.Move();
 
-	Pwre::System::Run();
+	while (Pwre::WaitEvent());
 	return 0;
 }

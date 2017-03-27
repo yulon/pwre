@@ -7,10 +7,13 @@ namespace Pwre {
 #include <iostream>
 
 namespace Pwre {
-	namespace System {
-		extern Display *dpy;
-		extern XWindow root;
-	} /* System */
+	extern class WindowSystem {
+		public:
+			Display *dpy;
+			XWindow root;
+
+			WindowSystem();
+	} wndSys;
 
 	struct Window::_BlackBox {
 		XWindow xWnd;
@@ -23,5 +26,5 @@ namespace Pwre {
 	);
 } /* Pwre */
 
-#define _SCREEN_W DisplayWidth(System::dpy, 0)
-#define _SCREEN_H DisplayHeight(System::dpy, 0)
+#define _SCREEN_W DisplayWidth(wndSys.dpy, 0)
+#define _SCREEN_H DisplayHeight(wndSys.dpy, 0)

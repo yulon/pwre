@@ -28,128 +28,123 @@ namespace Pwre {
 	Atom netWmStateFullscr;
 	Atom motifWmHints;
 
-	namespace System {
-		std::unordered_map<XWindow, Window *> wndMap;
-		_shared_mutex wndMapLock;
-		std::recursive_mutex xEventMux;
-		std::atomic<int> wndCount;
+	std::unordered_map<XWindow, Window *> wndMap;
+	_shared_mutex wndMapLock;
+	std::recursive_mutex xEventMux;
+	std::atomic<int> wndCount;
 
-		Display *dpy;
-		XWindow root;
+	WindowSystem::WindowSystem() {
+		XInitThreads();
+		wndSys.dpy = XOpenDisplay(NULL);
+		if (!wndSys.dpy) {
+			std::cout << "Pwre: X11.XOpenDisplay error!" << std::endl;
+			exit(1);
+		}
+		wndSys.root = XRootWindow(wndSys.dpy, 0);
+		netWmName = XInternAtom(wndSys.dpy, "_NET_WM_NAME", False);
+		utf8Str = XInternAtom(wndSys.dpy, "UTF8_STRING", False);
+		wmDelWnd = XInternAtom(wndSys.dpy, "WM_DELETE_WINDOW", False);
+		wmProtocols = XInternAtom(wndSys.dpy, "WM_PROTOCOLS", False);
 
-		bool Init() {
-			XInitThreads();
-			dpy = XOpenDisplay(NULL);
-			if (!dpy) {
-				std::cout << "Pwre: X11.XOpenDisplay error!" << std::endl;
+		netWmState =  XInternAtom(wndSys.dpy, "_NET_WM_STATE", False);
+		netWmStateHide =  XInternAtom(wndSys.dpy, "_NET_WM_STATE_HIDDEN", False);
+		netWmStateMaxVert = XInternAtom(wndSys.dpy, "_NET_WM_STATE_MAXIMIZED_VERT", False);
+		netWmStateMaxHorz = XInternAtom(wndSys.dpy, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
+		netWmStateFullscr = XInternAtom(wndSys.dpy, "_NET_WM_STATE_FULLSCREEN", False);
+
+		motifWmHints = XInternAtom(wndSys.dpy, "_MOTIF_WM_HINTS", True);
+
+		wndCount = 0;
+	}
+	WindowSystem wndSys;
+
+	#define _XEVENT_SYNC(_wnd, _event, _conds, _bingo) { \
+		XEvent event; \
+		while (XEventRecv(&event, false)) { \
+			if ( \
+				event.xany.window == _wnd && \
+				event.xany.type == _event \
+				_conds \
+			) { \
+				_bingo \
+				break; \
+			} \
+		} \
+	}
+
+	bool XEventRecv(XEvent *event, bool mux) {
+		if (mux) {
+			xEventMux.lock();
+			XNextEvent(wndSys.dpy, event);
+			xEventMux.unlock();
+		} else {
+			XNextEvent(wndSys.dpy, event);
+		}
+
+		wndMapLock.lock_shared();
+		auto wnd = wndMap[event->xany.window];
+		wndMapLock.unlock_shared();
+
+		if (wnd) {
+			switch (event->xany.type) {
+				case ConfigureNotify:
+					wnd->OnSize.Receive(event->xconfigure.width, event->xconfigure.height);
+					break;
+				case Expose:
+					wnd->OnPaint.Receive();
+					break;
+				case ClientMessage:
+					if (event->xclient.message_type == wmProtocols && (Atom)event->xclient.data.l[0] == wmDelWnd) {
+						if (!wnd->OnClose.Accept()) {
+							return true;
+						}
+
+						bool ret = false;
+
+						xEventMux.lock();
+						XDestroyWindow(wndSys.dpy, event->xany.window);
+						_XEVENT_SYNC(
+							wnd->_m->xWnd,
+							DestroyNotify,
+							,
+							ret = true;
+						)
+						xEventMux.unlock();
+
+						return ret;
+					}
+					break;
+				case DestroyNotify:
+					wnd->OnDestroy.Receive();
+
+					wndMapLock.lock();
+					wndMap.erase(wnd->_m->xWnd);
+					wndMapLock.unlock();
+
+					if (!--wndCount) {
+						wndMap.clear();
+						XCloseDisplay(wndSys.dpy);
+						return false;
+					}
+			}
+		}
+		return true;
+	}
+
+	bool CleanEvents() {
+		XEvent event;
+		while (XPending(wndSys.dpy)) {
+			if (!XEventRecv(&event, true)) {
 				return false;
 			}
-			root = XRootWindow(dpy, 0);
-			netWmName = XInternAtom(dpy, "_NET_WM_NAME", False);
-			utf8Str = XInternAtom(dpy, "UTF8_STRING", False);
-			wmDelWnd = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
-			wmProtocols = XInternAtom(dpy, "WM_PROTOCOLS", False);
-
-			netWmState =  XInternAtom(dpy, "_NET_WM_STATE", False);
-			netWmStateHide =  XInternAtom(dpy, "_NET_WM_STATE_HIDDEN", False);
-			netWmStateMaxVert = XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_VERT", False);
-			netWmStateMaxHorz = XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
-			netWmStateFullscr = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
-
-			motifWmHints = XInternAtom(dpy, "_MOTIF_WM_HINTS", True);
-
-			wndCount = 0;
-			return true;
 		}
+		return true;
+	}
 
-		#define _XEVENT_SYNC(_wnd, _event, _conds, _bingo) { \
-			XEvent event; \
-			while (System::XEventRecv(&event, false)) { \
-				if ( \
-					event.xany.window == _wnd && \
-					event.xany.type == _event \
-					_conds \
-				) { \
-					_bingo \
-					break; \
-				} \
-			} \
-		}
-
-		bool XEventRecv(XEvent *event, bool mux) {
-			if (mux) {
-				System::xEventMux.lock();
-				XNextEvent(dpy, event);
-				System::xEventMux.unlock();
-			} else {
-				XNextEvent(dpy, event);
-			}
-
-			System::wndMapLock.lock_shared();
-			auto wnd = System::wndMap[event->xany.window];
-			System::wndMapLock.unlock_shared();
-
-			if (wnd) {
-				switch (event->xany.type) {
-					case ConfigureNotify:
-						wnd->OnSize.Receive(event->xconfigure.width, event->xconfigure.height);
-						break;
-					case Expose:
-						wnd->OnPaint.Receive();
-						break;
-					case ClientMessage:
-						if (event->xclient.message_type == wmProtocols && (Atom)event->xclient.data.l[0] == wmDelWnd) {
-							if (!wnd->OnClose.Accept()) {
-								return true;
-							}
-
-							bool ret = false;
-
-							System::xEventMux.lock();
-							XDestroyWindow(dpy, event->xany.window);
-							_XEVENT_SYNC(
-								wnd->_m->xWnd,
-								DestroyNotify,
-								,
-								ret = true;
-							)
-							System::xEventMux.unlock();
-
-							return ret;
-						}
-						break;
-					case DestroyNotify:
-						wnd->OnDestroy.Receive();
-
-						System::wndMapLock.lock();
-						System::wndMap.erase(wnd->_m->xWnd);
-						System::wndMapLock.unlock();
-
-						if (!--wndCount) {
-							System::wndMap.clear();
-							XCloseDisplay(dpy);
-							return false;
-						}
-				}
-			}
-			return true;
-		}
-
-		bool Step() {
-			XEvent event;
-			while (XPending(dpy)) {
-				if (!XEventRecv(&event, true)) {
-					return false;
-				}
-			}
-			return true;
-		}
-
-		void Run() {
-			XEvent event;
-			while (XEventRecv(&event, true));
-		}
-	} /* System */
+	bool WaitEvent() {
+		XEvent event;
+		return XEventRecv(&event, true);
+	}
 
 	bool WindowCoreConstructor(
 		Window *wnd,
@@ -157,8 +152,8 @@ namespace Pwre {
 		int depth, Visual *visual, unsigned long valuemask, XSetWindowAttributes *swa
 	) {
 		wnd->_m->xWnd = XCreateWindow(
-			System::dpy,
-			System::root,
+			wndSys.dpy,
+			wndSys.root,
 			0,
 			0,
 			150,
@@ -175,13 +170,13 @@ namespace Pwre {
 			return false;
 		}
 
-		XSetWMProtocols(System::dpy, wnd->_m->xWnd, &wmDelWnd, 1);
+		XSetWMProtocols(wndSys.dpy, wnd->_m->xWnd, &wmDelWnd, 1);
 
-		System::wndCount++;
+		wndCount++;
 
-		System::wndMapLock.lock();
-		System::wndMap[wnd->_m->xWnd] = wnd;
-		System::wndMapLock.unlock();
+		wndMapLock.lock();
+		wndMap[wnd->_m->xWnd] = wnd;
+		wndMapLock.unlock();
 		return true;
 	}
 
@@ -193,7 +188,7 @@ namespace Pwre {
 			WindowCoreConstructor(
 				this,
 				hints,
-				XDefaultDepth(System::dpy, 0), XDefaultVisual(System::dpy, 0), CWEventMask, &swa
+				XDefaultDepth(wndSys.dpy, 0), XDefaultVisual(wndSys.dpy, 0), CWEventMask, &swa
 			);
 		}
 	}
@@ -213,7 +208,7 @@ namespace Pwre {
 	}
 
 	void Window::Destroy() {
-		XDestroyWindow(System::dpy, _m->xWnd);
+		XDestroyWindow(wndSys.dpy, _m->xWnd);
 	}
 
 	std::string Window::Title() {
@@ -223,7 +218,7 @@ namespace Pwre {
 		int format;
 		unsigned long nitems, after;
 		unsigned char *data;
-		if (Success == XGetWindowProperty(System::dpy, _m->xWnd, netWmName, 0, LONG_MAX, False, utf8Str, &type, &format, &nitems, &after, &data) && data) {
+		if (Success == XGetWindowProperty(wndSys.dpy, _m->xWnd, netWmName, 0, LONG_MAX, False, utf8Str, &type, &format, &nitems, &after, &data) && data) {
 			title = (const char *)data;
 			XFree(data);
 		}
@@ -232,18 +227,18 @@ namespace Pwre {
 	}
 
 	void Window::Retitle(const std::string &title) {
-		XChangeProperty(System::dpy, _m->xWnd, netWmName, utf8Str, 8, PropModeReplace, (const unsigned char*)title.c_str(), title.size());
+		XChangeProperty(wndSys.dpy, _m->xWnd, netWmName, utf8Str, 8, PropModeReplace, (const unsigned char*)title.c_str(), title.size());
 	}
 
 	#include "fixpos.hpp"
 
 	void Window::Move(int x, int y) {
 		XWindowAttributes wa;
-		XGetWindowAttributes(System::dpy, _m->xWnd, &wa);
+		XGetWindowAttributes(wndSys.dpy, _m->xWnd, &wa);
 		FixPos(x, y, wa.width, wa.height);
 
-		System::xEventMux.lock();
-		int err = XMoveWindow(System::dpy, _m->xWnd, x, y);
+		xEventMux.lock();
+		int err = XMoveWindow(wndSys.dpy, _m->xWnd, x, y);
 		if (err != BadValue && err != BadWindow && err != BadMatch) {
 			_XEVENT_SYNC(
 				_m->xWnd,
@@ -254,12 +249,12 @@ namespace Pwre {
 				),
 			)
 		}
-		System::xEventMux.unlock();
+		xEventMux.unlock();
 	}
 
 	void Window::Size(int &width, int &height) {
 		XWindowAttributes wa;
-		XGetWindowAttributes(System::dpy, _m->xWnd, &wa);
+		XGetWindowAttributes(wndSys.dpy, _m->xWnd, &wa);
 		if (width) {
 			width = wa.width;
 		}
@@ -269,8 +264,8 @@ namespace Pwre {
 	}
 
 	void Window::Resize(int width, int height) {
-		System::xEventMux.lock();
-		int err = XResizeWindow(System::dpy, _m->xWnd, width, height);
+		xEventMux.lock();
+		int err = XResizeWindow(wndSys.dpy, _m->xWnd, width, height);
 		if (err != BadValue && err != BadWindow) {
 			_XEVENT_SYNC(
 				_m->xWnd,
@@ -279,21 +274,21 @@ namespace Pwre {
 				&& event.xconfigure.height == height,
 			)
 		}
-		System::xEventMux.unlock();
+		xEventMux.unlock();
 	}
 
 	static void Visible(Window *wnd) {
 		XWindowAttributes wa;
-		XGetWindowAttributes(System::dpy, wnd->_m->xWnd, &wa);
-		System::xEventMux.lock();
-		if (wa.map_state != IsViewable && XMapRaised(System::dpy, wnd->_m->xWnd) != BadWindow && wa.map_state == IsUnmapped) {
+		XGetWindowAttributes(wndSys.dpy, wnd->_m->xWnd, &wa);
+		xEventMux.lock();
+		if (wa.map_state != IsViewable && XMapRaised(wndSys.dpy, wnd->_m->xWnd) != BadWindow && wa.map_state == IsUnmapped) {
 			_XEVENT_SYNC(
 				wnd->_m->xWnd,
 				MapNotify,
 				,
 			)
 		}
-		System::xEventMux.unlock();
+		xEventMux.unlock();
 	}
 
 	void Window::AddStates(uint32_t type) {
@@ -304,7 +299,7 @@ namespace Pwre {
 				break;
 			case PWRE_STATE_MINIMIZE:
 				Visible(this);
-				XIconifyWindow(System::dpy, _m->xWnd, 0);
+				XIconifyWindow(wndSys.dpy, _m->xWnd, 0);
 				break;
 			case PWRE_STATE_MAXIMIZE:
 				Visible(this);
@@ -316,7 +311,7 @@ namespace Pwre {
 				event.xclient.data.l[0] = netWmStateAdd;
 				event.xclient.data.l[1] = netWmStateMaxVert;
 				event.xclient.data.l[2] = netWmStateMaxHorz;
-				XSendEvent(System::dpy, System::root, False, StructureNotifyMask, &event);
+				XSendEvent(wndSys.dpy, wndSys.root, False, StructureNotifyMask, &event);
 				break;
 			case PWRE_STATE_FULLSCREEN:
 				Visible(this);
@@ -327,7 +322,7 @@ namespace Pwre {
 				event.xclient.format = 32;
 				event.xclient.data.l[0] = netWmStateAdd;
 				event.xclient.data.l[1] = netWmStateFullscr;
-				XSendEvent(System::dpy, System::root, False, StructureNotifyMask, &event);
+				XSendEvent(wndSys.dpy, wndSys.root, False, StructureNotifyMask, &event);
 		}
 		return;
 	}
@@ -351,7 +346,7 @@ namespace Pwre {
 				event.xclient.data.l[0] = netWmStateRemove;
 				event.xclient.data.l[1] = netWmStateMaxVert;
 				event.xclient.data.l[2] = netWmStateMaxHorz;
-				XSendEvent(System::dpy, System::root, False, StructureNotifyMask, &event);
+				XSendEvent(wndSys.dpy, wndSys.root, False, StructureNotifyMask, &event);
 				break;
 			case PWRE_STATE_FULLSCREEN:
 				Visible(this);
@@ -362,7 +357,7 @@ namespace Pwre {
 				event.xclient.format = 32;
 				event.xclient.data.l[0] = netWmStateRemove;
 				event.xclient.data.l[1] = netWmStateFullscr;
-				XSendEvent(System::dpy, System::root, False, StructureNotifyMask, &event);
+				XSendEvent(wndSys.dpy, wndSys.root, False, StructureNotifyMask, &event);
 		}
 	}
 
@@ -385,7 +380,7 @@ namespace Pwre {
 		PropMotifWmHints motifHints;
 		motifHints.flags = MWM_HINTS_DECORATIONS;
 		motifHints.decorations = 0;
-		XChangeProperty(System::dpy, _m->xWnd, motifWmHints, motifWmHints, 32, PropModeReplace, (unsigned char *) &motifHints, PROP_MOTIF_WM_HINTS_ELEMENTS);
+		XChangeProperty(wndSys.dpy, _m->xWnd, motifWmHints, motifWmHints, 32, PropModeReplace, (unsigned char *) &motifHints, PROP_MOTIF_WM_HINTS_ELEMENTS);
 	}
 } /* Pwre */
 
