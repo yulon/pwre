@@ -18,13 +18,15 @@ namespace Pwre {
 			}
 	} wndSys;
 
-	bool CleanEvents() {
+	bool CheckoutEvents() {
+		NSEvent *event;
 		for (;;) {
-			NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:0 inMode:NSDefaultRunLoopMode dequeue:YES];
-			if (!event) {
+			event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:0 inMode:NSDefaultRunLoopMode dequeue:YES];
+			if (event) {
+				[NSApp sendEvent:event];
+			} else {
 				break;
 			}
-			[NSApp sendEvent:event];
 		}
 		return true;
 	}

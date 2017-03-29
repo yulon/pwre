@@ -131,7 +131,7 @@ namespace Pwre {
 		return true;
 	}
 
-	bool CleanEvents() {
+	bool CheckoutEvents() {
 		XEvent event;
 		while (XPending(wndSys.dpy)) {
 			if (!XEventRecv(&event, true)) {

@@ -14,7 +14,7 @@
 #endif
 
 namespace Pwre {
-	bool CleanEvents();
+	bool CheckoutEvents();
 	bool WaitEvent();
 
 	struct Point {

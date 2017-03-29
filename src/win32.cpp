@@ -108,7 +108,7 @@ namespace Pwre {
 			}
 	} wndSys;
 
-	bool CleanEvents() {
+	bool CheckoutEvents() {
 		MSG msg;
 		while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE) > 0) {
 			TranslateMessage(&msg);
@@ -116,6 +116,9 @@ namespace Pwre {
 			if (msg.message == WM_QUIT) {
 				return false;
 			}
+		}
+		if (msg.message == WM_QUIT) {
+			return false;
 		}
 		return true;
 	}
@@ -125,9 +128,9 @@ namespace Pwre {
 		if (GetMessageW(&msg, NULL, 0, 0) > 0) {
 			TranslateMessage(&msg);
 			DispatchMessageW(&msg);
-			if (msg.message == WM_QUIT) {
-				return false;
-			}
+		}
+		if (msg.message == WM_QUIT) {
+			return false;
 		}
 		return true;
 	}

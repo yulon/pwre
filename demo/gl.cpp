@@ -19,7 +19,7 @@ int main() {
 	wnd.AddStates(PWRE_STATE_VISIBLE);
 	wnd.Move();
 
-	while (Pwre::CleanEvents()) {
+	while (Pwre::CheckoutEvents()) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glBegin(GL_TRIANGLES);
 
