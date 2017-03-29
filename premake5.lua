@@ -9,7 +9,7 @@ workspace "Pwre"
 
 	project "pwre"
 		kind "StaticLib"
-		targetdir("lib/%{cfg.system}/%{cfg.platform}/%{cfg.buildcfg}")
+		targetdir("lib/%{cfg.system}/%{cfg.platform}")
 		files { "src/*.cpp", "src/*.hpp", "src/*.h", "include/*.hpp", "include/*.h" }
 		includedirs { "deps" }
 
@@ -24,6 +24,7 @@ workspace "Pwre"
 			defines { "DEBUG" }
 			symbols "On"
 			warnings "Extra"
+			targetsuffix ("_d")
 
 		configuration "Release"
 			defines { "NDEBUG" }
@@ -31,10 +32,21 @@ workspace "Pwre"
 
 	project "demo_blank"
 		kind "ConsoleApp"
-		targetdir("bin/%{cfg.system}/%{cfg.platform}/%{cfg.buildcfg}")
+		targetdir("bin/%{cfg.system}/%{cfg.platform}")
 		files { "demo/blank.cpp" }
-		libdirs { "lib/%{cfg.system}/%{cfg.platform}/%{cfg.buildcfg}" }
-		links { "pwre" }
+		libdirs { "lib/%{cfg.system}/%{cfg.platform}" }
+
+		configuration "Debug"
+			defines { "DEBUG" }
+			symbols "On"
+			warnings "Extra"
+			targetsuffix ("_d")
+			links { "pwre_d" }
+
+		configuration "Release"
+			defines { "NDEBUG" }
+			optimize "Speed"
+			links { "pwre" }
 
 		configuration "windows"
 			links { "user32" }
@@ -45,21 +57,23 @@ workspace "Pwre"
 		configuration "linux"
 			links { "X11" }
 
+	project "demo_gl"
+		kind "ConsoleApp"
+		targetdir("bin/%{cfg.system}/%{cfg.platform}")
+		files { "demo/gl.cpp" }
+		libdirs { "lib/%{cfg.system}/%{cfg.platform}" }
+
 		configuration "Debug"
 			defines { "DEBUG" }
 			symbols "On"
 			warnings "Extra"
+			targetsuffix ("_d")
+			links { "pwre_d" }
 
 		configuration "Release"
 			defines { "NDEBUG" }
 			optimize "Speed"
-
-	project "demo_gl"
-		kind "ConsoleApp"
-		targetdir("bin/%{cfg.system}/%{cfg.platform}/%{cfg.buildcfg}")
-		files { "demo/gl.cpp" }
-		libdirs { "lib/%{cfg.system}/%{cfg.platform}/%{cfg.buildcfg}" }
-		links { "pwre" }
+			links { "pwre" }
 
 		configuration "windows"
 			links { "user32", "gdi32", "opengl32" }
@@ -69,22 +83,24 @@ workspace "Pwre"
 
 		configuration "linux"
 			links { "X11", "GL", "Xrender" }
-
-		configuration "Debug"
-			defines { "DEBUG" }
-			symbols "On"
-			warnings "Extra"
-
-		configuration "Release"
-			defines { "NDEBUG" }
-			optimize "Speed"
 
 	project "demo_gl_alpha"
 		kind "ConsoleApp"
-		targetdir("bin/%{cfg.system}/%{cfg.platform}/%{cfg.buildcfg}")
+		targetdir("bin/%{cfg.system}/%{cfg.platform}")
 		files { "demo/gl_alpha.cpp" }
-		libdirs { "lib/%{cfg.system}/%{cfg.platform}/%{cfg.buildcfg}" }
-		links { "pwre" }
+		libdirs { "lib/%{cfg.system}/%{cfg.platform}" }
+
+		configuration "Debug"
+			defines { "DEBUG" }
+			symbols "On"
+			warnings "Extra"
+			targetsuffix ("_d")
+			links { "pwre_d" }
+
+		configuration "Release"
+			defines { "NDEBUG" }
+			optimize "Speed"
+			links { "pwre" }
 
 		configuration "windows"
 			links { "user32", "gdi32", "opengl32" }
@@ -94,12 +110,3 @@ workspace "Pwre"
 
 		configuration "linux"
 			links { "X11", "GL", "Xrender" }
-
-		configuration "Debug"
-			defines { "DEBUG" }
-			symbols "On"
-			warnings "Extra"
-
-		configuration "Release"
-			defines { "NDEBUG" }
-			optimize "Speed"
