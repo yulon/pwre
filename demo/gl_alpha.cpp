@@ -40,6 +40,6 @@ int main() {
 	wnd.AddStates(PWRE_STATE_VISIBLE);
 	wnd.Move();
 
-	while (Pwre::WaitEvent());
+	Pwre::WaitQuit();
 	return 0;
 }

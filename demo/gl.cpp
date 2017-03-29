@@ -15,11 +15,13 @@ int main() {
 	wnd.Resize(600, 500);
 	wnd.MakeCurrent();
 	wnd.Retitle((const char *)glGetString(GL_VERSION));
+
 	glClearColor(1, 1, 1, 1);
+
 	wnd.AddStates(PWRE_STATE_VISIBLE);
 	wnd.Move();
 
-	while (Pwre::CheckoutEvents()) {
+	Pwre::AddIdleHandler([&wnd]() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glBegin(GL_TRIANGLES);
 
@@ -34,6 +36,8 @@ int main() {
 
 		glEnd();
 		wnd.SwapBuffers();
-	}
+	});
+
+	Pwre::WaitQuit();
 	return 0;
 }

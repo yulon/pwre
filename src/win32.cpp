@@ -108,7 +108,7 @@ namespace Pwre {
 			}
 	} wndSys;
 
-	bool CheckoutEvents() {
+	bool CheckoutNativeEvents() {
 		MSG msg;
 		while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE) > 0) {
 			TranslateMessage(&msg);
@@ -123,7 +123,7 @@ namespace Pwre {
 		return true;
 	}
 
-	bool WaitEvent() {
+	bool WaitNativeEvent() {
 		MSG msg;
 		if (GetMessageW(&msg, NULL, 0, 0) > 0) {
 			TranslateMessage(&msg);

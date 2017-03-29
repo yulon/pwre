@@ -131,7 +131,7 @@ namespace Pwre {
 		return true;
 	}
 
-	bool CheckoutEvents() {
+	bool CheckoutNativeEvents() {
 		XEvent event;
 		while (XPending(wndSys.dpy)) {
 			if (!XEventRecv(&event, true)) {
@@ -141,7 +141,7 @@ namespace Pwre {
 		return true;
 	}
 
-	bool WaitEvent() {
+	bool WaitNativeEvent() {
 		XEvent event;
 		return XEventRecv(&event, true);
 	}

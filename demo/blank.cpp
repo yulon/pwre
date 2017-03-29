@@ -10,6 +10,6 @@ int main() {
 
 	std::cout << "title: " << wnd.Title() << std::endl;
 
-	while (Pwre::WaitEvent());
+	Pwre::WaitQuit();
 	return 0;
 }

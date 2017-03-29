@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <atomic>
 
 #if (defined(_WIN32) && defined(_MSC_VER) && !defined(_USING_V110_SDK71)) || __cplusplus > 201402L
 	#include <shared_mutex>
@@ -14,8 +15,10 @@
 #endif
 
 namespace Pwre {
-	bool CheckoutEvents();
-	bool WaitEvent();
+	void WaitQuit();
+	void Wait(const std::atomic<bool> &flag);
+
+	std::function<void()> AddIdleHandler(const std::function<void()> &);
 
 	struct Point {
 		int x, y;

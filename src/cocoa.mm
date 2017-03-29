@@ -18,7 +18,7 @@ namespace Pwre {
 			}
 	} wndSys;
 
-	bool CheckoutEvents() {
+	bool CheckoutNativeEvents() {
 		NSEvent *event;
 		for (;;) {
 			event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:0 inMode:NSDefaultRunLoopMode dequeue:YES];
@@ -31,7 +31,7 @@ namespace Pwre {
 		return true;
 	}
 
-	bool WaitEvent() {
+	bool WaitNativeEvent() {
 		NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:[NSDate distantFuture] inMode:NSDefaultRunLoopMode dequeue:YES];
 		if (event) {
 			[NSApp sendEvent:event];
