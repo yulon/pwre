@@ -17,8 +17,6 @@ namespace Pwre {
 	std::mutex tasksMux;
 
 	std::function<void()> AddTask(const std::function<void()> &func, size_t count, size_t interval) {
-		std::unique_lock<std::mutex> ul(tasksMux);
-
 		if (interval) {
 			std::shared_ptr<std::atomic<bool>> deleted(new std::atomic<bool>(false));
 
@@ -42,6 +40,8 @@ namespace Pwre {
 				*deleted = true;
 			};
 		} else {
+			std::unique_lock<std::mutex> ul(tasksMux);
+
 			std::shared_ptr<bool> deleted(new bool(false));
 
 			tasks.push_back({func, count, deleted});
