@@ -10,6 +10,7 @@ namespace Pwre {
 	struct TaskInfo {
 		std::function<void()> func;
 		size_t count;
+		std::shared_ptr<bool> deleted;
 	};
 
 	std::vector<TaskInfo> tasks;
@@ -28,7 +29,7 @@ namespace Pwre {
 						return;
 					}
 					tasksMux.lock();
-					tasks.push_back({func, 1});
+					tasks.push_back({func, 1, nullptr});
 					tasksMux.unlock();
 					WakeUp();
 					if (count && !--count) {
@@ -41,15 +42,19 @@ namespace Pwre {
 				*deleted = true;
 			};
 		} else {
-			tasks.push_back({func, count});
+			std::shared_ptr<bool> deleted(new bool(false));
+
+			tasks.push_back({func, count, deleted});
 			if (IsNonGUIThrd) {
 				WakeUp();
 			}
 
 			auto it = --tasks.end();
-			return [it]() {
+			return [it, deleted]() {
 				std::unique_lock<std::mutex> ul(tasksMux);
-				tasks.erase(it);
+				if (!*deleted) {
+					tasks.erase(it);
+				}
 			};
 		}
 	}
@@ -61,6 +66,9 @@ namespace Pwre {
 			for (auto it = tasks.begin(); it != tasks.end();) {
 				(*it).func();
 				if ((*it).count && !--(*it).count) {
+					if ((*it).deleted != nullptr) {
+						*(*it).deleted = true;
+					}
 					it = tasks.erase(it);
 				} else {
 					++it;
