@@ -11,7 +11,7 @@
 #endif
 
 int main() {
-	Pwre::GLWindow wnd;
+	Pwre::GL::Window wnd;
 	wnd.Resize(600, 500);
 	wnd.MakeCurrent();
 	wnd.Retitle((const char *)glGetString(GL_VERSION));

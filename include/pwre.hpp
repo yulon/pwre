@@ -203,22 +203,36 @@ namespace Pwre {
 			_BlackBox *_m;
 	};
 
-	class GLWindow : public Window {
-		public:
-			#define PWRE_HINT_GL_V3 0x3000000000
+	namespace GL {
+		class Window : public Pwre::Window {
+			public:
+				#define PWRE_HINT_GL_V3 0x3000000000
 
-			GLWindow(uint64_t hints = 0);
-			~GLWindow();
+				Window(uint64_t hints = 0);
+				~Window();
 
-			uintptr_t NativeGLCtx();
-			void MakeCurrent();
-			void SwapBuffers();
+				uintptr_t NativeGLCtx();
+				void MakeCurrent();
+				void SwapBuffers();
 
-			///////////////////////////////////////////////
+				///////////////////////////////////////////////
 
-			struct _BlackBox;
-			_BlackBox *_glm;
-	};
+				struct _BlackBox;
+				_BlackBox *_glm;
+		};
+
+		inline uintptr_t NativeGLCtx(Pwre::Window *wnd) {
+			return static_cast<Pwre::GL::Window *>(wnd)->NativeGLCtx();
+		}
+
+		inline void MakeCurrent(Pwre::Window *wnd) {
+			static_cast<Pwre::GL::Window *>(wnd)->MakeCurrent();
+		}
+
+		inline void SwapBuffers(Pwre::Window *wnd) {
+			static_cast<Pwre::GL::Window *>(wnd)->SwapBuffers();
+		}
+	} /* GL */
 } /* Pwre */
 
 #endif // !_PWRE_HPP

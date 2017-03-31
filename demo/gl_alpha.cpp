@@ -12,7 +12,7 @@
 #endif
 
 int main() {
-	Pwre::GLWindow wnd(PWRE_HINT_ALPHA);
+	Pwre::GL::Window wnd(PWRE_HINT_ALPHA);
 	wnd.Less(true);
 	wnd.Resize(600, 500);
 	wnd.MakeCurrent();
