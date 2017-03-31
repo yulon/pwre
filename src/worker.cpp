@@ -59,7 +59,7 @@ namespace Pwre {
 		}
 	}
 
-	bool Work() {
+	bool Working() {
 		std::unique_lock<std::mutex> ul(tasksMux);
 		if (tasks.size()) {
 			bool ret = CheckoutEvents();
@@ -83,14 +83,14 @@ namespace Pwre {
 	void WaitQuit() {
 		AssertNonGUIThrd(WaitQuit);
 
-		while (Work());
+		while (Working());
 	}
 
 	void Wait(const std::atomic<bool> &flag) {
 		AssertNonGUIThrd(Wait);
 
 		while (!flag) {
-			if (!Work()) {
+			if (!Working()) {
 				std::cout << "Pwre::Wait: GUI environment quit!" << std::endl;
 				exit(1);
 			}
