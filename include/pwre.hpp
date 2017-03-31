@@ -5,6 +5,8 @@
 #include <vector>
 #include <functional>
 #include <atomic>
+#include <thread>
+#include <chrono>
 
 #if (defined(_WIN32) && defined(_MSC_VER) && !defined(_USING_V110_SDK71)) || __cplusplus > 201402L
 	#include <shared_mutex>
@@ -15,10 +17,28 @@
 #endif
 
 namespace Pwre {
+	// Blocking current GUI work, wait GUI environment quit, but doesn't stop other GUI works.
+	// GUI thread use only.
 	void WaitQuit();
+
+	// Blocking current GUI work, wait flag is true, but doesn't stop other GUI works.
+	// GUI thread use only.
 	void Wait(const std::atomic<bool> &flag);
 
-	std::function<void()> AddIdleHandler(const std::function<void()> &);
+	// Wake up sleeping GUI thread (if is).
+	// All threads can use, but GUI thread can't wake up self.
+	void WakeUp();
+
+	// Add a task to GUI thread.
+	// Count is 0 for unlimited.
+	// Interval in milliseconds.
+	// Return value is delete function.
+	// All threads can use.
+	std::function<void()> AddTask(
+		const std::function<void()> &,
+		size_t count = 0,
+		size_t interval = 0
+	);
 
 	struct Point {
 		int x, y;
@@ -133,9 +153,9 @@ namespace Pwre {
 
 	class Window {
 		public:
-			#define PWRE_HINT_ALPHA 0x00000001 // support for Windows Vista+ (suggest less), X11 (only GL), macOS.
-			#define PWRE_HINT_BLUR 0x00000010 // support for Windows Vista/7 (only Aero Glass), Windows 10 (unpublished API, not perfect, suggest less), macOS.
-			#define PWRE_HINT_WMBACKGROUND 0x00000002 // support for Windows Vista+ (Aero Glass will automatically blur, but when less only shadow), macOS.
+			#define PWRE_HINT_ALPHA 0x00000001 // Support for Windows Vista+ (suggest less), X11 (only GL), macOS.
+			#define PWRE_HINT_BLUR 0x00000010 // Support for Windows Vista/7 (only Aero Glass), Windows 10 (unpublished API, not perfect, suggest less), macOS.
+			#define PWRE_HINT_WMBACKGROUND 0x00000002 // Support for Windows Vista+ (Aero Glass will automatically blur, but when less only shadow), macOS.
 
 			Window(uint64_t hints = 0);
 			~Window();

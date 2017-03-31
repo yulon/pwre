@@ -3,22 +3,20 @@
 #ifdef PWRE_PLAT_COCOA
 
 #include "cocoa.hpp"
+#include "gui_thrd.hpp"
 
 namespace Pwre {
 	std::atomic<int> wndCount;
 
-	class WindowSystem {
-		public:
-			NSAutoreleasePool *pool;
+	void GUIThrdEntryPoint::Init() {
+		pool = [[NSAutoreleasePool alloc] init];
 
-			WindowSystem() {
-				pool = [[NSAutoreleasePool alloc] init];
+		wndCount = 0;
+	}
 
-				wndCount = 0;
-			}
-	} wndSys;
+	GUIThrdEntryPoint guiThrdInfo;
 
-	bool CheckoutNativeEvents() {
+	bool CheckoutEvents() {
 		NSEvent *event;
 		for (;;) {
 			event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:0 inMode:NSDefaultRunLoopMode dequeue:YES];
@@ -31,12 +29,16 @@ namespace Pwre {
 		return true;
 	}
 
-	bool WaitNativeEvent() {
+	bool WaitEvent() {
 		NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:[NSDate distantFuture] inMode:NSDefaultRunLoopMode dequeue:YES];
 		if (event) {
 			[NSApp sendEvent:event];
 		}
 		return true;
+	}
+
+	void WakeUp() {
+
 	}
 
 	Window::Window(uint64_t hints) {

@@ -31,31 +31,31 @@ namespace Pwre {
 		XVisualInfo *vi;
 		if ((hints & PWRE_HINT_ALPHA) == PWRE_HINT_ALPHA) {
 			int fbConfLen;
-			GLXFBConfig *fbConf = glXChooseFBConfig(wndSys.dpy, 0, glAttrA, &fbConfLen);
+			GLXFBConfig *fbConf = glXChooseFBConfig(dpy, 0, glAttrA, &fbConfLen);
 			XRenderPictFormat *pictFmt = NULL;
 			for (int i = 0; i < fbConfLen; i++) {
-				vi = glXGetVisualFromFBConfig(wndSys.dpy, fbConf[i]);
+				vi = glXGetVisualFromFBConfig(dpy, fbConf[i]);
 				if (!vi) {
 					continue;
 				}
-				pictFmt = XRenderFindVisualFormat(wndSys.dpy, vi->visual);
+				pictFmt = XRenderFindVisualFormat(dpy, vi->visual);
 				if (!pictFmt) {
 					continue;
 				}
 				if (pictFmt->direct.alphaMask > 0) {
-					vi = glXGetVisualFromFBConfig(wndSys.dpy, fbConf[i]);
+					vi = glXGetVisualFromFBConfig(dpy, fbConf[i]);
 					break;
 				}
 				XFree(vi);
 			}
 		} else {
-			vi = glXChooseVisual(wndSys.dpy, 0, (int *)&glAttr);
+			vi = glXChooseVisual(dpy, 0, (int *)&glAttr);
 		}
 
 		XSetWindowAttributes swa;
 		swa.background_pixel = 0;
 		swa.border_pixel = 0;
-		swa.colormap = XCreateColormap(wndSys.dpy, wndSys.root, vi->visual, AllocNone);
+		swa.colormap = XCreateColormap(dpy, root, vi->visual, AllocNone);
 		swa.event_mask = ExposureMask | KeyPressMask | StructureNotifyMask;
 
 		if (!WindowCoreConstructor(
@@ -67,7 +67,7 @@ namespace Pwre {
 			return;
 		}
 
-		_glm->ctx = glXCreateContext(wndSys.dpy, vi, NULL, GL_TRUE);
+		_glm->ctx = glXCreateContext(dpy, vi, NULL, GL_TRUE);
 		XFree(vi);
 		if (!_glm->ctx) {
 			std::cout << "Pwre: X11.glXCreateContext error!" << std::endl;
@@ -77,9 +77,9 @@ namespace Pwre {
 
 		OnDestroy.Add([this]() {
 			if (glXGetCurrentContext() == this->_glm->ctx) {
-				glXMakeCurrent(wndSys.dpy, None, NULL);
+				glXMakeCurrent(dpy, None, NULL);
 			}
-			glXDestroyContext(wndSys.dpy, this->_glm->ctx);
+			glXDestroyContext(dpy, this->_glm->ctx);
 		});
 	}
 
@@ -92,11 +92,11 @@ namespace Pwre {
 	}
 
 	void GLWindow::MakeCurrent() {
-		glXMakeCurrent(wndSys.dpy, _m->xWnd, _glm->ctx);
+		glXMakeCurrent(dpy, _m->xWnd, _glm->ctx);
 	}
 
 	void GLWindow::SwapBuffers() {
-		glXSwapBuffers(wndSys.dpy, _m->xWnd);
+		glXSwapBuffers(dpy, _m->xWnd);
 	}
 } /* Pwre */
 

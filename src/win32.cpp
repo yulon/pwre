@@ -3,6 +3,7 @@
 #ifdef PWRE_PLAT_WIN32
 
 #include "win32.hpp"
+#include "gui_thrd.hpp"
 #include <dwmapi.h>
 
 namespace Pwre {
@@ -71,44 +72,45 @@ namespace Pwre {
 		return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 	}
 
-	class WindowSystem {
-		public:
-			HMODULE mainModule;
-			WNDCLASSEXW wndClass;
+	DWORD guiThrdNtvId;
+	HMODULE mainModule;
+	WNDCLASSEXW wndClass;
 
-			WindowSystem() {
-				_LOAD_DLL(dwmapi,
-					_LOAD_DLL_FUNC(dwmapi, DwmEnableBlurBehindWindow);
-					_LOAD_DLL_FUNC(dwmapi, DwmExtendFrameIntoClientArea);
+	void GUIThrdEntryPoint::Init() {
+		_LOAD_DLL(dwmapi,
+			_LOAD_DLL_FUNC(dwmapi, DwmEnableBlurBehindWindow);
+			_LOAD_DLL_FUNC(dwmapi, DwmExtendFrameIntoClientArea);
 
-					_LOAD_DLL(gdi32,
-						_LOAD_DLL_FUNC(gdi32, CreateRectRgn);
-					)
-				)
+			_LOAD_DLL(gdi32,
+				_LOAD_DLL_FUNC(gdi32, CreateRectRgn);
+			)
+		)
 
-				mainModule = GetModuleHandleW(NULL);
+		guiThrdNtvId = GetCurrentThreadId();
+		mainModule = GetModuleHandleW(NULL);
 
-				wndClass.style = CS_OWNDC | CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
-				wndClass.hInstance = mainModule;
-				wndClass.hIcon = LoadIconW(NULL, (LPCWSTR)IDI_APPLICATION);
-				wndClass.hIconSm = LoadIconW(NULL, (LPCWSTR)IDI_WINLOGO);
-				wndClass.hCursor = LoadCursorW(NULL, (LPCWSTR)IDC_ARROW);
-				wndClass.lpszClassName = L"Pwre::Window";
-				wndClass.cbWndExtra = sizeof(void *) * PWRE_PLAT_WIN32_WNDEXTRA;
-				wndClass.lpfnWndProc = WndMsgHandler;
-				wndClass.cbSize = sizeof(wndClass);
+		wndClass.style = CS_OWNDC | CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
+		wndClass.hInstance = mainModule;
+		wndClass.hIcon = LoadIconW(NULL, (LPCWSTR)IDI_APPLICATION);
+		wndClass.hIconSm = LoadIconW(NULL, (LPCWSTR)IDI_WINLOGO);
+		wndClass.hCursor = LoadCursorW(NULL, (LPCWSTR)IDC_ARROW);
+		wndClass.lpszClassName = L"Pwre::Window";
+		wndClass.cbWndExtra = sizeof(void *) * PWRE_PLAT_WIN32_WNDEXTRA;
+		wndClass.lpfnWndProc = WndMsgHandler;
+		wndClass.cbSize = sizeof(wndClass);
 
-				ATOM ok = RegisterClassExW(&wndClass);
-				if (!ok) {
-					std::cout << "Pwre: Win32.RegisterClassExW error!" << std::endl;
-					exit(1);
-				}
+		ATOM ok = RegisterClassExW(&wndClass);
+		if (!ok) {
+			std::cout << "Pwre: Win32.RegisterClassExW error!" << std::endl;
+			exit(1);
+		}
 
-				wndCount = 0;
-			}
-	} wndSys;
+		wndCount = 0;
+	}
 
-	bool CheckoutNativeEvents() {
+	GUIThrdEntryPoint guiThrdInfo;
+
+	bool CheckoutEvents() {
 		MSG msg;
 		while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE) > 0) {
 			TranslateMessage(&msg);
@@ -123,7 +125,7 @@ namespace Pwre {
 		return true;
 	}
 
-	bool WaitNativeEvent() {
+	bool WaitEvent() {
 		MSG msg;
 		if (GetMessageW(&msg, NULL, 0, 0) > 0) {
 			TranslateMessage(&msg);
@@ -133,6 +135,14 @@ namespace Pwre {
 			return false;
 		}
 		return true;
+	}
+
+	#ifndef PWRE_PLAT_WIN32_MSG_WAKEUP
+	#define PWRE_PLAT_WIN32_MSG_WAKEUP (WM_USER + 6)
+	#endif
+
+	void WakeUp() {
+		PostThreadMessageW(guiThrdNtvId, PWRE_PLAT_WIN32_MSG_WAKEUP, 0, 0);
 	}
 
 	Window::Window(uint64_t hints) {
@@ -151,11 +161,11 @@ namespace Pwre {
 
 		_m->hWnd = CreateWindowExW(
 			0,
-			wndSys.wndClass.lpszClassName,
+			wndClass.lpszClassName,
 			NULL,
 			WS_OVERLAPPEDWINDOW,
 			0, 0, 150 + _m->ncWidth, 150 + _m->ncHeight, NULL, NULL,
-			wndSys.mainModule,
+			mainModule,
 			(LPVOID)this
 		);
 		if (!_m->hWnd) {
