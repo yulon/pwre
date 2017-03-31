@@ -29,10 +29,8 @@ namespace Pwre {
 	// All threads can use, but GUI thread can't wake up self.
 	void WakeUp();
 
-	// Add a task to GUI thread.
-	// Count is 0 for unlimited.
-	// Interval in milliseconds.
-	// Return value is delete function.
+	// Add a task to GUI thread, and return a function for delete this task.
+	// Argument "count" is 0 for unlimited, "interval" in milliseconds.
 	// All threads can use.
 	std::function<void()> AddTask(
 		const std::function<void()> &,
