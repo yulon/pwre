@@ -55,7 +55,7 @@ workspace "Pwre"
 			linkoptions { "-framework Cocoa" }
 
 		configuration "linux"
-			links { "X11" }
+			links { "X11", "pthread" }
 
 	project "demo_gl"
 		kind "ConsoleApp"
@@ -82,7 +82,7 @@ workspace "Pwre"
 			linkoptions { "-framework Cocoa", "-framework OpenGL" }
 
 		configuration "linux"
-			links { "X11", "GL", "Xrender" }
+			links { "X11", "pthread", "GL", "Xrender" }
 
 	project "demo_gl_alpha"
 		kind "ConsoleApp"
@@ -109,4 +109,4 @@ workspace "Pwre"
 			linkoptions { "-framework Cocoa", "-framework OpenGL" }
 
 		configuration "linux"
-			links { "X11", "GL", "Xrender" }
+			links { "X11", "pthread", "GL", "Xrender" }

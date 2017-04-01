@@ -62,7 +62,9 @@ namespace Pwre {
 	bool Working() {
 		std::unique_lock<std::mutex> ul(tasksMux);
 		if (tasks.size()) {
-			bool ret = CheckoutEvents();
+			if (!CheckoutEvents()) {
+				return false;
+			}
 			for (auto it = tasks.begin(); it != tasks.end();) {
 				(*it).func();
 				if ((*it).count && !--(*it).count) {
@@ -74,7 +76,7 @@ namespace Pwre {
 					++it;
 				}
 			}
-			return ret;
+			return true;
 		} else {
 			return WaitEvent();
 		}

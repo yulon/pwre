@@ -6,7 +6,7 @@
 #include "gui_thrd.hpp"
 
 namespace Pwre {
-	std::atomic<int> wndCount;
+	size_t wndCount;
 
 	void GUIThrdEntryPoint::Init() {
 		pool = [[NSAutoreleasePool alloc] init];

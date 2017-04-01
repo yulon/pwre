@@ -30,15 +30,13 @@ namespace Pwre {
 	Atom motifWmHints;
 
 	std::unordered_map<XWindow, Window *> wndMap;
-	_shared_mutex wndMapLock;
-	std::recursive_mutex xEventMux;
-	std::atomic<int> wndCount;
 
 	Display *dpy;
 	XWindow root;
 
 	void GUIThrdEntryPoint::Init() {
 		XInitThreads();
+
 		dpy = XOpenDisplay(NULL);
 		if (!dpy) {
 			std::cout << "Pwre: X11.XOpenDisplay error!" << std::endl;
@@ -57,15 +55,13 @@ namespace Pwre {
 		netWmStateFullscr = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
 
 		motifWmHints = XInternAtom(dpy, "_MOTIF_WM_HINTS", True);
-
-		wndCount = 0;
 	}
 
 	GUIThrdEntryPoint guiThrdInfo;
 
 	#define _XEVENT_SYNC(_wnd, _event, _conds, _bingo) { \
 		XEvent event; \
-		while (XEventRecv(&event, false)) { \
+		while (XEventRecv(&event)) { \
 			if ( \
 				event.xany.window == _wnd && \
 				event.xany.type == _event \
@@ -77,18 +73,12 @@ namespace Pwre {
 		} \
 	}
 
-	bool XEventRecv(XEvent *event, bool mux) {
-		if (mux) {
-			xEventMux.lock();
-			XNextEvent(dpy, event);
-			xEventMux.unlock();
-		} else {
-			XNextEvent(dpy, event);
-		}
+	bool XEventRecv(XEvent *event) {
+		AssertNonGUIThrd(XEventRecv);
 
-		wndMapLock.lock_shared();
+		XNextEvent(dpy, event);
+
 		auto wnd = wndMap[event->xany.window];
-		wndMapLock.unlock_shared();
 
 		if (wnd) {
 			switch (event->type) {
@@ -106,7 +96,6 @@ namespace Pwre {
 
 						bool ret = false;
 
-						xEventMux.lock();
 						XDestroyWindow(dpy, event->xany.window);
 						_XEVENT_SYNC(
 							wnd->_m->xWnd,
@@ -114,7 +103,6 @@ namespace Pwre {
 							,
 							ret = true;
 						)
-						xEventMux.unlock();
 
 						return ret;
 					}
@@ -122,11 +110,9 @@ namespace Pwre {
 				case DestroyNotify:
 					wnd->OnDestroy.Receive();
 
-					wndMapLock.lock();
 					wndMap.erase(wnd->_m->xWnd);
-					wndMapLock.unlock();
 
-					if (!--wndCount) {
+					if (!wndMap.size()) {
 						wndMap.clear();
 						XCloseDisplay(dpy);
 						return false;
@@ -139,7 +125,7 @@ namespace Pwre {
 	bool CheckoutEvents() {
 		XEvent event;
 		while (XPending(dpy)) {
-			if (!XEventRecv(&event, true)) {
+			if (!XEventRecv(&event)) {
 				return false;
 			}
 		}
@@ -148,7 +134,7 @@ namespace Pwre {
 
 	bool WaitEvent() {
 		XEvent event;
-		return XEventRecv(&event, true);
+		return XEventRecv(&event);
 	}
 
 	void WakeUp() {
@@ -186,11 +172,7 @@ namespace Pwre {
 
 		XSetWMProtocols(dpy, wnd->_m->xWnd, &wmDelWnd, 1);
 
-		wndCount++;
-
-		wndMapLock.lock();
 		wndMap[wnd->_m->xWnd] = wnd;
-		wndMapLock.unlock();
 		return true;
 	}
 
@@ -251,7 +233,6 @@ namespace Pwre {
 		XGetWindowAttributes(dpy, _m->xWnd, &wa);
 		FixPos(x, y, wa.width, wa.height);
 
-		xEventMux.lock();
 		int err = XMoveWindow(dpy, _m->xWnd, x, y);
 		if (err != BadValue && err != BadWindow && err != BadMatch) {
 			_XEVENT_SYNC(
@@ -263,7 +244,6 @@ namespace Pwre {
 				),
 			)
 		}
-		xEventMux.unlock();
 	}
 
 	void Window::Size(int &width, int &height) {
@@ -278,7 +258,6 @@ namespace Pwre {
 	}
 
 	void Window::Resize(int width, int height) {
-		xEventMux.lock();
 		int err = XResizeWindow(dpy, _m->xWnd, width, height);
 		if (err != BadValue && err != BadWindow) {
 			_XEVENT_SYNC(
@@ -288,13 +267,11 @@ namespace Pwre {
 				&& event.xconfigure.height == height,
 			)
 		}
-		xEventMux.unlock();
 	}
 
 	static void Visible(Window *wnd) {
 		XWindowAttributes wa;
 		XGetWindowAttributes(dpy, wnd->_m->xWnd, &wa);
-		xEventMux.lock();
 		if (wa.map_state != IsViewable && XMapRaised(dpy, wnd->_m->xWnd) != BadWindow && wa.map_state == IsUnmapped) {
 			_XEVENT_SYNC(
 				wnd->_m->xWnd,
@@ -302,7 +279,6 @@ namespace Pwre {
 				,
 			)
 		}
-		xEventMux.unlock();
 	}
 
 	void Window::AddStates(uint32_t type) {

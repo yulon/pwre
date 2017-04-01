@@ -34,7 +34,7 @@ namespace Pwre {
 	#define PWRE_PLAT_WIN32_WNDEXTRA_I 6
 	#endif
 
-	std::atomic<int> wndCount;
+	size_t wndCount;
 
 	LRESULT CALLBACK WndMsgHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 		auto wnd = (Window *)GetWindowLongPtrW(hWnd, PWRE_PLAT_WIN32_WNDEXTRA_I);

@@ -7,7 +7,7 @@ namespace Pwre {
 	struct Window::_BlackBox {
 		HWND hWnd;
 		int ncWidth, ncHeight;
-		std::atomic<bool> less;
+		bool less;
 	};
 } /* Pwre */
 
