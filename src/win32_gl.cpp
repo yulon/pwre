@@ -72,18 +72,26 @@ namespace Pwre {
 		}
 
 		uintptr_t Window::NativeGLCtx() {
+			AssertNonGUIThrd(Window);
+
 			return (uintptr_t)_glm->RC;
 		}
 
 		void Window::MakeCurrent() {
+			AssertNonGUIThrd(Window);
+
 			wglMakeCurrent(_glm->DC, _glm->RC);
 		}
 
 		static inline void swapBuffers(HDC dc) {
+			AssertNonGUIThrd(Window);
+
 			SwapBuffers(dc);
 		}
 
 		void Window::SwapBuffers() {
+			AssertNonGUIThrd(Window);
+
 			swapBuffers(_glm->DC);
 		}
 	} /* GL */

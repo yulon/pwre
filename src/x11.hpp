@@ -4,6 +4,7 @@ namespace Pwre {
 } /* Pwre */
 
 #include "pwre.hpp"
+#include "gui_thrd.hpp"
 #include <iostream>
 
 namespace Pwre {

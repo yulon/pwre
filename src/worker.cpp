@@ -2,10 +2,11 @@
 #include "gui_thrd.hpp"
 #include <mutex>
 #include <memory>
+#include <deque>
 
 namespace Pwre {
-	bool CheckoutEvents();
-	bool WaitEvent();
+	bool CheckoutEvents(); // In {target_plat}.cpp
+	bool WaitEvent(); // In {target_plat}.cpp
 
 	struct TaskInfo {
 		std::function<void()> func;
@@ -14,7 +15,14 @@ namespace Pwre {
 	};
 
 	std::vector<TaskInfo> tasks;
-	std::mutex tasksMux;
+
+	struct NonGUIThrdChangeTaskRequest {
+		TaskInfo info;
+		std::vector<TaskInfo>::iterator it;
+	};
+
+	std::deque<NonGUIThrdChangeTaskRequest> nonGUIThrdChangeTaskRequests;
+	std::mutex nonGUIThrdChangeTaskRequestsMux;
 
 	std::function<void()> AddTask(const std::function<void()> &func, size_t count, size_t interval) {
 		if (interval) {
@@ -26,9 +34,9 @@ namespace Pwre {
 					if (*deleted) {
 						return;
 					}
-					tasksMux.lock();
-					tasks.push_back({func, 1, nullptr});
-					tasksMux.unlock();
+					nonGUIThrdChangeTaskRequestsMux.lock();
+					nonGUIThrdChangeTaskRequests.push_back({{func, 1, nullptr}, {}});
+					nonGUIThrdChangeTaskRequestsMux.unlock();
 					WakeUp();
 					if (count && !--count) {
 						return;
@@ -40,32 +48,62 @@ namespace Pwre {
 				*deleted = true;
 			};
 		} else {
-			std::unique_lock<std::mutex> ul(tasksMux);
-
 			std::shared_ptr<bool> deleted(new bool(false));
 
-			tasks.push_back({func, count, deleted});
-			if (IsNonGUIThrd) {
+			if (IsGUIThrd) {
+				tasks.push_back({func, count, deleted});
+			} else {
+				nonGUIThrdChangeTaskRequestsMux.lock();
+				nonGUIThrdChangeTaskRequests.push_back({{func, count, deleted}, {}});
+				nonGUIThrdChangeTaskRequestsMux.unlock();
 				WakeUp();
 			}
 
 			auto it = --tasks.end();
 			return [it, deleted]() {
-				std::unique_lock<std::mutex> ul(tasksMux);
-				if (!*deleted) {
-					tasks.erase(it);
+				if (IsGUIThrd) {
+					if (!*deleted) {
+						tasks.erase(it);
+					}
+				} else {
+					nonGUIThrdChangeTaskRequestsMux.lock();
+					nonGUIThrdChangeTaskRequests.push_back({{std::function<void()>(nullptr), 0, deleted}, it});
+					nonGUIThrdChangeTaskRequestsMux.unlock();
+					WakeUp();
 				}
 			};
 		}
 	}
 
+	void OnWakeUP() {
+		AssertNonGUIThrd(OnWakeUP);
+
+		nonGUIThrdChangeTaskRequestsMux.lock();
+		for (;;) {
+			const NonGUIThrdChangeTaskRequest &req = nonGUIThrdChangeTaskRequests.front();
+
+			if (req.info.func) { // An add request.
+				tasks.push_back(req.info);
+			} else {  // A delete request.
+				if (!*req.info.deleted) {
+					tasks.erase(req.it);
+				}
+			}
+
+			nonGUIThrdChangeTaskRequests.pop_front();
+			if (!nonGUIThrdChangeTaskRequests.size()) {
+				break;
+			}
+		}
+		nonGUIThrdChangeTaskRequestsMux.unlock();
+	}
+
 	bool Working() {
-		std::unique_lock<std::mutex> ul(tasksMux);
 		if (tasks.size()) {
 			if (!CheckoutEvents()) {
 				return false;
 			}
-			for (auto it = tasks.begin(); it != tasks.end();) {
+			for (auto it = tasks.begin(); it != tasks.end(); ) {
 				(*it).func();
 				if ((*it).count && !--(*it).count) {
 					if ((*it).deleted != nullptr) {

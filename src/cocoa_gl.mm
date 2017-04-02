@@ -49,14 +49,20 @@ namespace Pwre {
 		}
 
 		uintptr_t Window::NativeGLCtx() {
+			AssertNonGUIThrd(Window);
+
 			return (uintptr_t)_glm->ctx;
 		}
 
 		void Window::MakeCurrent() {
+			AssertNonGUIThrd(Window);
+
 			[_glm->ctx makeCurrentContext];
 		}
 
 		void Window::SwapBuffers() {
+			AssertNonGUIThrd(Window);
+
 			[_glm->ctx flushBuffer];
 		}
 	} /* GL */

@@ -3,7 +3,6 @@
 #ifdef PWRE_PLAT_WIN32
 
 #include "win32.hpp"
-#include "gui_thrd.hpp"
 #include <dwmapi.h>
 
 namespace Pwre {
@@ -110,13 +109,27 @@ namespace Pwre {
 
 	GUIThrdEntryPoint guiThrdInfo;
 
+	#ifndef PWRE_PLAT_WIN32_MSG_WAKEUP
+	#define PWRE_PLAT_WIN32_MSG_WAKEUP (WM_USER + 6)
+	#endif
+
+	void WakeUp() {
+		PostThreadMessageW(guiThrdNtvId, PWRE_PLAT_WIN32_MSG_WAKEUP, 0, 0);
+	}
+
+	void OnWakeUP(); // In worker.cpp
+
 	bool CheckoutEvents() {
 		MSG msg;
 		while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE) > 0) {
-			TranslateMessage(&msg);
-			DispatchMessageW(&msg);
-			if (msg.message == WM_QUIT) {
-				return false;
+			if (msg.message == PWRE_PLAT_WIN32_MSG_WAKEUP) {
+				OnWakeUP();
+			} else {
+				TranslateMessage(&msg);
+				DispatchMessageW(&msg);
+				if (msg.message == WM_QUIT) {
+					return false;
+				}
 			}
 		}
 		if (msg.message == WM_QUIT) {
@@ -128,8 +141,12 @@ namespace Pwre {
 	bool WaitEvent() {
 		MSG msg;
 		if (GetMessageW(&msg, NULL, 0, 0) > 0) {
-			TranslateMessage(&msg);
-			DispatchMessageW(&msg);
+			if (msg.message == PWRE_PLAT_WIN32_MSG_WAKEUP) {
+				OnWakeUP();
+			} else {
+				TranslateMessage(&msg);
+				DispatchMessageW(&msg);
+			}
 		}
 		if (msg.message == WM_QUIT) {
 			return false;
@@ -137,15 +154,9 @@ namespace Pwre {
 		return true;
 	}
 
-	#ifndef PWRE_PLAT_WIN32_MSG_WAKEUP
-	#define PWRE_PLAT_WIN32_MSG_WAKEUP (WM_USER + 6)
-	#endif
-
-	void WakeUp() {
-		PostThreadMessageW(guiThrdNtvId, PWRE_PLAT_WIN32_MSG_WAKEUP, 0, 0);
-	}
-
 	Window::Window(uint64_t hints) {
+		AssertNonGUIThrd(Window);
+
 		_m = new _BlackBox;
 		_m->less = false;
 
@@ -197,18 +208,26 @@ namespace Pwre {
 	}
 
 	uintptr_t Window::NativeObj() {
+		AssertNonGUIThrd(Window);
+
 		return (uintptr_t)_m->hWnd;
 	}
 
 	void Window::Close() {
+		AssertNonGUIThrd(Window);
+
 		CloseWindow(_m->hWnd);
 	}
 
 	void Window::Destroy() {
+		AssertNonGUIThrd(Window);
+
 		DestroyWindow(_m->hWnd);
 	}
 
 	std::string Window::Title() {
+		AssertNonGUIThrd(Window);
+
 		std::string title;
 
 		int wcharsLen = GetWindowTextLengthW(_m->hWnd);
@@ -233,6 +252,8 @@ namespace Pwre {
 	}
 
 	void Window::Retitle(const std::string &title) {
+		AssertNonGUIThrd(Window);
+
 		if (title.size() == 0) {
 			return;
 		}
@@ -251,6 +272,8 @@ namespace Pwre {
 	}
 
 	void Window::Pos(int &x, int &y) {
+		AssertNonGUIThrd(Window);
+
 		RECT rect;
 		GetWindowRect(_m->hWnd, &rect);
 		x = rect.left;
@@ -260,6 +283,8 @@ namespace Pwre {
 	#include "fixpos.hpp"
 
 	void Window::Move(int x, int y) {
+		AssertNonGUIThrd(Window);
+
 		RECT rect;
 		GetWindowRect(_m->hWnd, &rect);
 		int width = rect.right - rect.left;
@@ -274,6 +299,8 @@ namespace Pwre {
 	}
 
 	void Window::Size(int &width, int &height) {
+		AssertNonGUIThrd(Window);
+
 		RECT rect;
 		if (_m->less) {
 			GetWindowRect(_m->hWnd, &rect);
@@ -291,6 +318,8 @@ namespace Pwre {
 	}
 
 	void Window::Resize(int width, int height) {
+		AssertNonGUIThrd(Window);
+
 		RECT rect;
 		GetWindowRect(_m->hWnd, &rect);
 		if (!_m->less) {
@@ -308,6 +337,8 @@ namespace Pwre {
 	#define _STYLE_HAS(_style) (GetWindowLongW(_m->hWnd, GWL_STYLE) & _style) == _style
 
 	void Window::AddStates(uint32_t type) {
+		AssertNonGUIThrd(Window);
+
 		ShowWindow(_m->hWnd, SW_SHOW);
 		return;
 		switch (type) {
@@ -323,6 +354,8 @@ namespace Pwre {
 	}
 
 	void Window::RmStates(uint32_t type) {
+		AssertNonGUIThrd(Window);
+
 		switch (type) {
 			case PWRE_STATE_VISIBLE:
 				ShowWindow(_m->hWnd, SW_HIDE);
@@ -338,6 +371,8 @@ namespace Pwre {
 	}
 
 	bool Window::HasStates(uint32_t type) {
+		AssertNonGUIThrd(Window);
+
 		switch (type) {
 			case PWRE_STATE_VISIBLE:
 				return _STYLE_HAS(WS_VISIBLE);
@@ -352,6 +387,8 @@ namespace Pwre {
 	#undef _STYLE_HAS
 
 	void Window::Less(bool less) {
+		AssertNonGUIThrd(Window);
+
 		RECT rect;
 		GetClientRect(_m->hWnd, &rect);
 		_m->less = less;

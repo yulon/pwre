@@ -3,7 +3,6 @@
 #ifdef PWRE_PLAT_X11
 
 #include "x11.hpp"
-#include "gui_thrd.hpp"
 #include <X11/Xutil.h>
 
 #include <unordered_map>
@@ -73,9 +72,9 @@ namespace Pwre {
 		} \
 	}
 
-	bool XEventRecv(XEvent *event) {
-		AssertNonGUIThrd(XEventRecv);
+	void OnWakeUP(); // In worker.cpp
 
+	bool XEventRecv(XEvent *event) {
 		XNextEvent(dpy, event);
 
 		auto wnd = wndMap[event->xany.window];
@@ -118,6 +117,8 @@ namespace Pwre {
 						return false;
 					}
 			}
+		} else if (event->xany.window == root && event->type == ClientMessage && event->xclient.format == 32) {
+			OnWakeUP();
 		}
 		return true;
 	}
@@ -177,6 +178,8 @@ namespace Pwre {
 	}
 
 	Window::Window(uint64_t hints) {
+		AssertNonGUIThrd(Window);
+
 		_m = new _BlackBox;
 		if (hints != (uint64_t)-1) {
 			XSetWindowAttributes swa;
@@ -194,20 +197,28 @@ namespace Pwre {
 	}
 
 	uintptr_t Window::NativeObj() {
+		AssertNonGUIThrd(Window);
+
 		return (uintptr_t)_m->xWnd;
 	}
 
 	void Window::Close() {
+		AssertNonGUIThrd(Window);
+
 		if (OnClose.Accept()) {
 			Destroy();
 		}
 	}
 
 	void Window::Destroy() {
+		AssertNonGUIThrd(Window);
+
 		XDestroyWindow(dpy, _m->xWnd);
 	}
 
 	std::string Window::Title() {
+		AssertNonGUIThrd(Window);
+
 		std::string title;
 
 		Atom type;
@@ -223,12 +234,16 @@ namespace Pwre {
 	}
 
 	void Window::Retitle(const std::string &title) {
+		AssertNonGUIThrd(Window);
+
 		XChangeProperty(dpy, _m->xWnd, netWmName, utf8Str, 8, PropModeReplace, (const unsigned char*)title.c_str(), title.size());
 	}
 
 	#include "fixpos.hpp"
 
 	void Window::Move(int x, int y) {
+		AssertNonGUIThrd(Window);
+
 		XWindowAttributes wa;
 		XGetWindowAttributes(dpy, _m->xWnd, &wa);
 		FixPos(x, y, wa.width, wa.height);
@@ -247,6 +262,8 @@ namespace Pwre {
 	}
 
 	void Window::Size(int &width, int &height) {
+		AssertNonGUIThrd(Window);
+
 		XWindowAttributes wa;
 		XGetWindowAttributes(dpy, _m->xWnd, &wa);
 		if (width) {
@@ -258,6 +275,8 @@ namespace Pwre {
 	}
 
 	void Window::Resize(int width, int height) {
+		AssertNonGUIThrd(Window);
+
 		int err = XResizeWindow(dpy, _m->xWnd, width, height);
 		if (err != BadValue && err != BadWindow) {
 			_XEVENT_SYNC(
@@ -282,6 +301,8 @@ namespace Pwre {
 	}
 
 	void Window::AddStates(uint32_t type) {
+		AssertNonGUIThrd(Window);
+
 		XEvent event;
 		switch (type) {
 			case PWRE_STATE_VISIBLE:
@@ -318,6 +339,8 @@ namespace Pwre {
 	}
 
 	void Window::RmStates(uint32_t type) {
+		AssertNonGUIThrd(Window);
+
 		XEvent event;
 		switch (type) {
 			case PWRE_STATE_VISIBLE:
@@ -352,6 +375,8 @@ namespace Pwre {
 	}
 
 	bool Window::HasStates(uint32_t type) {
+		AssertNonGUIThrd(Window);
+
 		return false;
 	}
 
@@ -367,6 +392,8 @@ namespace Pwre {
 	};
 
 	void Window::Less(bool less) {
+		AssertNonGUIThrd(Window);
+
 		PropMotifWmHints motifHints;
 		motifHints.flags = MWM_HINTS_DECORATIONS;
 		motifHints.decorations = 0;

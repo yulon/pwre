@@ -35,7 +35,7 @@ namespace Pwre {
 				GLXFBConfig *fbConf = glXChooseFBConfig(dpy, 0, glAttrA, &fbConfLen);
 				XRenderPictFormat *pictFmt = NULL;
 				for (int i = 0; i < fbConfLen; i++) {
-					vi = glXGetVisualFromFBConfig(dpy, fbConf[i]);
+					vi = glXGetVisualInFBConfig(dpy, fbConf[i]);
 					if (!vi) {
 						continue;
 					}
@@ -44,7 +44,7 @@ namespace Pwre {
 						continue;
 					}
 					if (pictFmt->direct.alphaMask > 0) {
-						vi = glXGetVisualFromFBConfig(dpy, fbConf[i]);
+						vi = glXGetVisualInFBConfig(dpy, fbConf[i]);
 						break;
 					}
 					XFree(vi);
@@ -89,14 +89,20 @@ namespace Pwre {
 		}
 
 		uintptr_t Window::NativeGLCtx() {
+			AssertNonGUIThrd(Window);
+
 			return (uintptr_t)_glm->ctx;
 		}
 
 		void Window::MakeCurrent() {
+			AssertNonGUIThrd(Window);
+
 			glXMakeCurrent(dpy, _m->xWnd, _glm->ctx);
 		}
 
 		void Window::SwapBuffers() {
+			AssertNonGUIThrd(Window);
+
 			glXSwapBuffers(dpy, _m->xWnd);
 		}
 	} /* GL */

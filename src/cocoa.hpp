@@ -1,5 +1,5 @@
 #include "pwre.hpp"
-#include <iostream>
+#include "gui_thrd.hpp"
 #import <Cocoa/Cocoa.h>
 
 namespace Pwre {

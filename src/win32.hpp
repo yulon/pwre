@@ -1,7 +1,6 @@
 #include "pwre.hpp"
-#include <iostream>
+#include "gui_thrd.hpp"
 #include <windows.h>
-#include <atomic>
 
 namespace Pwre {
 	struct Window::_BlackBox {
