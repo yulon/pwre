@@ -9,11 +9,11 @@
 #include <chrono>
 
 namespace Pwre {
-	// Blocking current GUI work, wait GUI environment quit, but doesn't stop other GUI works.
+	// Block current GUI work, until GUI environment quit, but doesn't stop other GUI works.
 	// GUI thread use only.
 	void WaitQuit();
 
-	// Blocking current GUI work, wait flag is true, but doesn't stop other GUI works.
+	// Block current GUI work, until flag is true, but doesn't stop other GUI works.
 	// GUI thread use only.
 	void Wait(const std::atomic<bool> &flag);
 
@@ -29,6 +29,20 @@ namespace Pwre {
 		size_t count = 0,
 		size_t interval = 0
 	);
+
+	// Block current GUI work, until new thread finishes its execution, but doesn't stop other GUI works.
+	// GUI thread use only.
+	template <typename R>
+	R WaitNewThrd(const std::function<R()> &func) {
+		std::atomic<bool> done(false);
+		R reuslt;
+		std::thread thrd([func, &done, &reuslt]() {
+			reuslt = func();
+			done = true;
+		});
+		Wait(done);
+		return reuslt;
+	}
 
 	struct Point {
 		int x, y;
