@@ -30,7 +30,7 @@ namespace Pwre {
 			_glm = new _BlackBox;
 
 			XVisualInfo *vi;
-			if ((hints & PWRE_HINT_ALPHA) == PWRE_HINT_ALPHA) {
+			if ((hints & Hint::Alpha) == Hint::Alpha) {
 				int fbConfLen;
 				GLXFBConfig *fbConf = glXChooseFBConfig(dpy, 0, glAttrA, &fbConfLen);
 				XRenderPictFormat *pictFmt = NULL;

@@ -12,12 +12,12 @@
 #endif
 
 int main() {
-	Pwre::GL::Window wnd(PWRE_HINT_ALPHA);
+	Pwre::GL::Window wnd(Pwre::Hint::Alpha);
 	wnd.Less(true);
 	wnd.Resize(600, 500);
+
 	wnd.MakeCurrent();
 	wnd.Retitle((const char *)glGetString(GL_VERSION));
-
 	glClearColor(0, 0, 0, 0.4);
 
 	wnd.OnPaint.Add([&wnd]() {
@@ -37,7 +37,7 @@ int main() {
 		wnd.SwapBuffers();
 	});
 
-	wnd.AddStates(PWRE_STATE_VISIBLE);
+	wnd.AddStates(Pwre::State::Visible);
 	wnd.Move();
 
 	Pwre::WaitQuit();

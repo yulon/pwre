@@ -305,14 +305,14 @@ namespace Pwre {
 
 		XEvent event;
 		switch (type) {
-			case PWRE_STATE_VISIBLE:
+			case State::Visible:
 				Visible(this);
 				break;
-			case PWRE_STATE_MINIMIZE:
+			case State::Minimize:
 				Visible(this);
 				XIconifyWindow(dpy, _m->xWnd, 0);
 				break;
-			case PWRE_STATE_MAXIMIZE:
+			case State::Maximize:
 				Visible(this);
 				memset(&event, 0, sizeof(XClientMessageEvent));
 				event.type = ClientMessage;
@@ -324,7 +324,7 @@ namespace Pwre {
 				event.xclient.data.l[2] = netWmStateMaxHorz;
 				XSendEvent(dpy, root, False, StructureNotifyMask, &event);
 				break;
-			case PWRE_STATE_FULLSCREEN:
+			case State::FullScreen:
 				Visible(this);
 				memset(&event, 0, sizeof(XClientMessageEvent));
 				event.type = ClientMessage;
@@ -343,13 +343,13 @@ namespace Pwre {
 
 		XEvent event;
 		switch (type) {
-			case PWRE_STATE_VISIBLE:
+			case State::Visible:
 				Visible(this);
 				break;
-			case PWRE_STATE_MINIMIZE:
+			case State::Minimize:
 				Visible(this);
 				break;
-			case PWRE_STATE_MAXIMIZE:
+			case State::Maximize:
 				Visible(this);
 				memset(&event, 0, sizeof(XClientMessageEvent));
 				event.type = ClientMessage;
@@ -361,7 +361,7 @@ namespace Pwre {
 				event.xclient.data.l[2] = netWmStateMaxHorz;
 				XSendEvent(dpy, root, False, StructureNotifyMask, &event);
 				break;
-			case PWRE_STATE_FULLSCREEN:
+			case State::FullScreen:
 				Visible(this);
 				memset(&event, 0, sizeof(XClientMessageEvent));
 				event.type = ClientMessage;

@@ -119,14 +119,14 @@ namespace Pwre {
 		AssertNonGUIThrd(Window);
 
 		switch (type) {
-			case PWRE_STATE_VISIBLE:
+			case State::Visible:
 				Visible(_m);
 				break;
-			case PWRE_STATE_MINIMIZE:
+			case State::Minimize:
 				Visible(_m);
 				[_m->nsWnd miniaturize:_m->nsWnd];
 				break;
-			case PWRE_STATE_MAXIMIZE:
+			case State::Maximize:
 				Visible(_m);
 				if (!_m->nsWnd.zoomed) {
 					[_m->nsWnd zoom:_m->nsWnd];
@@ -134,7 +134,7 @@ namespace Pwre {
 					[_m->nsWnd deminiaturize:_m->nsWnd];
 				}
 				break;
-			case PWRE_STATE_FULLSCREEN:
+			case State::FullScreen:
 				Visible(_m);
 				if (!(_m->nsWnd.styleMask & NSWindowStyleMaskFullScreen)) {
 					[_m->nsWnd toggleFullScreen:_m->nsWnd];
@@ -148,14 +148,14 @@ namespace Pwre {
 		AssertNonGUIThrd(Window);
 
 		switch (type) {
-			case PWRE_STATE_VISIBLE:
+			case State::Visible:
 				[NSApp hide:_m->nsWnd];
 				break;
-			case PWRE_STATE_MINIMIZE:
+			case State::Minimize:
 				Visible(_m);
 				[_m->nsWnd deminiaturize:_m->nsWnd];
 				break;
-			case PWRE_STATE_MAXIMIZE:
+			case State::Maximize:
 				Visible(_m);
 				if (_m->nsWnd.zoomed) {
 					[_m->nsWnd zoom:_m->nsWnd];
@@ -163,7 +163,7 @@ namespace Pwre {
 					[_m->nsWnd deminiaturize:_m->nsWnd];
 				}
 				break;
-			case PWRE_STATE_FULLSCREEN:
+			case State::FullScreen:
 				Visible(_m);
 				if (_m->nsWnd.styleMask & NSWindowStyleMaskFullScreen) {
 					[_m->nsWnd toggleFullScreen:_m->nsWnd];
@@ -177,13 +177,13 @@ namespace Pwre {
 		AssertNonGUIThrd(Window);
 
 		switch (type) {
-			case PWRE_STATE_VISIBLE:
+			case State::Visible:
 				return _m->nsWnd.visible;
-			case PWRE_STATE_MINIMIZE:
+			case State::Minimize:
 				return _m->nsWnd.miniaturized;
-			case PWRE_STATE_MAXIMIZE:
+			case State::Maximize:
 				return _m->nsWnd.zoomed;
-			case PWRE_STATE_FULLSCREEN:
+			case State::FullScreen:
 				return _m->nsWnd.styleMask & NSWindowStyleMaskFullScreen;
 		}
 		return false;

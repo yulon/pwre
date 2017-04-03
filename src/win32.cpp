@@ -188,7 +188,7 @@ namespace Pwre {
 
 		SetWindowLongPtrW(_m->hWnd, PWRE_PLAT_WIN32_WNDEXTRA_I, (LONG_PTR)(this));
 
-		if (((hints & PWRE_HINT_ALPHA) == PWRE_HINT_ALPHA) && DLL::dwmapi::DwmEnableBlurBehindWindow && DLL::gdi32::CreateRectRgn) {
+		if (((hints & Hint::Alpha) == Hint::Alpha) && DLL::dwmapi::DwmEnableBlurBehindWindow && DLL::gdi32::CreateRectRgn) {
 			DWM_BLURBEHIND bb;
 			bb.dwFlags = DWM_BB_ENABLE | DWM_BB_BLURREGION;
 			bb.hRgnBlur = DLL::gdi32::CreateRectRgn(0, 0, -1, -1);
@@ -196,7 +196,7 @@ namespace Pwre {
 			bb.fTransitionOnMaximized = 1;
 			DLL::dwmapi::DwmEnableBlurBehindWindow(_m->hWnd, &bb);
 		} else
-		if (((hints & PWRE_HINT_WMBACKGROUND) == PWRE_HINT_WMBACKGROUND) && DLL::dwmapi::DwmExtendFrameIntoClientArea) {
+		if (((hints & Hint::WMBackground) == Hint::WMBackground) && DLL::dwmapi::DwmExtendFrameIntoClientArea) {
 			MARGINS marInset;
 			marInset.cxLeftWidth = -1;
 			DLL::dwmapi::DwmExtendFrameIntoClientArea(_m->hWnd, &marInset);
@@ -342,13 +342,13 @@ namespace Pwre {
 		ShowWindow(_m->hWnd, SW_SHOW);
 		return;
 		switch (type) {
-			case PWRE_STATE_VISIBLE:
+			case State::Visible:
 				ShowWindow(_m->hWnd, SW_SHOW);
 				break;
-			case PWRE_STATE_MINIMIZE:
+			case State::Minimize:
 				ShowWindow(_m->hWnd, SW_MINIMIZE);
 				break;
-			case PWRE_STATE_MAXIMIZE:
+			case State::Maximize:
 				ShowWindow(_m->hWnd, SW_MAXIMIZE);
 		}
 	}
@@ -357,15 +357,15 @@ namespace Pwre {
 		AssertNonGUIThrd(Window);
 
 		switch (type) {
-			case PWRE_STATE_VISIBLE:
+			case State::Visible:
 				ShowWindow(_m->hWnd, SW_HIDE);
 				break;
-			case PWRE_STATE_MINIMIZE:
+			case State::Minimize:
 				if (_STYLE_HAS(WS_MINIMIZE)) {
 					ShowWindow(_m->hWnd, SW_RESTORE);
 				}
 				break;
-			case PWRE_STATE_MAXIMIZE:
+			case State::Maximize:
 				ShowWindow(_m->hWnd, SW_SHOWNORMAL);
 		}
 	}
@@ -374,11 +374,11 @@ namespace Pwre {
 		AssertNonGUIThrd(Window);
 
 		switch (type) {
-			case PWRE_STATE_VISIBLE:
+			case State::Visible:
 				return _STYLE_HAS(WS_VISIBLE);
-			case PWRE_STATE_MINIMIZE:
+			case State::Minimize:
 				return _STYLE_HAS(WS_MINIMIZE);
-			case PWRE_STATE_MAXIMIZE:
+			case State::Maximize:
 				return _STYLE_HAS(WS_MAXIMIZE);
 		}
 		return false;

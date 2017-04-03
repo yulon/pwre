@@ -13,12 +13,12 @@
 int main() {
 	Pwre::GL::Window wnd;
 	wnd.Resize(600, 500);
+
 	wnd.MakeCurrent();
 	wnd.Retitle((const char *)glGetString(GL_VERSION));
-
 	glClearColor(1, 1, 1, 1);
 
-	wnd.AddStates(PWRE_STATE_VISIBLE);
+	wnd.AddStates(Pwre::State::Visible);
 	wnd.Move();
 
 	Pwre::AddTask([&wnd]() {
