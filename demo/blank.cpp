@@ -1,15 +1,18 @@
-#include <iostream>
 #include <pwre.hpp>
+#include <iostream>
 
 int main() {
-	Pwre::Window wnd;
-	wnd.Retitle("我只是一个空白窗口_(:з」∠)_");
-	wnd.Resize(500, 500);
-	wnd.AddStates(Pwre::State::Visible);
-	wnd.Move();
+	pwre::init();
 
-	std::cout << "title: " << wnd.Title() << std::endl;
+	auto wnd = pwre::create();
 
-	Pwre::WaitQuit();
+	wnd->retitle("我只是一个空白窗口_(:з」∠)_");
+	wnd->resize({500, 500});
+	wnd->add_states(PWRE_STATE_VISIBLE);
+	wnd->move();
+
+	std::cout << "title: " << wnd->title() << std::endl;
+
+	while (pwre::recv_event());
 	return 0;
 }

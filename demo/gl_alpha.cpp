@@ -12,15 +12,23 @@
 #endif
 
 int main() {
-	Pwre::GL::Window wnd(Pwre::Hint::Alpha);
-	wnd.Less(true);
-	wnd.Resize(600, 500);
+	pwre::init();
 
-	wnd.MakeCurrent();
-	wnd.Retitle((const char *)glGetString(GL_VERSION));
+	pwre::gl_context *glc;
+	auto wnd = pwre::create(glc, PWRE_HINT_ALPHA);
+
+	glc->make_current();
+	wnd->retitle((const char *)glGetString(GL_VERSION));
 	glClearColor(0, 0, 0, 0.4);
 
-	wnd.OnPaint.Add([&wnd]() {
+	wnd->less(true);
+	wnd->resize({600, 500});
+	wnd->add_states(PWRE_STATE_VISIBLE);
+	wnd->move();
+
+	glViewport(0, 0, 600, 500);
+
+	wnd->on_paint.add([&glc]() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glBegin(GL_TRIANGLES);
 
@@ -34,12 +42,9 @@ int main() {
 		glVertex3f(1.0, -1.0, 0.0);
 
 		glEnd();
-		wnd.SwapBuffers();
+		glc->swap_buffers();
 	});
 
-	wnd.AddStates(Pwre::State::Visible);
-	wnd.Move();
-
-	Pwre::WaitQuit();
+	while (pwre::recv_event());
 	return 0;
 }

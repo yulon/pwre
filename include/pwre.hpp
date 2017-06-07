@@ -4,74 +4,46 @@
 #include <string>
 #include <vector>
 #include <functional>
-#include <atomic>
-#include <thread>
-#include <chrono>
+#include <iostream>
+#include <tuple>
 
-namespace Pwre {
-	// Block current GUI work, until GUI environment quit, but doesn't stop other GUI works.
-	// GUI thread use only.
-	void WaitQuit();
+namespace pwre {
+	struct point {
+		int x, y;
+	};
 
-	// Block current GUI work, until flag is true, but doesn't stop other GUI works.
-	// GUI thread use only.
-	void Wait(const std::atomic<bool> &flag);
+	struct size {
+		int width, height;
+	};
 
-	// Wake up sleeping GUI thread (if is).
-	// All threads can use, but GUI thread can't wake up self.
-	void WakeUp();
-
-	// Add a task to GUI thread, and return a function for delete this task.
-	// Argument "count" is 0 for unlimited, "interval" in milliseconds.
-	// All threads can use.
-	std::function<void()> AddTask(
-		const std::function<void()> &,
-		size_t count = 0,
-		size_t interval = 0
-	);
-
-	// Block current GUI work, until new thread finishes its execution, but doesn't stop other GUI works.
-	// GUI thread use only.
-	template <typename R>
-	R WaitNewThrd(const std::function<R()> &func) {
-		std::atomic<bool> done(false);
-		R reuslt;
-		std::thread thrd([func, &done, &reuslt]() {
-			reuslt = func();
-			done = true;
-		});
-		Wait(done);
-		return reuslt;
-	}
-
-	struct Bounds {
+	struct bounds {
 		int left, top, right, bottom;
 	};
 
-	struct ActionArea {
-		Bounds outer;
-		Bounds border;
-		Bounds control;
+	struct action_area {
+		bounds outer;
+		bounds border;
+		bounds control;
 	};
 
-	template <typename Ret, typename... Args>
-	class EventHandler {
+	template <typename Res, typename... Args>
+	class funcontainer {
 		public:
-			std::function<void()> Add(const std::function<Ret(Args...)> &handler) {
-				_funcs.push_back(handler);
+			std::function<void()> add(const std::function<Res(Args...)> &func) {
+				_funcs.push_back(func);
 				auto it = --_funcs.end();
 				return [this, it](){
 					this->_funcs.erase(it);
 				};
 			}
 		protected:
-			std::vector<std::function<Ret(Args...)>> _funcs;
+			std::vector<std::function<Res(Args...)>> _funcs;
 	};
 
 	template <typename... Args>
-	class EventAcceptor : public EventHandler<bool, Args...> {
+	class interceptor : public funcontainer<bool, Args...> {
 		public:
-			bool Accept(Args... a) {
+			bool calls(Args... a) {
 				for (auto rit = this->_funcs.rbegin(); rit != this->_funcs.rend(); rit++) {
 					if (!(*rit)(a...)) {
 						return false;
@@ -82,105 +54,89 @@ namespace Pwre {
 	};
 
 	template <typename... Args>
-	class EventReceiver : public EventHandler<void, Args...> {
+	class listener : public funcontainer<void, Args...> {
 		public:
-			void Receive(Args... a) {
+			void calls(Args... a) {
 				for (auto rit = this->_funcs.rbegin(); rit != this->_funcs.rend(); rit++) {
 					(*rit)(a...);
 				}
 			}
 	};
 
-	namespace Hint {
-		const uint64_t Alpha = 0x00000001; // Support for Windows Vista+ (suggest less), X11 (only GL), macOS.
-		const uint64_t Blur = 0x00000010; // Support for Windows Vista/7 (only Aero Glass), Windows 10 (unpublished API, not perfect, suggest less), macOS.
-		const uint64_t WMBackground = 0x00000002; // Support for Windows Vista+ (Aero Glass will automatically blur, but when less only shadow), macOS.
-	} /* Hint */
-
-	namespace State {
-		const uint64_t Visible = 0x00000001;
-		const uint64_t Minimize = 0x00000010;
-		const uint64_t Maximize = 0x00000100;
-		const uint64_t FullScreen = 0x00001000;
-	} /* State */
-
-	class Window {
+	class gl_context {
 		public:
-			Window(uint64_t hints = 0);
-			~Window();
+			virtual uintptr_t native_handle() = 0;
+			virtual void make_current() = 0;
+			virtual void swap_buffers() = 0;
 
-			void Close();
-			void Destroy();
+		protected:
+			virtual ~gl_context() {}
+	};
 
-			uintptr_t NativeObj();
+	class window {
+		public:
+			virtual void close() = 0;
+			virtual void destroy() = 0;
 
-			std::string Title();
-			void Retitle(const std::string &);
+			virtual uintptr_t native_handle() = 0;
+
+			#define _PWRE_NOT_IMPL(_mn, _a) std::cout << "pwre::window::"#_mn"(" << _a << "): Not implemented!" << std::endl
+
+			virtual std::string title()                                         { _PWRE_NOT_IMPL(title, ""); return NULL; }
+			virtual void retitle(const std::string &title)                      { _PWRE_NOT_IMPL(retitle, "\"" << title << "\""); }
+
+			virtual point pos()                                                 { _PWRE_NOT_IMPL(pos, ""); return {}; }
 
 			#define PWRE_MOVE_AUTO -10101
 
-			void Pos(int &x, int &y);
-			void Move(int x = PWRE_MOVE_AUTO, int y = PWRE_MOVE_AUTO);
+			virtual void move(point pos = {PWRE_MOVE_AUTO, PWRE_MOVE_AUTO})     { _PWRE_NOT_IMPL(move, pos.x << ", " << pos.y); }
 
-			void Size(int &width, int &height);
-			void Resize(int width, int height);
+			virtual pwre::size size() = 0;
+			virtual void resize(pwre::size sz)                                  { _PWRE_NOT_IMPL(resize, sz.width << ", " << sz.height); }
 
-			void AddStates(uint32_t);
-			void RmStates(uint32_t);
-			bool HasStates(uint32_t);
+			#define PWRE_STATE_VISIBLE 0x00000001
+			#define PWRE_STATE_MINIMIZE 0x00000010
+			#define PWRE_STATE_MAXIMIZE 0x00000100
+			#define PWRE_STATE_FULLSCREEN 0x00001000
 
-			void Less(bool);
-			bool CustomActionArea(const ActionArea &);
+			virtual void add_states(uint32_t states) = 0;
+			virtual void rm_states(uint32_t states) = 0;
+			virtual bool has_states(uint32_t states) = 0;
 
-			EventAcceptor<> OnClose;
-			EventReceiver<> OnDestroy;
-			EventReceiver<int/*width*/, int/*height*/> OnSize;
-			EventReceiver<int/*x*/, int/*y*/> OnMove;
-			EventReceiver<> OnPaint;
-			EventReceiver<int/*x*/, int/*y*/> OnMouseMove;
-			EventReceiver<int/*x*/, int/*y*/> OnMouseDown;
-			EventReceiver<int/*x*/, int/*y*/> OnMouseUp;
-			EventReceiver<int/*keyCode*/> OnKeyDown;
-			EventReceiver<int/*keyCode*/> OnKeyUp;
+			virtual void less(bool lessed)                                      { _PWRE_NOT_IMPL(less, lessed); }
+			virtual bool rearea(const action_area &)                            { _PWRE_NOT_IMPL(rearea, "action_area"); return false; }
 
-			///////////////////////////////////////////////
+			#undef _PWRE_NOT_IMPL
 
-			struct _BlackBox;
-			_BlackBox *_m;
+			////////////////////////////////////////////////////////////////////
+
+			interceptor<> on_close;
+			listener<> on_destroy;
+			listener<pwre::size> on_size;
+			listener<point> on_move;
+			listener<> on_paint;
+			listener<point> on_mouse_move;
+			listener<point> on_mouse_down;
+			listener<point> on_mouse_up;
+			listener<int> on_key_down;
+			listener<int> on_key_up;
+
+		protected:
+			virtual ~window() {}
 	};
 
-	namespace GL {
-		namespace Hint {
-			const uint64_t V3 = 0x3000000000;
-		} /* Hint */
+	void init();
+	bool recv_event();
+	bool recv_event(window *);
+	bool checkout_events();
+	bool checkout_events(window *);
 
-		class Window : public Pwre::Window {
-			public:
-				Window(uint64_t hints = 0);
-				~Window();
+	#define PWRE_HINT_ALPHA 0x00000001 // Support for Windows Vista+ (suggest less), X11 (only GL), macOS.
+	#define PWRE_HINT_BLUR 0x00000010 // Support for Windows Vista/7 (only Aero Glass), Windows 10 (unpublished API, not perfect, suggest less), macOS.
+	#define PWRE_HINT_WMBACKGROUND 0x00000002 // Support for Windows Vista+ (Aero Glass will automatically blur, but when less only shadow), macOS.
 
-				uintptr_t NativeGLCtx();
-				void MakeCurrent();
-				void SwapBuffers();
-
-				///////////////////////////////////////////////
-
-				struct _BlackBox;
-				_BlackBox *_glm;
-		};
-
-		inline uintptr_t NativeGLCtx(Pwre::Window *wnd) {
-			return static_cast<Pwre::GL::Window *>(wnd)->NativeGLCtx();
-		}
-
-		inline void MakeCurrent(Pwre::Window *wnd) {
-			static_cast<Pwre::GL::Window *>(wnd)->MakeCurrent();
-		}
-
-		inline void SwapBuffers(Pwre::Window *wnd) {
-			static_cast<Pwre::GL::Window *>(wnd)->SwapBuffers();
-		}
-	} /* GL */
-} /* Pwre */
+	window *create(uint64_t hints = 0);
+	window *create(gl_context *&, uint64_t hints = 0);
+} /* pwre */
 
 #endif // !_PWRE_HPP

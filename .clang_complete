@@ -1,7 +1,6 @@
 -std=c++11
 -I./include
 -I./src
--I./deps
 -DPWRE_PLAT_WIN32
 -DPWRE_PLAT_X11
 -DPWRE_PLAT_COCOA

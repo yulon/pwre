@@ -1,4 +1,4 @@
-workspace "Pwre"
+workspace "pwre"
 	language "C++"
 	flags { "C++11" }
 	location ( "build" )
@@ -10,7 +10,13 @@ workspace "Pwre"
 	project "pwre"
 		kind "StaticLib"
 		targetdir("lib/%{cfg.system}/%{cfg.platform}")
-		files { "src/*.cpp", "src/*.hpp", "src/*.h", "include/*.hpp", "include/*.h" }
+		files {
+			"include/*.hpp", "include/*.h",
+			"src/*.cpp", "src/*.hpp", "src/*.h",
+			"src/win32/*.cpp", "src/win32/*.hpp",
+			"src/x11/*.cpp", "src/x11/*.hpp",
+			"src/cocoa/*.cpp", "src/cocoa/*.hpp", "src/cocoa/*.mm"
+		}
 		includedirs { "deps" }
 
 		configuration { "windows", "gmake" }
