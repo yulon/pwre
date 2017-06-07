@@ -27,7 +27,7 @@ namespace pwre {
 				NSOpenGLPixelFormat *pixFmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:gl2];
 
 				c = [[NSOpenGLContext alloc] initWithFormat:pixFmt shareContext:nil];
-				[c setView:[wnd->ns contentView]];
+				[c setView:[wnd->nsWnd contentView]];
 				[pixFmt release];
 
 				wnd->on_size.add([this]() {

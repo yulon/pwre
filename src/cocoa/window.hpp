@@ -5,26 +5,16 @@ namespace pwre {
 	class _window;
 } /* pwre */
 
-@interface PwreController : NSWindowController {
+@interface PwreNSWindow : NSWindow {
 	@public
-		pwre::_window *wnd;
+		pwre::_window *pw;
 }
-- (void)mouseDown:(NSEvent *)e;
-@end
-
-@interface PwreObserver : NSObject {
-	@public
-		pwre::_window *wnd;
-}
-- (void)onSize:(NSNotification *)n;
 @end
 
 namespace pwre {
 	class _window : public window {
 		public:
-			NSWindow *ns;
-			PwreController *ctrlr;
-			PwreObserver *obsrv;
+			PwreNSWindow *nsWnd;
 
 			////////////////////////////////////////////////////////////////////
 
