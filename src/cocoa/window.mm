@@ -5,8 +5,24 @@
 #include "window.hpp"
 
 namespace pwre {
-	NSAutoreleasePool *pool;
 	size_t count = 0;
+} /* pwre */
+
+@implementation PwreController
+	- (void)mouseDown:(NSEvent *)e {
+		NSPoint pos = [e locationInWindow];
+		wnd->on_mouse_down.calls(e.buttonNumber, {(int)pos.x, (int)pos.y});
+	}
+@end
+
+@implementation PwreObserver
+	- (void)onSize:(NSNotification *)n {
+		wnd->on_size.calls();
+	}
+@end
+
+namespace pwre {
+	NSAutoreleasePool *pool;
 
 	void init() {
 		pool = [[NSAutoreleasePool alloc] init];
@@ -43,8 +59,22 @@ namespace pwre {
 		[ns makeKeyAndOrderFront:ns];
 		[NSApp hide:ns];
 		ns.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
+		[ns setAcceptsMouseMovedEvents:YES];
 
-		count++;
+		ctrlr = [PwreController alloc];
+		ctrlr->wnd = this;
+		[ctrlr initWithWindow:ns];
+
+		obsrv = [PwreObserver alloc];
+		obsrv->wnd = this;
+		[[NSNotificationCenter defaultCenter]
+			addObserver:obsrv
+			selector:@selector(onSize:)
+			name:NSWindowDidResizeNotification
+			object:ns
+		];
+
+		++count;
 	}
 
 	window *create(uint64_t hints) {
@@ -52,11 +82,11 @@ namespace pwre {
 	}
 
 	void _window::close() {
-
+		[ns performClose:nil];
 	}
 
 	void _window::destroy() {
-
+		[ns close];
 	}
 
 	uintptr_t _window::native_handle() {

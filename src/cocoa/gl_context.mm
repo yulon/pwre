@@ -24,13 +24,13 @@ namespace pwre {
 			////////////////////////////////////////////////////////////////////
 
 			_gl_context(_window *wnd) {
-				NSOpenGLPixelFormat *pix_fmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:gl2];
+				NSOpenGLPixelFormat *pixFmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:gl2];
 
-				c = [[NSOpenGLContext alloc] initWithFormat:pix_fmt shareContext:nil];
+				c = [[NSOpenGLContext alloc] initWithFormat:pixFmt shareContext:nil];
 				[c setView:[wnd->ns contentView]];
-				[pix_fmt release];
+				[pixFmt release];
 
-				wnd->on_size.add([this](size pos) {
+				wnd->on_size.add([this]() {
 					[this->c update];
 				});
 

@@ -112,12 +112,12 @@ namespace pwre {
 
 			interceptor<> on_close;
 			listener<> on_destroy;
-			listener<pwre::size> on_size;
+			listener<> on_size;
 			listener<point> on_move;
 			listener<> on_paint;
-			listener<point> on_mouse_move;
-			listener<point> on_mouse_down;
-			listener<point> on_mouse_up;
+			listener<int, point> on_mouse_move;
+			listener<int, point> on_mouse_down;
+			listener<int, point> on_mouse_up;
 			listener<int> on_key_down;
 			listener<int> on_key_up;
 

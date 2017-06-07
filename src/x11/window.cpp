@@ -80,7 +80,7 @@ namespace pwre {
 	void handle_event(_window *wnd, XEvent &event) {
 		switch (event.type) {
 			case ConfigureNotify:
-				wnd->on_size.calls(event.xconfigure.width, event.xconfigure.height);
+				wnd->on_size.calls();
 				break;
 			case Expose:
 				wnd->on_paint.calls();
