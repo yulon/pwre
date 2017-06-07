@@ -19,46 +19,46 @@ namespace pwre {
 
 	class _gl_context : public gl_context {
 		public:
-			NSOpenGLContext *c;
+			NSOpenGLContext *nsglCtx;
 
 			////////////////////////////////////////////////////////////////////
 
-			_gl_context(_window *wnd) {
+			_gl_context(_window *_wnd) {
 				NSOpenGLPixelFormat *pixFmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:gl2];
 
-				c = [[NSOpenGLContext alloc] initWithFormat:pixFmt shareContext:nil];
-				[c setView:[wnd->nsWnd contentView]];
+				nsglCtx = [[NSOpenGLContext alloc] initWithFormat:pixFmt shareContext:nil];
+				[nsglCtx setView:[_wnd->nsWnd contentView]];
 				[pixFmt release];
 
-				wnd->on_size.add([this]() {
-					[this->c update];
+				_wnd->on_size.add([this]() {
+					[this->nsglCtx update];
 				});
 
-				wnd->on_destroy.add([this]() {
-					if ([NSOpenGLContext currentContext] == this->c) {
+				_wnd->on_destroy.add([this]() {
+					if ([NSOpenGLContext currentContext] == this->nsglCtx) {
 						[NSOpenGLContext clearCurrentContext];
 					}
-					[this->c release];
+					[this->nsglCtx release];
 				});
 			}
 
 			virtual uintptr_t native_handle() {
-				return (uintptr_t)c;
+				return (uintptr_t)nsglCtx;
 			}
 
 			virtual void make_current() {
-				[c makeCurrentContext];
+				[nsglCtx makeCurrentContext];
 			}
 
 			virtual void swap_buffers() {
-				[c flushBuffer];
+				[nsglCtx flushBuffer];
 			}
 	};
 
 	window *create(gl_context *&glc, uint64_t hints) {
-		auto wnd = new _window(hints);
-		glc = static_cast<gl_context *>(new _gl_context(wnd));
-		return static_cast<window *>(wnd);
+		auto _wnd = new _window(hints);
+		glc = static_cast<gl_context *>(new _gl_context(_wnd));
+		return static_cast<window *>(_wnd);
 	}
 } /* pwre */
 

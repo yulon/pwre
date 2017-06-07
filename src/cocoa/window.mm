@@ -11,13 +11,13 @@ namespace pwre {
 @implementation PwreNSWindow
 	- (void)mouseDown:(NSEvent *)e {
 		NSPoint pos = [e locationInWindow];
-		pw->on_mouse_down.calls(e.buttonNumber, {(int)pos.x, (int)pos.y});
+		_wnd->on_mouse_down.calls(e.buttonNumber, {(int)pos.x, (int)pos.y});
 	}
 
 	////////////////////////////////////////////////////////////////////////////
 
 	- (void)onSize:(NSNotification *)n {
-		pw->on_size.calls();
+		_wnd->on_size.calls();
 	}
 @end
 
@@ -61,7 +61,7 @@ namespace pwre {
 		nsWnd.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
 		[nsWnd setAcceptsMouseMovedEvents:YES];
 
-		nsWnd->pw = this;
+		nsWnd->_wnd = this;
 		[[NSNotificationCenter defaultCenter]
 			addObserver:nsWnd
 			selector:@selector(onSize:)
@@ -118,9 +118,9 @@ namespace pwre {
 		[nsWnd setContentSize:NSMakeSize(sz.width, sz.height)];
 	}
 
-	void visible(_window *wnd) {
-		if (!wnd->nsWnd.visible) {
-			[NSApp unhide:wnd->nsWnd];
+	void visible(_window *_wnd) {
+		if (!_wnd->nsWnd.visible) {
+			[NSApp unhide:_wnd->nsWnd];
 		}
 	}
 

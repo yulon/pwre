@@ -28,8 +28,8 @@ namespace pwre {
 
 			////////////////////////////////////////////////////////////////////////
 
-			_gl_context(_window *wnd) {
-				dc = GetDC(wnd->h);
+			_gl_context(_window *_wnd) {
+				dc = GetDC(_wnd->hwnd);
 				uassert(dc, "Pwre", "GetDC");
 
 				int pix_fmt = ChoosePixelFormat(dc, &pfd);
@@ -40,7 +40,7 @@ namespace pwre {
 				rc = wglCreateContext(dc);
 				uassert(rc, "Pwre", "wglCreateContext");
 
-				wnd->on_destroy.add([this]() {
+				_wnd->on_destroy.add([this]() {
 					if (wglGetCurrentDC() == this->dc) {
 						wglMakeCurrent(NULL, NULL);
 					}
@@ -63,9 +63,9 @@ namespace pwre {
 	};
 
 	window *create(gl_context *&glc, uint64_t hints) {
-		auto wnd = new _window(hints);
-		glc = static_cast<gl_context *>(new _gl_context(wnd));
-		return static_cast<window *>(wnd);
+		auto _wnd = new _window(hints);
+		glc = static_cast<gl_context *>(new _gl_context(_wnd));
+		return static_cast<window *>(_wnd);
 	}
 }
 

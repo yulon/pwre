@@ -7,7 +7,7 @@ namespace pwre {
 
 @interface PwreNSWindow : NSWindow {
 	@public
-		pwre::_window *pw;
+		pwre::_window *_wnd;
 }
 @end
 

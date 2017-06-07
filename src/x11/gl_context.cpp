@@ -23,23 +23,23 @@ namespace pwre {
 
 	class _gl_context : public gl_context {
 		public:
-			Window x;
-			GLXContext c;
+			Window xwnd;
+			GLXContext glxc;
 
 			////////////////////////////////////////////////////////////////////
 
-			_gl_context(Window xwnd, GLXContext glxc) : x(xwnd), c(glxc) {}
+			_gl_context(Window w, GLXContext c) : xwnd(w), glxc(c) {}
 
 			virtual uintptr_t native_handle() {
-				return (uintptr_t)c;
+				return (uintptr_t)glxc;
 			}
 
 			virtual void make_current() {
-				glXMakeCurrent(dpy, x, c);
+				glXMakeCurrent(dpy, xwnd, glxc);
 			}
 
 			virtual void swap_buffers() {
-				glXSwapBuffers(dpy, x);
+				glXSwapBuffers(dpy, xwnd);
 			}
 	};
 
@@ -74,12 +74,12 @@ namespace pwre {
 		swa.colormap = XCreateColormap(dpy, root, vi->visual, AllocNone);
 		swa.event_mask = ExposureMask | KeyPressMask | StructureNotifyMask;
 
-		auto wnd = new _window(
+		auto _wnd = new _window(
 			hints,
 			vi->depth, vi->visual, CWBackPixel | CWBorderPixel | CWEventMask | CWColormap, &swa
 		);
-		if (!wnd->x) {
-			delete wnd;
+		if (!_wnd->xwnd) {
+			delete _wnd;
 			XFree(vi);
 			return NULL;
 		}
@@ -90,16 +90,16 @@ namespace pwre {
 
 		uassert(glxc, "Pwre", "glXCreateContext");
 
-		wnd->on_destroy.add([glxc]() {
+		_wnd->on_destroy.add([glxc]() {
 			if (glXGetCurrentContext() == glxc) {
 				glXMakeCurrent(dpy, None, NULL);
 			}
 			glXDestroyContext(dpy, glxc);
 		});
 
-		glc = static_cast<gl_context *>(new _gl_context(wnd->x, glxc));
+		glc = static_cast<gl_context *>(new _gl_context(_wnd->xwnd, glxc));
 
-		return static_cast<window *>(wnd);
+		return static_cast<window *>(_wnd);
 	}
 } /* pwre */
 

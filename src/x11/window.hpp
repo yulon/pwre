@@ -10,7 +10,7 @@ namespace pwre {
 	class _window : public window {
 		public:
 			size_t ref;
-			Window x;
+			Window xwnd;
 
 			////////////////////////////////////////////////////////////////////
 

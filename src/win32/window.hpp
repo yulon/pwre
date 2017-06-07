@@ -6,7 +6,7 @@
 namespace pwre {
 	class _window : public window {
 		public:
-			HWND h;
+			HWND hwnd;
 			int nc_width, nc_height;
 			bool lessed;
 
