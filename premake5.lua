@@ -14,8 +14,7 @@ workspace "pwre"
 			"include/*.hpp", "include/*.h",
 			"src/*.cpp", "src/*.hpp", "src/*.h",
 			"src/win32/*.cpp", "src/win32/*.hpp",
-			"src/x11/*.cpp", "src/x11/*.hpp",
-			"src/cocoa/*.cpp", "src/cocoa/*.hpp", "src/cocoa/*.mm"
+			"src/x11/*.cpp", "src/x11/*.hpp"
 		}
 		includedirs { "deps" }
 
@@ -24,7 +23,7 @@ workspace "pwre"
 			targetextension ".a"
 
 		configuration "macosx"
-			files { "src/*.mm" }
+			files { "src/cocoa/*.mm", "src/cocoa/*.hpp" }
 
 		configuration "Debug"
 			defines { "DEBUG" }
