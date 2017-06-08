@@ -56,8 +56,6 @@ namespace pwre {
 			backing:NSBackingStoreBuffered
 			defer:NO
 		];
-		[nsWnd makeKeyAndOrderFront:nsWnd];
-		[NSApp hide:nsWnd];
 		nsWnd.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
 		[nsWnd setAcceptsMouseMovedEvents:YES];
 
@@ -120,7 +118,7 @@ namespace pwre {
 
 	void visible(_window *_wnd) {
 		if (!_wnd->nsWnd.visible) {
-			[NSApp unhide:_wnd->nsWnd];
+			[_wnd->nsWnd makeKeyAndOrderFront:_wnd->nsWnd];
 		}
 	}
 
@@ -154,7 +152,7 @@ namespace pwre {
 	void _window::rm_states(uint32_t type) {
 		switch (type) {
 			case PWRE_STATE_VISIBLE:
-				[NSApp hide:nsWnd];
+				[nsWnd orderOut:nsWnd];
 				break;
 			case PWRE_STATE_MINIMIZE:
 				visible(this);
