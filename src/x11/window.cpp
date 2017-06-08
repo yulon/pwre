@@ -36,8 +36,6 @@ namespace pwre {
 	Window root;
 
 	void init() {
-		XInitThreads();
-
 		dpy = XOpenDisplay(NULL);
 		uassert(dpy, "Pwre", "XOpenDisplay");
 
@@ -105,9 +103,7 @@ namespace pwre {
 		auto _wnd = map[event.xany.window];
 		if (_wnd) {
 			handle_event(_wnd, event);
-		}/* else if (event->xany.window == root && event->type == ClientMessage && event->xclient.format == 32) {
-			OnNotify();
-		}*/
+		}
 	}
 
 	bool checkout_events() {
@@ -158,15 +154,6 @@ namespace pwre {
 		}
 		return false;
 	}
-
-	/*void Notify() {
-		XEvent event;
-		memset(&event, 0, sizeof(XClientMessageEvent));
-		event.type = ClientMessage;
-		event.xclient.window = root;
-		event.xclient.format = 32;
-		XSendEvent(dpy, root, False, StructureNotifyMask, &event);
-	}*/
 
 	_window::_window(
 		uint64_t hints,
@@ -273,7 +260,9 @@ namespace pwre {
 
 		XWindowAttributes wa;
 		XGetWindowAttributes(dpy, _wnd->xwnd, &wa);
-		if (wa.map_state != IsViewable && XMapRaised(dpy, _wnd->xwnd) != BadWindow);
+		if (wa.map_state != IsViewable) {
+			XMapRaised(dpy, _wnd->xwnd);
+		}
 	}
 
 	void _window::add_states(uint32_t type) {
