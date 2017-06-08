@@ -6,6 +6,7 @@
 
 namespace pwre {
 	size_t count = 0;
+	bool life = true;
 } /* pwre */
 
 @implementation PwreNSWindow
@@ -15,6 +16,22 @@ namespace pwre {
 	}
 
 	////////////////////////////////////////////////////////////////////////////
+
+	- (void)onClose:(NSNotification *)n {
+		switch (self.releasedWhenClosed) {
+			default:
+			if (_wnd->on_close.calls()) {
+				self.releasedWhenClosed = YES;
+				case YES:
+				_wnd->on_destroy.calls();
+				[self release];
+				delete _wnd;
+				if (!--pwre::count) {
+					pwre::life = false;
+				}
+			}
+		}
+	}
 
 	- (void)onSize:(NSNotification *)n {
 		_wnd->on_size.calls();
@@ -30,23 +47,26 @@ namespace pwre {
 
 	bool checkout_events() {
 		NSEvent *event;
-		for (;;) {
+		while (life) {
 			event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:0 inMode:NSDefaultRunLoopMode dequeue:YES];
 			if (event) {
 				[NSApp sendEvent:event];
 			} else {
-				break;
+				return life;
 			}
 		}
-		return true;
+		return false;
 	}
 
 	bool recv_event() {
-		NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:[NSDate distantFuture] inMode:NSDefaultRunLoopMode dequeue:YES];
-		if (event) {
-			[NSApp sendEvent:event];
+		if (life) {
+			NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny untilDate:[NSDate distantFuture] inMode:NSDefaultRunLoopMode dequeue:YES];
+			if (event) {
+				[NSApp sendEvent:event];
+			}
+			return life;
 		}
-		return true;
+		return false;
 	}
 
 	_window::_window(uint64_t hints) {
@@ -60,6 +80,15 @@ namespace pwre {
 		[nsWnd setAcceptsMouseMovedEvents:YES];
 
 		nsWnd->_wnd = this;
+
+		nsWnd.releasedWhenClosed = NO;
+		[[NSNotificationCenter defaultCenter]
+			addObserver:nsWnd
+			selector:@selector(onClose:)
+			name:NSWindowWillCloseNotification
+			object:nsWnd
+		];
+
 		[[NSNotificationCenter defaultCenter]
 			addObserver:nsWnd
 			selector:@selector(onSize:)
@@ -75,10 +104,11 @@ namespace pwre {
 	}
 
 	void _window::close() {
-		[nsWnd performClose:nil];
+		[nsWnd close];
 	}
 
 	void _window::destroy() {
+		nsWnd.releasedWhenClosed = YES;
 		[nsWnd close];
 	}
 
