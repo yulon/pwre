@@ -231,18 +231,17 @@ namespace pwre {
 			gl_window(uint64_t hints = 0);
 	};
 
-	#ifdef PWRE_PLAT_WIN32
-		#define _PWRE_INIT init_win32
-	#elif defined(PWRE_PLAT_COCOA)
-		#define _PWRE_INIT init_cocoa
-	#elif defined(PWRE_PLAT_X11)
-		#define _PWRE_INIT init_x11
-	#endif
-
-	void _PWRE_INIT();
-
 	inline void init() {
+		#ifdef PWRE_PLAT_WIN32
+			#define _PWRE_INIT init_win32
+		#elif defined(PWRE_PLAT_COCOA)
+			#define _PWRE_INIT init_cocoa
+		#elif defined(PWRE_PLAT_X11)
+			#define _PWRE_INIT init_x11
+		#endif
+		void _PWRE_INIT();
 		_PWRE_INIT();
+		#undef _PWRE_INIT
 	}
 
 	bool recv_event();
