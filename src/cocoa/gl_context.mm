@@ -1,8 +1,6 @@
-#include "../plat.h"
+#include <pwre.hpp>
 
 #ifdef PWRE_PLAT_COCOA
-
-#include "window.hpp"
 
 namespace pwre {
 	constexpr NSOpenGLPixelFormatAttribute gl2[] {
@@ -17,48 +15,40 @@ namespace pwre {
 		0
 	};*/
 
-	class _gl_context : public gl_context {
-		public:
-			NSOpenGLContext *nsglCtx;
+	gl_window::gl_window(uint64_t hints) : window(hints) {
+		NSOpenGLPixelFormat *pixFmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:gl2];
+		if (!pixFmt) {
+			destroy();
+			return;
+		}
 
-			////////////////////////////////////////////////////////////////////
+		render_context._nrc = [[NSOpenGLContext alloc] initWithFormat:pixFmt shareContext:nil];
+		if (!render_context._nrc) {
+			destroy();
+			return;
+		}
 
-			_gl_context(_window *_wnd) {
-				NSOpenGLPixelFormat *pixFmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:gl2];
+		[pixFmt release];
+		[render_context._nrc setView:[_nwnd contentView]];
 
-				nsglCtx = [[NSOpenGLContext alloc] initWithFormat:pixFmt shareContext:nil];
-				[nsglCtx setView:[_wnd->nsWnd contentView]];
-				[pixFmt release];
+		on_size.add([this]() {
+			[this->render_context._nrc update];
+		});
 
-				_wnd->on_size.add([this]() {
-					[this->nsglCtx update];
-				});
-
-				_wnd->on_destroy.add([this]() {
-					if ([NSOpenGLContext currentContext] == this->nsglCtx) {
-						[NSOpenGLContext clearCurrentContext];
-					}
-					[this->nsglCtx release];
-				});
+		on_destroy.add([this]() {
+			if ([NSOpenGLContext currentContext] == this->render_context._nrc) {
+				[NSOpenGLContext clearCurrentContext];
 			}
+			[this->render_context._nrc release];
+		});
+	}
 
-			virtual uintptr_t native_handle() {
-				return (uintptr_t)nsglCtx;
-			}
+	void gl_window::render_context_type::make_current() {
+		[_nrc makeCurrentContext];
+	}
 
-			virtual void make_current() {
-				[nsglCtx makeCurrentContext];
-			}
-
-			virtual void swap_buffers() {
-				[nsglCtx flushBuffer];
-			}
-	};
-
-	window *create(gl_context *&glc, uint64_t hints) {
-		auto _wnd = new _window(hints);
-		glc = static_cast<gl_context *>(new _gl_context(_wnd));
-		return static_cast<window *>(_wnd);
+	void gl_window::render_context_type::swap_buffers() {
+		[_nrc flushBuffer];
 	}
 } /* pwre */
 

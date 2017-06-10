@@ -1,0 +1,4 @@
+-std=c++11
+-I../../include
+-I../
+-DPWRE_PLAT_WIN32

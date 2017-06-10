@@ -1,9 +1,9 @@
-#include "../plat.h"
+#include <pwre.hpp>
 
 #ifdef PWRE_PLAT_X11
 
 #include "window.hpp"
-#include <GL/glx.h>
+
 #include <X11/extensions/Xrender.h>
 
 namespace pwre {
@@ -21,29 +21,7 @@ namespace pwre {
 		None
 	};
 
-	class _gl_context : public gl_context {
-		public:
-			Window xwnd;
-			GLXContext glxc;
-
-			////////////////////////////////////////////////////////////////////
-
-			_gl_context(Window w, GLXContext c) : xwnd(w), glxc(c) {}
-
-			virtual uintptr_t native_handle() {
-				return (uintptr_t)glxc;
-			}
-
-			virtual void make_current() {
-				glXMakeCurrent(dpy, xwnd, glxc);
-			}
-
-			virtual void swap_buffers() {
-				glXSwapBuffers(dpy, xwnd);
-			}
-	};
-
-	window *create(gl_context *&glc, uint64_t hints) {
+	gl_window::gl_window(uint64_t hints) : window(-1) {
 		XVisualInfo *vi;
 		if ((hints & PWRE_HINT_ALPHA) == PWRE_HINT_ALPHA) {
 			int fb_conf_len;
@@ -74,32 +52,37 @@ namespace pwre {
 		swa.colormap = XCreateColormap(dpy, root, vi->visual, AllocNone);
 		swa.event_mask = ExposureMask | KeyPressMask | StructureNotifyMask;
 
-		auto _wnd = new _window(
-			hints,
-			vi->depth, vi->visual, CWBackPixel | CWBorderPixel | CWEventMask | CWColormap, &swa
-		);
-		if (!_wnd->xwnd) {
-			delete _wnd;
+		ctor(*this, hints, vi->depth, vi->visual, CWBackPixel | CWBorderPixel | CWEventMask | CWColormap, &swa);
+		if (!available()) {
 			XFree(vi);
-			return NULL;
+			return;
 		}
 
-		auto glxc = glXCreateContext(dpy, vi, NULL, GL_TRUE);
+		render_context._nrc = glXCreateContext(dpy, vi, NULL, GL_TRUE);
 
 		XFree(vi);
 
-		uassert(glxc, "Pwre", "glXCreateContext");
+		if (!render_context._nrc) {
+			destroy();
+			return;
+		}
 
-		_wnd->on_destroy.add([glxc]() {
-			if (glXGetCurrentContext() == glxc) {
+		render_context._nwnd = native_handle();
+
+		on_destroy.add([this]() {
+			if (glXGetCurrentContext() == this->render_context._nrc) {
 				glXMakeCurrent(dpy, None, NULL);
 			}
-			glXDestroyContext(dpy, glxc);
+			glXDestroyContext(dpy, this->render_context._nrc);
 		});
+	}
 
-		glc = static_cast<gl_context *>(new _gl_context(_wnd->xwnd, glxc));
+	void gl_window::render_context_type::make_current() {
+		glXMakeCurrent(dpy, _nwnd, _nrc);
+	}
 
-		return static_cast<window *>(_wnd);
+	void gl_window::render_context_type::swap_buffers() {
+		glXSwapBuffers(dpy, _nwnd);
 	}
 } /* pwre */
 

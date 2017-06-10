@@ -1,8 +1,9 @@
-#include "../plat.h"
+#include <pwre.hpp>
 
 #ifdef PWRE_PLAT_X11
 
 #include "window.hpp"
+
 #include <X11/Xutil.h>
 
 #include <unordered_map>
@@ -10,6 +11,9 @@
 
 #include <climits>
 #include <cstring>
+
+#include <cassert>
+#include "../uassert.h"
 
 namespace pwre {
 	#define _EVENT_MASK (ExposureMask | KeyPressMask | StructureNotifyMask)
@@ -29,13 +33,13 @@ namespace pwre {
 	Atom _NET_WM_STATE_FULLSCREEN;
 	Atom _MOTIF_WM_HINTS;
 
-	std::unordered_map<Window, _window *> map;
+	std::unordered_map<Window, window *> map;
 	bool life = true;
 
 	Display *dpy;
 	Window root;
 
-	void init() {
+	void init_x11() {
 		dpy = XOpenDisplay(NULL);
 		uassert(dpy, "Pwre", "XOpenDisplay");
 
@@ -54,18 +58,15 @@ namespace pwre {
 		_MOTIF_WM_HINTS = XInternAtom(dpy, "_MOTIF_WM_HINTS", True);
 	}
 
-	void on_destroy(_window *_wnd) {
-		_wnd->on_destroy.calls();
-		map.erase(_wnd->xwnd);
-		if (!_wnd->ref) {
-			delete _wnd;
-		} else {
-			_wnd->xwnd = NULL;
-		}
-		if (!map.size()) {
-			map.clear();
-			XCloseDisplay(dpy);
-			life = false;
+	void on_destroy(window &wnd) {
+		if (wnd.available()) {
+			map.erase(wnd.native_handle());
+			wnd.on_destroy.calls();
+			if (!map.size()) {
+				map.clear();
+				XCloseDisplay(dpy);
+				life = false;
+			}
 		}
 	}
 
@@ -73,26 +74,24 @@ namespace pwre {
 	#define _HANDLE_EVENT_RESULT_DESTROY 1
 	#define _HANDLE_EVENT_RESULT_QUIT 2
 
-	size_t handle_event_level = 0;
-
-	void handle_event(_window *_wnd, XEvent &event) {
+	void handle_event(window &wnd, XEvent &event) {
 		switch (event.type) {
 			case ConfigureNotify:
-				_wnd->on_size.calls();
+				wnd.on_size.calls();
 				break;
 			case Expose:
-				_wnd->on_paint.calls();
+				wnd.on_paint.calls();
 				break;
 			case ClientMessage:
 				if (event.xclient.message_type == WM_PROTOCOLS && (Atom)event.xclient.data.l[0] == WM_DELETE_WINDOW) {
-					if (!_wnd->on_close.calls()) {
+					if (!wnd.on_close.calls()) {
 						return;
 					}
-					_wnd->destroy();
+					wnd.destroy();
 				}
 				break;
 			case DestroyNotify:
-				on_destroy(_wnd);
+				on_destroy(wnd);
 		}
 	}
 
@@ -100,9 +99,9 @@ namespace pwre {
 		XEvent event;
 		XNextEvent(dpy, &event);
 
-		auto _wnd = map[event.xany.window];
-		if (_wnd) {
-			handle_event(_wnd, event);
+		auto wnd = map[event.xany.window];
+		if (wnd) {
+			handle_event(*wnd, event);
 		}
 	}
 
@@ -113,20 +112,12 @@ namespace pwre {
 		return life;
 	}
 
-	bool checkout_events(_window *_wnd, long event_mask) {
-		_wnd->ref++;
+	bool checkout_events(window &wnd, long event_mask) {
 		XEvent event;
-		while (life && _wnd->xwnd && XCheckWindowEvent(dpy, _wnd->xwnd, event_mask, &event)) {
-			handle_event(_wnd, event);
-		}
-		if (!--_wnd->ref && !_wnd->xwnd) {
-			delete _wnd;
+		while (life && wnd.available() && XCheckWindowEvent(dpy, wnd.native_handle(), event_mask, &event)) {
+			handle_event(wnd, event);
 		}
 		return life;
-	}
-
-	bool checkout_events(window *wnd) {
-		return checkout_events(static_cast<_window *>(wnd), _EVENT_MASK);
 	}
 
 	bool recv_event() {
@@ -137,29 +128,15 @@ namespace pwre {
 		return false;
 	}
 
-	bool recv_event(window *wnd) {
-		auto _wnd = static_cast<_window *>(wnd);
-		if (life && _wnd->xwnd) {
-			XEvent event;
-			XWindowEvent(dpy, _wnd->xwnd, _EVENT_MASK, &event);
-			_wnd->ref++;
-			handle_event(_wnd, event);
-			_wnd->ref--;
-			if (_wnd->xwnd) {
-				return true;
-			}
-		}
-		if (!_wnd->ref) {
-			delete _wnd;
-		}
-		return false;
-	}
-
-	_window::_window(
+	void ctor(
+		window &wnd,
 		uint64_t hints,
-		int depth, Visual *visual, unsigned long valuemask, XSetWindowAttributes *swa
+		int depth,
+		Visual *visual,
+		unsigned long valuemask,
+		XSetWindowAttributes *swa
 	) {
-		xwnd = XCreateWindow(
+		wnd._nwnd = XCreateWindow(
 			dpy,
 			root,
 			0,
@@ -173,46 +150,49 @@ namespace pwre {
 			valuemask,
 			swa
 		);
-		uassert(xwnd, "Pwre", "XCreateWindow");
+		if (!wnd._nwnd) {
+			return;
+		}
 
-		XSetWMProtocols(dpy, xwnd, &WM_DELETE_WINDOW, 1);
+		XSetWMProtocols(dpy, wnd._nwnd, &WM_DELETE_WINDOW, 1);
 
-		map[xwnd] = this;
-		ref = 0;
+		wnd.on_destroy.add([&wnd]() {
+			wnd._nwnd = (Window)0;
+		});
+
+		map[wnd._nwnd] = &wnd;
 	}
 
-	window *create(uint64_t hints) {
+	window::window(uint64_t hints) {
+		if (hints == (uint64_t)-1) {
+			return;
+		}
+
 		XSetWindowAttributes swa;
 		swa.event_mask = _EVENT_MASK;
-		return static_cast<window *>(new _window(
-			hints,
-			XDefaultDepth(dpy, 0), XDefaultVisual(dpy, 0), CWEventMask, &swa
-		));
+
+		ctor(*this, hints, XDefaultDepth(dpy, 0), XDefaultVisual(dpy, 0), CWEventMask, &swa);
 	}
 
-	uintptr_t _window::native_handle() {
-		return (uintptr_t)xwnd;
-	}
-
-	void _window::close() {
+	void window::close() {
 		if (on_close.calls()) {
 			destroy();
 		}
 	}
 
-	void _window::destroy() {
-		XDestroyWindow(dpy, xwnd);
-		pwre::on_destroy(this);
+	void window::destroy() {
+		XDestroyWindow(dpy, _nwnd);
+		pwre::on_destroy(*this);
 	}
 
-	std::string _window::title() {
+	std::string window::title() {
 		std::string title;
 
 		Atom type;
 		int format;
 		unsigned long nitems, after;
 		unsigned char *data;
-		if (Success == XGetWindowProperty(dpy, xwnd, _NET_WM_NAME, 0, LONG_MAX, False, UTF8_STRING, &type, &format, &nitems, &after, &data) && data) {
+		if (Success == XGetWindowProperty(dpy, _nwnd, _NET_WM_NAME, 0, LONG_MAX, False, UTF8_STRING, &type, &format, &nitems, &after, &data) && data) {
 			title = (const char *)data;
 			XFree(data);
 		}
@@ -220,15 +200,15 @@ namespace pwre {
 		return title;
 	}
 
-	void _window::retitle(const std::string &title) {
-		XChangeProperty(dpy, xwnd, _NET_WM_NAME, UTF8_STRING, 8, PropModeReplace, (const unsigned char*)title.c_str(), title.size());
+	void window::retitle(const std::string &title) {
+		XChangeProperty(dpy, _nwnd, _NET_WM_NAME, UTF8_STRING, 8, PropModeReplace, (const unsigned char*)title.c_str(), title.size());
 	}
 
-	point _window::pos() {
-		checkout_events(this, ConfigureNotify);
+	window::pos_type window::pos() {
+		checkout_events(*this, ConfigureNotify);
 
 		XWindowAttributes wa;
-		XGetWindowAttributes(dpy, xwnd, &wa);
+		XGetWindowAttributes(dpy, _nwnd, &wa);
 		return {wa.x, wa.y};
 	}
 
@@ -236,50 +216,50 @@ namespace pwre {
 	#define _SCREEN_H (DisplayHeight(dpy, 0))
 	#include "../fix_pos.hpp"
 
-	void _window::move(point pos) {
+	void window::move(pos_type pos) {
 		auto sz = size();
 		fix_pos(pos.x, pos.y, sz.width, sz.height);
 
-		XMoveWindow(dpy, xwnd, pos.x, pos.y);
+		XMoveWindow(dpy, _nwnd, pos.x, pos.y);
 	}
 
-	pwre::size _window::size() {
-		checkout_events(this, StructureNotifyMask);
+	window::size_type window::size() {
+		checkout_events(*this, StructureNotifyMask);
 
 		XWindowAttributes wa;
-		XGetWindowAttributes(dpy, xwnd, &wa);
+		XGetWindowAttributes(dpy, _nwnd, &wa);
 		return {wa.width, wa.height};
 	}
 
-	void _window::resize(pwre::size sz) {
-		XResizeWindow(dpy, xwnd, sz.width, sz.height);
+	void window::resize(window::size_type sz) {
+		XResizeWindow(dpy, _nwnd, sz.width, sz.height);
 	}
 
-	static void visible(_window *_wnd) {
-		checkout_events(_wnd, StructureNotifyMask);
+	void visible(window &wnd) {
+		checkout_events(wnd, StructureNotifyMask);
 
 		XWindowAttributes wa;
-		XGetWindowAttributes(dpy, _wnd->xwnd, &wa);
+		XGetWindowAttributes(dpy, wnd.native_handle(), &wa);
 		if (wa.map_state != IsViewable) {
-			XMapRaised(dpy, _wnd->xwnd);
+			XMapRaised(dpy, wnd.native_handle());
 		}
 	}
 
-	void _window::add_states(uint32_t type) {
+	void window::add_states(uint32_t type) {
 		XEvent event;
 		switch (type) {
 			case PWRE_STATE_VISIBLE:
-				visible(this);
+				visible(*this);
 				break;
 			case PWRE_STATE_MINIMIZE:
-				visible(this);
-				XIconifyWindow(dpy, xwnd, 0);
+				visible(*this);
+				XIconifyWindow(dpy, _nwnd, 0);
 				break;
 			case PWRE_STATE_MAXIMIZE:
-				visible(this);
+				visible(*this);
 				memset(&event, 0, sizeof(XClientMessageEvent));
 				event.type = ClientMessage;
-				event.xclient.window = xwnd;
+				event.xclient.window = _nwnd;
 				event.xclient.message_type = _NET_WM_STATE;
 				event.xclient.format = 32;
 				event.xclient.data.l[0] = _NET_WM_STATE_ADD;
@@ -288,10 +268,10 @@ namespace pwre {
 				XSendEvent(dpy, root, False, StructureNotifyMask, &event);
 				break;
 			case PWRE_STATE_FULLSCREEN:
-				visible(this);
+				visible(*this);
 				memset(&event, 0, sizeof(XClientMessageEvent));
 				event.type = ClientMessage;
-				event.xclient.window = xwnd;
+				event.xclient.window = _nwnd;
 				event.xclient.message_type = _NET_WM_STATE;
 				event.xclient.format = 32;
 				event.xclient.data.l[0] = _NET_WM_STATE_ADD;
@@ -300,20 +280,20 @@ namespace pwre {
 		}
 	}
 
-	void _window::rm_states(uint32_t type) {
+	void window::rm_states(uint32_t type) {
 		XEvent event;
 		switch (type) {
 			case PWRE_STATE_VISIBLE:
-				visible(this);
+				visible(*this);
 				break;
 			case PWRE_STATE_MINIMIZE:
-				visible(this);
+				visible(*this);
 				break;
 			case PWRE_STATE_MAXIMIZE:
-				visible(this);
+				visible(*this);
 				memset(&event, 0, sizeof(XClientMessageEvent));
 				event.type = ClientMessage;
-				event.xclient.window = xwnd;
+				event.xclient.window = _nwnd;
 				event.xclient.message_type = _NET_WM_STATE;
 				event.xclient.format = 32;
 				event.xclient.data.l[0] = _NET_WM_STATE_REMOVE;
@@ -322,10 +302,10 @@ namespace pwre {
 				XSendEvent(dpy, root, False, StructureNotifyMask, &event);
 				break;
 			case PWRE_STATE_FULLSCREEN:
-				visible(this);
+				visible(*this);
 				memset(&event, 0, sizeof(XClientMessageEvent));
 				event.type = ClientMessage;
-				event.xclient.window = xwnd;
+				event.xclient.window = _nwnd;
 				event.xclient.message_type = _NET_WM_STATE;
 				event.xclient.format = 32;
 				event.xclient.data.l[0] = _NET_WM_STATE_REMOVE;
@@ -334,7 +314,7 @@ namespace pwre {
 		}
 	}
 
-	bool _window::has_states(uint32_t type) {
+	bool window::has_states(uint32_t type) {
 		return false;
 	}
 
@@ -349,11 +329,11 @@ namespace pwre {
 		unsigned long status;
 	};
 
-	void _window::less(bool less) {
+	void window::less(bool lessed) {
 		PropMotifWmHints motif_hints;
 		motif_hints.flags = MWM_HINTS_DECORATIONS;
 		motif_hints.decorations = 0;
-		XChangeProperty(dpy, xwnd, _MOTIF_WM_HINTS, _MOTIF_WM_HINTS, 32, PropModeReplace, (unsigned char *) &motif_hints, PROP_MOTIF_WM_HINTS_ELEMENTS);
+		XChangeProperty(dpy, _nwnd, _MOTIF_WM_HINTS, _MOTIF_WM_HINTS, 32, PropModeReplace, (unsigned char *) &motif_hints, PROP_MOTIF_WM_HINTS_ELEMENTS);
 	}
 } /* pwre */
 

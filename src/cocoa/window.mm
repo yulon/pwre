@@ -1,18 +1,22 @@
-#include "../plat.h"
+#include <pwre.hpp>
 
 #ifdef PWRE_PLAT_COCOA
-
-#include "window.hpp"
 
 namespace pwre {
 	size_t count = 0;
 	bool life = true;
 } /* pwre */
 
+@interface PwreNSWindow : NSWindow {
+	@public
+		pwre::window &wnd;
+}
+@end
+
 @implementation PwreNSWindow
 	- (void)mouseDown:(NSEvent *)e {
 		NSPoint pos = [e locationInWindow];
-		_wnd->on_mouse_down.calls(e.buttonNumber, {(int)pos.x, (int)pos.y});
+		wnd.on_mouse_down.calls(e.buttonNumber, {(int)pos.x, (int)pos.y});
 	}
 
 	////////////////////////////////////////////////////////////////////////////
@@ -20,12 +24,11 @@ namespace pwre {
 	- (void)onClose:(NSNotification *)n {
 		switch (self.releasedWhenClosed) {
 			default:
-			if (_wnd->on_close.calls()) {
+			if (wnd.on_close.calls()) {
 				self.releasedWhenClosed = YES;
 				case YES:
-				_wnd->on_destroy.calls();
+				wnd.on_destroy.calls();
 				[self release];
-				delete _wnd;
 				if (!--pwre::count) {
 					pwre::life = false;
 				}
@@ -34,14 +37,14 @@ namespace pwre {
 	}
 
 	- (void)onSize:(NSNotification *)n {
-		_wnd->on_size.calls();
+		wnd.on_size.calls();
 	}
 @end
 
 namespace pwre {
 	NSAutoreleasePool *pool;
 
-	void init() {
+	void init_cocoa() {
 		pool = [[NSAutoreleasePool alloc] init];
 	}
 
@@ -69,62 +72,62 @@ namespace pwre {
 		return false;
 	}
 
-	_window::_window(uint64_t hints) {
-		nsWnd = [[PwreNSWindow alloc]
+	window::window(uint64_t hints) {
+		_nwnd = [[PwreNSWindow alloc]
 			initWithContentRect:NSMakeRect(0, 0, 150, 150)
 			styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskMiniaturizable| NSWindowStyleMaskResizable | NSWindowStyleMaskClosable)
 			backing:NSBackingStoreBuffered
 			defer:NO
 		];
-		nsWnd.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
-		[nsWnd setAcceptsMouseMovedEvents:YES];
-
-		nsWnd->_wnd = this;
-
-		nsWnd.releasedWhenClosed = NO;
-		[[NSNotificationCenter defaultCenter]
-			addObserver:nsWnd
-			selector:@selector(onClose:)
-			name:NSWindowWillCloseNotification
-			object:nsWnd
-		];
-
-		[[NSNotificationCenter defaultCenter]
-			addObserver:nsWnd
-			selector:@selector(onSize:)
-			name:NSWindowDidResizeNotification
-			object:nsWnd
-		];
+		if (!_nwnd) {
+			return;
+		}
 
 		++count;
+
+		_nwnd.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
+		[_nwnd setAcceptsMouseMovedEvents:YES];
+
+		_nwnd->wnd = *this;
+
+		_nwnd.releasedWhenClosed = NO;
+		[[NSNotificationCenter defaultCenter]
+			addObserver:_nwnd
+			selector:@selector(onClose:)
+			name:NSWindowWillCloseNotification
+			object:_nwnd
+		];
+
+		[[NSNotificationCenter defaultCenter]
+			addObserver:_nwnd
+			selector:@selector(onSize:)
+			name:NSWindowDidResizeNotification
+			object:_nwnd
+		];
+
+		on_destroy.add([this]() {
+			this->_nwnd = NULL;
+		});
 	}
 
-	window *create(uint64_t hints) {
-		return static_cast<window *>(new _window(hints));
+	void window::close() {
+		[_nwnd close];
 	}
 
-	void _window::close() {
-		[nsWnd close];
+	void window::destroy() {
+		_nwnd.releasedWhenClosed = YES;
+		[_nwnd close];
 	}
 
-	void _window::destroy() {
-		nsWnd.releasedWhenClosed = YES;
-		[nsWnd close];
+	std::string window::title() {
+		return _nwnd.title.UTF8String;
 	}
 
-	uintptr_t _window::native_handle() {
-		return (uintptr_t)nsWnd;
+	void window::retitle(const std::string &title) {
+		_nwnd.title = [NSString stringWithUTF8String:title.c_str()];
 	}
 
-	std::string _window::title() {
-		return nsWnd.title.UTF8String;
-	}
-
-	void _window::retitle(const std::string &title) {
-		nsWnd.title = [NSString stringWithUTF8String:title.c_str()];
-	}
-
-	point _window::pos() {
+	window::pos_type window::pos() {
 		return {0, 0};
 	}
 
@@ -132,95 +135,95 @@ namespace pwre {
 	#define _SCREEN_H [[NSScreen mainScreen] frame].size.height
 	#include "../fix_pos.hpp"
 
-	void _window::move(point pos) {
-		fix_pos(pos.x, pos.y, nsWnd.frame.size.width, nsWnd.frame.size.height);
-		[nsWnd setFrameOrigin:NSMakePoint(pos.x, pos.y)];
+	void window::move(window::pos_type pos) {
+		fix_pos(pos.x, pos.y, _nwnd.frame.size.width, _nwnd.frame.size.height);
+		[_nwnd setFrameOrigin:NSMakePoint(pos.x, pos.y)];
 	}
 
-	pwre::size _window::size() {
-		NSSize size = [nsWnd contentLayoutRect].size;
+	window::size_type window::size() {
+		NSSize size = [_nwnd contentLayoutRect].size;
 		return {(int)size.width, (int)size.height};
 	}
 
-	void _window::resize(pwre::size sz) {
-		[nsWnd setContentSize:NSMakeSize(sz.width, sz.height)];
+	void window::resize(window::size_type sz) {
+		[_nwnd setContentSize:NSMakeSize(sz.width, sz.height)];
 	}
 
-	void visible(_window *_wnd) {
-		if (!_wnd->nsWnd.visible) {
-			[_wnd->nsWnd makeKeyAndOrderFront:_wnd->nsWnd];
+	void visible(NSWindow *nwnd) {
+		if (!nwnd.visible) {
+			[nwnd makeKeyAndOrderFront:nwnd];
 		}
 	}
 
-	void _window::add_states(uint32_t type) {
+	void window::add_states(uint32_t type) {
 		switch (type) {
 			case PWRE_STATE_VISIBLE:
-				visible(this);
+				visible(_nwnd);
 				break;
 			case PWRE_STATE_MINIMIZE:
-				visible(this);
-				[nsWnd miniaturize:nsWnd];
+				visible(_nwnd);
+				[_nwnd miniaturize:_nwnd];
 				break;
 			case PWRE_STATE_MAXIMIZE:
-				visible(this);
-				if (!nsWnd.zoomed) {
-					[nsWnd zoom:nsWnd];
-				} else if (nsWnd.miniaturized) {
-					[nsWnd deminiaturize:nsWnd];
+				visible(_nwnd);
+				if (!_nwnd.zoomed) {
+					[_nwnd zoom:_nwnd];
+				} else if (_nwnd.miniaturized) {
+					[_nwnd deminiaturize:_nwnd];
 				}
 				break;
 			case PWRE_STATE_FULLSCREEN:
-				visible(this);
-				if (!(nsWnd.styleMask & NSWindowStyleMaskFullScreen)) {
-					[nsWnd toggleFullScreen:nsWnd];
-				} else if (nsWnd.miniaturized) {
-					[nsWnd deminiaturize:nsWnd];
-				}
-		}
-	}
-
-	void _window::rm_states(uint32_t type) {
-		switch (type) {
-			case PWRE_STATE_VISIBLE:
-				[nsWnd orderOut:nsWnd];
-				break;
-			case PWRE_STATE_MINIMIZE:
-				visible(this);
-				[nsWnd deminiaturize:nsWnd];
-				break;
-			case PWRE_STATE_MAXIMIZE:
-				visible(this);
-				if (nsWnd.zoomed) {
-					[nsWnd zoom:nsWnd];
-				} else if (nsWnd.miniaturized) {
-					[nsWnd deminiaturize:nsWnd];
-				}
-				break;
-			case PWRE_STATE_FULLSCREEN:
-				visible(this);
-				if (nsWnd.styleMask & NSWindowStyleMaskFullScreen) {
-					[nsWnd toggleFullScreen:nsWnd];
-				} else if (nsWnd.miniaturized) {
-					[nsWnd deminiaturize:nsWnd];
+				visible(_nwnd);
+				if (!(_nwnd.styleMask & NSWindowStyleMaskFullScreen)) {
+					[_nwnd toggleFullScreen:_nwnd];
+				} else if (_nwnd.miniaturized) {
+					[_nwnd deminiaturize:_nwnd];
 				}
 		}
 	}
 
-	bool _window::has_states(uint32_t type) {
+	void window::rm_states(uint32_t type) {
 		switch (type) {
 			case PWRE_STATE_VISIBLE:
-				return nsWnd.visible;
+				[_nwnd orderOut:_nwnd];
+				break;
 			case PWRE_STATE_MINIMIZE:
-				return nsWnd.miniaturized;
+				visible(_nwnd);
+				[_nwnd deminiaturize:_nwnd];
+				break;
 			case PWRE_STATE_MAXIMIZE:
-				return nsWnd.zoomed;
+				visible(_nwnd);
+				if (_nwnd.zoomed) {
+					[_nwnd zoom:_nwnd];
+				} else if (_nwnd.miniaturized) {
+					[_nwnd deminiaturize:_nwnd];
+				}
+				break;
 			case PWRE_STATE_FULLSCREEN:
-				return nsWnd.styleMask & NSWindowStyleMaskFullScreen;
+				visible(_nwnd);
+				if (_nwnd.styleMask & NSWindowStyleMaskFullScreen) {
+					[_nwnd toggleFullScreen:_nwnd];
+				} else if (_nwnd.miniaturized) {
+					[_nwnd deminiaturize:_nwnd];
+				}
+		}
+	}
+
+	bool window::has_states(uint32_t type) {
+		switch (type) {
+			case PWRE_STATE_VISIBLE:
+				return _nwnd.visible;
+			case PWRE_STATE_MINIMIZE:
+				return _nwnd.miniaturized;
+			case PWRE_STATE_MAXIMIZE:
+				return _nwnd.zoomed;
+			case PWRE_STATE_FULLSCREEN:
+				return _nwnd.styleMask & NSWindowStyleMaskFullScreen;
 		}
 		return false;
 	}
 
-	void _window::less(bool less) {
+	void window::less(bool lessed) {
 
 	}
 } /* pwre */

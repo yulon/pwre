@@ -1,9 +1,11 @@
-#include "../plat.h"
+#include <pwre.hpp>
 
 #ifdef PWRE_PLAT_WIN32
 
-#include "window.hpp"
 #include <GL/gl.h>
+
+#include <cassert>
+#include "../uassert.h"
 
 namespace pwre {
 	constexpr PIXELFORMATDESCRIPTOR pfd {
@@ -21,51 +23,41 @@ namespace pwre {
 		0, 0, 0,
 	};
 
-	class _gl_context : public gl_context {
-		public:
-			HDC dc;
-			HGLRC rc;
+	gl_window::gl_window(uint64_t hints) : window(hints) {
+		render_context._dc = GetDC(native_handle());
+		if (!render_context._dc) {
+			destroy();
+			return;
+		}
 
-			////////////////////////////////////////////////////////////////////////
+		auto pix_fmt = ChoosePixelFormat(render_context._dc, &pfd);
+		if (!pix_fmt) {
+			destroy();
+			return;
+		}
 
-			_gl_context(_window *_wnd) {
-				dc = GetDC(_wnd->hwnd);
-				uassert(dc, "Pwre", "GetDC");
+		SetPixelFormat(render_context._dc, pix_fmt, &pfd);
 
-				int pix_fmt = ChoosePixelFormat(dc, &pfd);
-				uassert(pix_fmt, "Pwre", "ChoosePixelFormat");
+		render_context._nrc = wglCreateContext(render_context._dc);
+		if (!render_context._nrc) {
+			destroy();
+			return;
+		}
 
-				SetPixelFormat(dc, pix_fmt, &pfd);
-
-				rc = wglCreateContext(dc);
-				uassert(rc, "Pwre", "wglCreateContext");
-
-				_wnd->on_destroy.add([this]() {
-					if (wglGetCurrentDC() == this->dc) {
-						wglMakeCurrent(NULL, NULL);
-					}
-					wglDeleteContext(this->rc);
-					delete this;
-				});
+		on_destroy.add([this]() {
+			if (wglGetCurrentDC() == this->render_context._dc) {
+				wglMakeCurrent(NULL, NULL);
 			}
+			wglDeleteContext(this->render_context._nrc);
+		});
+	}
 
-			virtual uintptr_t native_handle() {
-				return (uintptr_t)rc;
-			}
+	void gl_window::render_context_type::make_current() {
+		wglMakeCurrent(_dc, _nrc);
+	}
 
-			virtual void make_current() {
-				wglMakeCurrent(dc, rc);
-			}
-
-			virtual void swap_buffers() {
-				SwapBuffers(dc);
-			}
-	};
-
-	window *create(gl_context *&glc, uint64_t hints) {
-		auto _wnd = new _window(hints);
-		glc = static_cast<gl_context *>(new _gl_context(_wnd));
-		return static_cast<window *>(_wnd);
+	void gl_window::render_context_type::swap_buffers() {
+		SwapBuffers(_dc);
 	}
 }
 

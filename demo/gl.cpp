@@ -13,16 +13,15 @@
 int main() {
 	pwre::init();
 
-	pwre::gl_context *glc;
-	auto wnd = pwre::create(glc);
+	pwre::gl_window wnd;
 
-	glc->make_current();
-	wnd->retitle((const char *)glGetString(GL_VERSION));
+	wnd.render_context.make_current();
+	wnd.retitle((const char *)glGetString(GL_VERSION));
 	glClearColor(1, 1, 1, 1);
 
-	wnd->resize({600, 500});
-	wnd->add_states(PWRE_STATE_VISIBLE);
-	wnd->move();
+	wnd.resize({600, 500});
+	wnd.add_states(PWRE_STATE_VISIBLE);
+	wnd.move();
 
 	glViewport(0, 0, 600, 500);
 
@@ -40,7 +39,7 @@ int main() {
 		glVertex3f(1.0, -1.0, 0.0);
 
 		glEnd();
-		glc->swap_buffers();
+		wnd.render_context.swap_buffers();
 	}
 	return 0;
 }
