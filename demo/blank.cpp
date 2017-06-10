@@ -5,6 +5,9 @@ int main() {
 	pwre::init();
 
 	pwre::window wnd;
+	if (!wnd.available()) {
+		return 1;
+	}
 
 	wnd.retitle("我只是一个空白窗口_(:з」∠)_");
 	wnd.resize({500, 500});

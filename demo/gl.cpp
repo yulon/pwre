@@ -14,6 +14,9 @@ int main() {
 	pwre::init();
 
 	pwre::gl_window wnd;
+	if (!wnd.available()) {
+		return 1;
+	}
 
 	wnd.render_context.make_current();
 	wnd.retitle((const char *)glGetString(GL_VERSION));
