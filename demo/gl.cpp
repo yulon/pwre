@@ -24,7 +24,6 @@ int main() {
 
 	wnd.resize({600, 500});
 	wnd.add_states(PWRE_STATE_VISIBLE);
-	wnd.move();
 
 	glViewport(0, 0, 600, 500);
 

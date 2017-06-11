@@ -125,11 +125,12 @@ namespace pwre {
 			std::string title();
 			void retitle(const std::string &);
 
+
+			#define PWRE_NULL -0xDCBA
+			#define PWRE_MOVE_CENTER (PWRE_NULL - 1)
+
 			pos_type pos();
-
-			#define PWRE_MOVE_AUTO -10101
-
-			void move(pos_type pos = {PWRE_MOVE_AUTO, PWRE_MOVE_AUTO});
+			void move(pos_type pos = {PWRE_MOVE_CENTER, PWRE_MOVE_CENTER});
 
 			size_type size();
 			void resize(size_type);
@@ -175,7 +176,15 @@ namespace pwre {
 					unsigned long valuemask,
 					XSetWindowAttributes *swa
 				);
+				friend void handle_event(window &wnd, XEvent &event);
 			#endif
+
+			pos_type
+				#ifdef PWRE_PLAT_X11
+					_move_buf;
+				#else
+					_move_cache;
+				#endif
 	};
 
 	class gl_window : public window {

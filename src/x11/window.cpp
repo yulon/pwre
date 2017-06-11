@@ -70,18 +70,27 @@ namespace pwre {
 		}
 	}
 
-	#define _HANDLE_EVENT_RESULT_NORMAL 0
-	#define _HANDLE_EVENT_RESULT_DESTROY 1
-	#define _HANDLE_EVENT_RESULT_QUIT 2
+	#define _SCREEN_W (DisplayWidth(dpy, 0))
+	#define _SCREEN_H (DisplayHeight(dpy, 0))
+	#include "../fix_pos.hpp"
 
 	void handle_event(window &wnd, XEvent &event) {
 		switch (event.type) {
-			case ConfigureNotify:
-				wnd.on_size.calls();
-				break;
 			case Expose:
 				wnd.on_paint.calls();
-				break;
+				return;
+			case ConfigureNotify:
+				wnd.on_size.calls();
+				return;
+			case MapNotify:
+				XWindowAttributes wa;
+				XGetWindowAttributes(dpy, wnd._nwnd, &wa);
+				if (wa.map_state == IsViewable && (wnd._move_buf.x != PWRE_NULL || wnd._move_buf.y != PWRE_NULL)) {
+					fix_pos(wnd._move_buf.x, wnd._move_buf.y, wa.x, wa.y, wa.width, wa.height);
+					XMoveWindow(dpy, wnd._nwnd, wnd._move_buf.x, wnd._move_buf.y);
+					wnd._move_buf = {PWRE_NULL, PWRE_NULL};
+				}
+				return;
 			case ClientMessage:
 				if (event.xclient.message_type == WM_PROTOCOLS && (Atom)event.xclient.data.l[0] == WM_DELETE_WINDOW) {
 					if (!wnd.on_close.calls()) {
@@ -89,7 +98,7 @@ namespace pwre {
 					}
 					wnd.destroy();
 				}
-				break;
+				return;
 			case DestroyNotify:
 				on_destroy(wnd);
 		}
@@ -154,6 +163,8 @@ namespace pwre {
 			return;
 		}
 
+		wnd._move_buf = {PWRE_MOVE_CENTER, PWRE_MOVE_CENTER};
+
 		XSetWMProtocols(dpy, wnd._nwnd, &WM_DELETE_WINDOW, 1);
 
 		wnd.on_destroy.add([&wnd]() {
@@ -205,21 +216,31 @@ namespace pwre {
 	}
 
 	window::pos_type window::pos() {
-		checkout_events(*this, ConfigureNotify);
+		checkout_events(*this, StructureNotifyMask);
 
 		XWindowAttributes wa;
 		XGetWindowAttributes(dpy, _nwnd, &wa);
+
+		if (_move_buf.x != PWRE_NULL || _move_buf.y != PWRE_NULL) {
+			auto pos = _move_buf;
+			fix_pos(pos.x, pos.y, wa.x, wa.y, wa.width, wa.height);
+			return pos;
+		}
+
 		return {wa.x, wa.y};
 	}
 
-	#define _SCREEN_W (DisplayWidth(dpy, 0))
-	#define _SCREEN_H (DisplayHeight(dpy, 0))
-	#include "../fix_pos.hpp"
-
 	void window::move(pos_type pos) {
-		auto sz = size();
-		fix_pos(pos.x, pos.y, sz.width, sz.height);
+		checkout_events(*this, StructureNotifyMask);
 
+		XWindowAttributes wa;
+		XGetWindowAttributes(dpy, _nwnd, &wa);
+		if (wa.map_state != IsViewable) {
+			_move_buf = pos;
+			return;
+		}
+
+		fix_pos(pos.x, pos.y, wa.x, wa.y, wa.width, wa.height);
 		XMoveWindow(dpy, _nwnd, pos.x, pos.y);
 	}
 
