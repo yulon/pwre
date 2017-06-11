@@ -23,6 +23,7 @@ int main() {
 	glClearColor(1, 1, 1, 1);
 
 	wnd.resize({600, 500});
+	wnd.move();
 	wnd.add_states(PWRE_STATE_VISIBLE);
 
 	glViewport(0, 0, 600, 500);

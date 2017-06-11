@@ -48,13 +48,6 @@ namespace pwre {
 					return 0;
 				case WM_ERASEBKGND:
 					return 0;
-				case WM_SHOWWINDOW:
-					if (wParam) {
-						if (wnd->_move_cache.x != PWRE_NULL || wnd->_move_cache.y != PWRE_NULL) {
-							wnd->_move_cache = {PWRE_NULL, PWRE_NULL};
-						}
-					}
-					break;
 				case WM_CLOSE:
 					if (!wnd->on_close.calls()) {
 						return 0;
@@ -124,18 +117,12 @@ namespace pwre {
 		_nc_width = (500 - rect.left) + (rect.right - 1000);
 		_nc_height = (500 - rect.top) + (rect.bottom - 1000);
 
-		size_type it_sz = {150 + _nc_width, 150 + _nc_height};
-		pos_type it_pos = {PWRE_MOVE_CENTER, PWRE_MOVE_CENTER};
-		_move_cache = it_pos;
-
-		fix_pos(it_pos.x, it_pos.y, 0, 0, it_sz.width, it_sz.height);
-
 		_nwnd = CreateWindowExW(
 			0,
 			cls.lpszClassName,
 			NULL,
 			WS_OVERLAPPEDWINDOW,
-			it_pos.x, it_pos.y, it_sz.width, it_sz.height, NULL, NULL,
+			0, 0, 150 + _nc_width, 150 + _nc_height, NULL, NULL,
 			host,
 			(LPVOID)this
 		);
@@ -221,14 +208,6 @@ namespace pwre {
 	}
 
 	void window::move(window::pos_type pos) {
-		if (!has_states(PWRE_STATE_VISIBLE)) {
-			if (pos.x < PWRE_NULL || pos.y < PWRE_NULL) {
-				_move_cache = pos;
-			} else if (_move_cache.x != PWRE_NULL || _move_cache.y != PWRE_NULL) {
-				_move_cache = {PWRE_NULL, PWRE_NULL};
-			}
-		}
-
 		RECT rect;
 		GetWindowRect(_nwnd, &rect);
 		int width = rect.right - rect.left;
@@ -269,10 +248,6 @@ namespace pwre {
 			sz.height,
 			TRUE
 		);
-
-		if (_move_cache.x < PWRE_NULL || _move_cache.y < PWRE_NULL) {
-			move(_move_cache);
-		}
 	}
 
 	#define _STYLE_HAS(_style) (GetWindowLongW(_nwnd, GWL_STYLE) & _style) == _style

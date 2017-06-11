@@ -58,16 +58,16 @@ namespace pwre {
 		_MOTIF_WM_HINTS = XInternAtom(dpy, "_MOTIF_WM_HINTS", True);
 	}
 
-	void on_destroy(window &wnd) {
-		if (wnd.available()) {
-			map.erase(wnd.native_handle());
-			wnd.on_destroy.calls();
-			if (!map.size()) {
-				map.clear();
-				XCloseDisplay(dpy);
-				life = false;
+	void sync_event_to(window &wnd, long event_mask, int type) {
+		XEvent event;
+		while (life && wnd.available()) {
+			XWindowEvent(dpy, wnd.native_handle(), event_mask, &event);
+			handle_event(wnd, event);
+			if (event.type == type) {
+				return;
 			}
 		}
+		return;
 	}
 
 	#define _SCREEN_W (DisplayWidth(dpy, 0))
@@ -83,12 +83,11 @@ namespace pwre {
 				wnd.on_size.calls();
 				return;
 			case MapNotify:
-				XWindowAttributes wa;
-				XGetWindowAttributes(dpy, wnd._nwnd, &wa);
-				if (wa.map_state == IsViewable && (wnd._move_buf.x != PWRE_NULL || wnd._move_buf.y != PWRE_NULL)) {
-					fix_pos(wnd._move_buf.x, wnd._move_buf.y, wa.x, wa.y, wa.width, wa.height);
+				if (wnd._move_buf.x != PWRE_NULL || wnd._move_buf.y != PWRE_NULL) {
 					XMoveWindow(dpy, wnd._nwnd, wnd._move_buf.x, wnd._move_buf.y);
 					wnd._move_buf = {PWRE_NULL, PWRE_NULL};
+
+					sync_event_to(wnd, StructureNotifyMask, ConfigureNotify);
 				}
 				return;
 			case ClientMessage:
@@ -100,7 +99,14 @@ namespace pwre {
 				}
 				return;
 			case DestroyNotify:
-				on_destroy(wnd);
+				map.erase(wnd._nwnd);
+				wnd.on_destroy.calls();
+				wnd._nwnd = (Window)0;
+				if (!map.size()) {
+					map.clear();
+					XCloseDisplay(dpy);
+					life = false;
+				}
 		}
 	}
 
@@ -117,14 +123,6 @@ namespace pwre {
 	bool checkout_events() {
 		while (life && XPending(dpy)) {
 			next_event();
-		}
-		return life;
-	}
-
-	bool checkout_events(window &wnd, long event_mask) {
-		XEvent event;
-		while (life && wnd.available() && XCheckWindowEvent(dpy, wnd.native_handle(), event_mask, &event)) {
-			handle_event(wnd, event);
 		}
 		return life;
 	}
@@ -163,13 +161,7 @@ namespace pwre {
 			return;
 		}
 
-		wnd._move_buf = {PWRE_MOVE_CENTER, PWRE_MOVE_CENTER};
-
 		XSetWMProtocols(dpy, wnd._nwnd, &WM_DELETE_WINDOW, 1);
-
-		wnd.on_destroy.add([&wnd]() {
-			wnd._nwnd = (Window)0;
-		});
 
 		map[wnd._nwnd] = &wnd;
 	}
@@ -193,7 +185,8 @@ namespace pwre {
 
 	void window::destroy() {
 		XDestroyWindow(dpy, _nwnd);
-		pwre::on_destroy(*this);
+
+		sync_event_to(*this, StructureNotifyMask, DestroyNotify);
 	}
 
 	std::string window::title() {
@@ -216,37 +209,33 @@ namespace pwre {
 	}
 
 	window::pos_type window::pos() {
-		checkout_events(*this, StructureNotifyMask);
-
 		XWindowAttributes wa;
 		XGetWindowAttributes(dpy, _nwnd, &wa);
 
 		if (_move_buf.x != PWRE_NULL || _move_buf.y != PWRE_NULL) {
-			auto pos = _move_buf;
-			fix_pos(pos.x, pos.y, wa.x, wa.y, wa.width, wa.height);
-			return pos;
+			return _move_buf;
 		}
 
 		return {wa.x, wa.y};
 	}
 
 	void window::move(pos_type pos) {
-		checkout_events(*this, StructureNotifyMask);
-
 		XWindowAttributes wa;
 		XGetWindowAttributes(dpy, _nwnd, &wa);
+
+		fix_pos(pos.x, pos.y, wa.x, wa.y, wa.width, wa.height);
+
 		if (wa.map_state != IsViewable) {
 			_move_buf = pos;
 			return;
 		}
 
-		fix_pos(pos.x, pos.y, wa.x, wa.y, wa.width, wa.height);
 		XMoveWindow(dpy, _nwnd, pos.x, pos.y);
+
+		sync_event_to(*this, StructureNotifyMask, ConfigureNotify);
 	}
 
 	window::size_type window::size() {
-		checkout_events(*this, StructureNotifyMask);
-
 		XWindowAttributes wa;
 		XGetWindowAttributes(dpy, _nwnd, &wa);
 		return {wa.width, wa.height};
@@ -254,16 +243,18 @@ namespace pwre {
 
 	void window::resize(window::size_type sz) {
 		XResizeWindow(dpy, _nwnd, sz.width, sz.height);
+
+		sync_event_to(*this, StructureNotifyMask, ConfigureNotify);
 	}
 
 	void visible(window &wnd) {
-		checkout_events(wnd, StructureNotifyMask);
-
 		XWindowAttributes wa;
 		XGetWindowAttributes(dpy, wnd.native_handle(), &wa);
 		if (wa.map_state != IsViewable) {
 			XMapRaised(dpy, wnd.native_handle());
 		}
+
+		sync_event_to(wnd, StructureNotifyMask, MapNotify);
 	}
 
 	void window::add_states(uint32_t type) {

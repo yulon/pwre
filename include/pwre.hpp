@@ -168,6 +168,7 @@ namespace pwre {
 				bool _lessed;
 				friend LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 			#elif defined(PWRE_PLAT_X11)
+				pos_type _move_buf;
 				friend void ctor(
 					window &wnd,
 					uint64_t hints,
@@ -178,13 +179,6 @@ namespace pwre {
 				);
 				friend void handle_event(window &wnd, XEvent &event);
 			#endif
-
-			pos_type
-				#ifdef PWRE_PLAT_X11
-					_move_buf;
-				#else
-					_move_cache;
-				#endif
 	};
 
 	class gl_window : public window {
