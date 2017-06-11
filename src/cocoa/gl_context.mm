@@ -16,6 +16,10 @@ namespace pwre {
 	};*/
 
 	gl_window::gl_window(uint64_t hints) : window(hints) {
+		if (!available()) {
+			return;
+		}
+
 		NSOpenGLPixelFormat *pixFmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:gl2];
 		if (!pixFmt) {
 			destroy();

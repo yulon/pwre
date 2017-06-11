@@ -24,6 +24,10 @@ namespace pwre {
 	};
 
 	gl_window::gl_window(uint64_t hints) : window(hints) {
+		if (!available()) {
+			return;
+		}
+
 		render_context._dc = GetDC(native_handle());
 		if (!render_context._dc) {
 			destroy();
