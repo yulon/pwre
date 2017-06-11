@@ -16,7 +16,6 @@ workspace "pwre"
 			"src/win32/*.cpp", "src/win32/*.hpp",
 			"src/x11/*.cpp", "src/x11/*.hpp"
 		}
-		includedirs { "deps" }
 
 		configuration { "windows", "gmake" }
 			targetprefix "lib"
