@@ -54,10 +54,6 @@ namespace pwre {
 			}
 			wglDeleteContext(this->render_context._nrc);
 		});
-
-		if ((uintptr_t)render_context._nrc == 0x10000) { // Windows 10 16215 bug?
-			destroy();
-		}
 	}
 
 	void gl_window::render_context_type::make_current() {
